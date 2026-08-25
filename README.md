@@ -24,6 +24,8 @@
 6. [🔌 API Endpoints & Gateway Reference](#-api-endpoints--gateway-reference)
 7. [🚀 Quickstart & Local Setup](#-quickstart--local-setup)
 8. [🔒 Security, Roles & Architectural Standards](#-security-roles--architectural-standards)
+9. [📚 Extended Documentation](#-extended-documentation)
+10. [👥 Contributors & Community](#-contributors--community)
 
 ---
 
@@ -381,8 +383,31 @@ flutter run
 
 ---
 
+## 📚 Extended Documentation
+
+For in-depth guides, diagrams, and operational procedures:
+- 📖 [Contributing Guidelines (CONTRIBUTING.md)](CONTRIBUTING.md)
+- 🏗️ [System Architecture & Sequence Flows (docs/ARCHITECTURE.md)](docs/ARCHITECTURE.md)
+- 🔌 [REST API Reference & Endpoints (docs/API_REFERENCE.md)](docs/API_REFERENCE.md)
+- 🗄️ [Database Schema & PostGIS Functions (docs/DATABASE_SCHEMA.md)](docs/DATABASE_SCHEMA.md)
+- 🔒 [Security Safeguards & Policies (docs/SECURITY.md)](docs/SECURITY.md)
+- 📜 [Release History & Milestones (CHANGELOG.md)](CHANGELOG.md)
+
+---
+
+## 👥 Contributors & Community
+
+We are proud of all the contributors powering the Jugaad ecosystem:
+
+<a href="https://github.com/KUSHALMN/Jugaad/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=KUSHALMN/Jugaad" alt="Contributors" />
+</a>
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 Developed with ❤️ for empowering skilled workers and simplifying local services.
+
