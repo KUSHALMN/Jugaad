@@ -1,0 +1,54 @@
+# Python environment files
+.venv/
+venv/
+env/
+ENV/
+bin/
+include/
+lib/
+share/
+
+# Python cache & compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment files and credentials
+.env
+.env.local
+.env.development
+.env.production
+gcp-service-account-key.json
+
+# Version control
+.git/
+.gitignore
+.gcloudignore
+.github/
+
+# IDE and system files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Docker-related files
+Dockerfile
+docker-compose.yml
+docker-compose*.yml
+.dockerignore
+
+# Build and local scripts
+*.ps1
+build_part*.py
+scaffold_backend.py
+apply_migration.py
+
+# Documentation
+README*.md
+docs/

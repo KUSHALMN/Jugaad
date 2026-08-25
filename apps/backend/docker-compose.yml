@@ -1,0 +1,77 @@
+# ============================================================================
+# Jugaad Backend — Docker Compose (Local Development)
+# ============================================================================
+version: '3.8'
+
+services:
+  # FastAPI Monolith Application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jugaad-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=local
+      - DEBUG=true
+      - HOST=0.0.0.0
+      - PORT=8000
+      # Redis connection via Docker service name
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
+      # Supabase Cloud keys
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      # Firebase Auth / FCM
+      - FIREBASE_CREDENTIALS_PATH=/app/firebase-credentials.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
+      - FIREBASE_CREDENTIALS_JSON=${FIREBASE_CREDENTIALS_JSON}
+      # SMS & Modes
+      - SMS_MODE=fake
+      - QUEUE_MODE=local
+      # Razorpay
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+      # MSG91
+      - MSG91_API_KEY=${MSG91_API_KEY}
+      - MSG91_TEMPLATE_ID=${MSG91_TEMPLATE_ID}
+    # Hot-reload mode using volume mapping
+    volumes:
+      - .:/app
+      # Avoid overwriting node_modules or virtual environments inside the container
+      - /app/.venv
+      - /app/venv
+      - /app/__pycache__
+    # Run uvicorn with hot reload enabled in local dev
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+    depends_on:
+      - redis
+    networks:
+      - jugaad-network
+
+  # Local Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: jugaad-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - jugaad-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+networks:
+  jugaad-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local

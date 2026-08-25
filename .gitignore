@@ -1,7 +1,50 @@
 # Local virtual environments
 venv/
 .venv/
+new_venv/
 ENV/
+env/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Node & Frontend
+node_modules/
+dist/
+.output/
+
+# Flutter & Dart & Android
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+.gradle/
+.gradle_home/
+.gradle_local/
+**/.gradle/
+**/.gradle_home/
+**/.gradle_local/
+android/.gradle/
+android/.gradle_home/
+android/.gradle_local/
+android/captures/
+android/local.properties
+android/GeneratedPluginRegistrant.java
+ios/.symlinks/
+ios/Pods/
+ios/Podfile.lock
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Target Support Files/
+ios/Flutter/AppFrameworkInfo.plist
 
 # IDE configurations
 .idea/
@@ -12,11 +55,28 @@ ENV/
 # Diagnostic/AI tool folders
 .qodo/
 .sixth/
+.agents/
+skills-lock.json
 
-# GCP Credentials (private keys)
+# Scratch & Temporary files
+*.tmp
+*.log
+found_prompts.txt
+full_step_1558.txt
+inst_user_settings.tmp
+fix_auth_provider.py
+
+# GCP & Cloud Credentials (private keys)
 gcp-service-account-key.json
-Jugaad app/Jugaad app/jugaad_backend/gcp-service-account-key.json
+firebase-service-account.json
+*.pem
+*.key
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local

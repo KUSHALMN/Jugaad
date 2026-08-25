@@ -1,0 +1,290 @@
+# ============================================================================
+# Jugaad Backend — Render Blueprint (render.yaml)
+# ============================================================================
+# Replaces: Cloud Run (13 services) + Google API Gateway
+# Region: Singapore (closest to India, lowest latency)
+# ============================================================================
+
+services:
+  # ─── API Gateway (reverse proxy) ──────────────────────────────────────────
+  - type: web
+    name: jugaad-gateway
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn gateway.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+      - key: REQUEST_SERVICE_URL
+        fromService:
+          name: jugaad-request-service
+          type: web
+          property: host
+      - key: MATCHING_SERVICE_URL
+        fromService:
+          name: jugaad-matching-service
+          type: web
+          property: host
+      - key: NOTIFICATION_SERVICE_URL
+        fromService:
+          name: jugaad-notification-service
+          type: web
+          property: host
+      - key: JOB_SERVICE_URL
+        fromService:
+          name: jugaad-job-service
+          type: web
+          property: host
+      - key: WORKER_SERVICE_URL
+        fromService:
+          name: jugaad-worker-service
+          type: web
+          property: host
+      - key: BOOKING_SERVICE_URL
+        fromService:
+          name: jugaad-booking-service
+          type: web
+          property: host
+      - key: PAYMENT_SERVICE_URL
+        fromService:
+          name: jugaad-payment-service
+          type: web
+          property: host
+      - key: ADMIN_SERVICE_URL
+        fromService:
+          name: jugaad-admin-service
+          type: web
+          property: host
+      - key: REVIEW_SERVICE_URL
+        fromService:
+          name: jugaad-review-service
+          type: web
+          property: host
+      - key: AUTH_SERVICE_URL
+        fromService:
+          name: jugaad-auth-service
+          type: web
+          property: host
+      - key: USER_SERVICE_URL
+        fromService:
+          name: jugaad-user-service
+          type: web
+          property: host
+      - key: SCHEDULER_SERVICE_URL
+        fromService:
+          name: jugaad-scheduler-service
+          type: web
+          property: host
+
+  # ─── Request Service ──────────────────────────────────────────────────────
+  - type: web
+    name: jugaad-request-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.request_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+      - key: MATCHING_SERVICE_URL
+        fromService:
+          name: jugaad-matching-service
+          type: web
+          property: host
+
+  # ─── Matching Service ─────────────────────────────────────────────────────
+  - type: web
+    name: jugaad-matching-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.matching_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+
+  # ─── Notification Service ─────────────────────────────────────────────────
+  - type: web
+    name: jugaad-notification-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.notification_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+
+  # ─── Job Service ──────────────────────────────────────────────────────────
+  - type: web
+    name: jugaad-job-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.job_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+
+  # ─── Worker Service ───────────────────────────────────────────────────────
+  - type: web
+    name: jugaad-worker-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.worker_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+
+  # ─── Booking Service ──────────────────────────────────────────────────────
+  - type: web
+    name: jugaad-booking-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.booking_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+
+  # ─── Payment Service ──────────────────────────────────────────────────────
+  - type: web
+    name: jugaad-payment-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.payment_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+
+  # ─── Admin Service ────────────────────────────────────────────────────────
+  - type: web
+    name: jugaad-admin-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.admin_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+
+  # ─── Review Service ───────────────────────────────────────────────────────
+  - type: web
+    name: jugaad-review-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.review_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+
+  # ─── Auth Service ─────────────────────────────────────────────────────────
+  - type: web
+    name: jugaad-auth-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.auth_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+
+  # ─── User Service ─────────────────────────────────────────────────────────
+  - type: web
+    name: jugaad-user-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.user_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+
+  # ─── Scheduler Service ────────────────────────────────────────────────────
+  - type: web
+    name: jugaad-scheduler-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn services.scheduler_service.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    region: singapore
+    plan: starter
+    envVars:
+      - fromGroup: jugaad-shared-env
+
+  # ─── NOTE: outbox_publisher is DELETED ────────────────────────────────────
+  # Replaced by Postgres trigger + pg_net HTTP extension
+  # See: supabase/schema.sql → outbox_event_trigger
+
+# ─── Shared Environment Variable Group ──────────────────────────────────────
+# Create this group in Render Dashboard → Environment Groups
+# All services reference it via `fromGroup: jugaad-shared-env`
+envVarGroups:
+  - name: jugaad-shared-env
+    envVars:
+      # Supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      # Service-to-service auth
+      - key: INTERNAL_SECRET
+        generateValue: true
+      # Firebase Admin SDK (Auth + FCM — DO NOT REMOVE)
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        sync: false
+      # For Render: paste full JSON content of firebase-credentials.json here
+      - key: FIREBASE_CREDENTIALS_JSON
+        sync: false
+      # Upstash (FREE — KEEP)
+      - key: QSTASH_TOKEN
+        sync: false
+      - key: QSTASH_CURRENT_SIGNING_KEY
+        sync: false
+      - key: QSTASH_NEXT_SIGNING_KEY
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      # Razorpay (KEEP)
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      # MSG91 SMS (KEEP)
+      - key: MSG91_API_KEY
+        sync: false
+      - key: MSG91_TEMPLATE_ID
+        sync: false
+      # Pilot geography
+      - key: PILOT_LAT_CENTER
+        value: "12.3051"
+      - key: PILOT_LNG_CENTER
+        value: "76.6551"
+      # Timeouts
+      - key: JOB_TIMEOUT_SECONDS
+        value: "120"
+      - key: MATCHING_RADIUS_KM
+        value: "5"
