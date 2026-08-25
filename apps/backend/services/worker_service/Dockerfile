@@ -6,4 +6,4 @@ COPY shared /app/shared
 COPY routers /app/routers
 COPY services /app/services
 ENV PYTHONPATH=/app
-CMD ["uvicorn", "services.auth_service.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "services.worker_service.main:app", "--host", "0.0.0.0", "--port", "8080"]
