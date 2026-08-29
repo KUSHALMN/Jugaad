@@ -127,14 +127,14 @@ class ServicesGrid extends ConsumerWidget {
 
     if (screenWidth >= 1024) {
       crossAxisCount = 3;
-      childAspectRatio = 1.30;
+      childAspectRatio = 1.25;
     } else if (screenWidth >= 600) {
       crossAxisCount = 2;
-      childAspectRatio = 1.15;
+      childAspectRatio = 1.05;
     } else {
-      // Mobile - 2 columns, tall cards (0.92 ratio) to comfortably fit all text and buttons
+      // Mobile - 2 columns with generous aspect ratio to prevent any bottom overflow
       crossAxisCount = 2;
-      childAspectRatio = 0.92;
+      childAspectRatio = 0.78;
     }
 
     return GridView.builder(
@@ -260,7 +260,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -269,43 +269,50 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: cfg.accentColor.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: cfg.accentColor.withValues(alpha: 0.20),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: cfg.accentColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: cfg.accentColor.withValues(alpha: 0.20),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: cfg.accentColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    displayBadgeText,
+                                    style: GoogleFonts.inter(
+                                      color: cfg.accentColor,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.1,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 5,
-                                height: 5,
-                                decoration: BoxDecoration(
-                                  color: cfg.accentColor,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                displayBadgeText,
-                                style: GoogleFonts.inter(
-                                  color: cfg.accentColor,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.1,
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
+                        const SizedBox(width: 4),
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                             onTap: () {
                               HapticFeedback.lightImpact();
                               setState(() => _isBookmarked = !_isBookmarked);
@@ -327,18 +334,18 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                       ],
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
                     // Icon + Service Details
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: 40,
-                          height: 40,
+                          width: 34,
+                          height: 34,
                           decoration: BoxDecoration(
                             color: cfg.bgTint,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: cfg.accentColor.withValues(alpha: 0.15),
                             ),
@@ -347,10 +354,10 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                           child: Icon(
                             cfg.iconData,
                             color: cfg.accentColor,
-                            size: 20,
+                            size: 17,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 7),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,7 +366,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                                 cfg.title,
                                 style: GoogleFonts.inter(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 14.5,
+                                  fontSize: 12.5,
                                   color: const Color(0xFF0F172A),
                                   letterSpacing: -0.3,
                                   height: 1.15,
@@ -372,9 +379,11 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                                 cfg.subtitle,
                                 style: GoogleFonts.inter(
                                   color: const Color(0xFF64748B),
-                                  fontSize: 11.5,
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.w500,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -382,51 +391,56 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                       ],
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
-                    // Trust Bar
-                    Row(
-                      children: [
-                        const Icon(Icons.star_rounded, size: 12, color: Color(0xFFF59E0B)),
-                        const SizedBox(width: 2),
-                        Text(
-                          cfg.rating,
-                          style: GoogleFonts.inter(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF0F172A),
+                    // Trust Bar with FittedBox to guarantee zero horizontal overflow
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.star_rounded, size: 12, color: Color(0xFFF59E0B)),
+                          const SizedBox(width: 2),
+                          Text(
+                            cfg.rating,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF0F172A),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          '(${cfg.jobsCount})',
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF64748B),
+                          const SizedBox(width: 3),
+                          Text(
+                            '(${cfg.jobsCount})',
+                            style: GoogleFonts.inter(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF64748B),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          width: 3,
-                          height: 3,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFCBD5E1),
-                            shape: BoxShape.circle,
+                          const SizedBox(width: 4),
+                          Container(
+                            width: 3,
+                            height: 3,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFCBD5E1),
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.verified_rounded, size: 11, color: Color(0xFF16A34A)),
-                        const SizedBox(width: 2),
-                        Text(
-                          'Verified',
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF16A34A),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.verified_rounded, size: 11, color: Color(0xFF16A34A)),
+                          const SizedBox(width: 2),
+                          Text(
+                            'Verified',
+                            style: GoogleFonts.inter(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF16A34A),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
 
                     const Spacer(),
@@ -435,12 +449,12 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                       decoration: BoxDecoration(
                         color: _isHovered
                             ? cfg.accentColor
                             : cfg.accentColor.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -448,7 +462,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                           Text(
                             'Book Service',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: _isHovered ? Colors.white : cfg.accentColor,
                               letterSpacing: -0.1,
@@ -461,7 +475,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                             curve: Curves.easeOutCubic,
                             child: Icon(
                               Icons.arrow_forward_rounded,
-                              size: 14,
+                              size: 13,
                               color: _isHovered ? Colors.white : cfg.accentColor,
                             ),
                           ),

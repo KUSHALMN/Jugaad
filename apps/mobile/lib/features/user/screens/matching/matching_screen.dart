@@ -8,6 +8,7 @@ import 'package:lottie/lottie.dart';
 import 'dart:math';
 import 'dart:async';
 import 'package:jugaad_mvp/core/services/api_service.dart';
+import 'package:jugaad_mvp/core/services/supabase_service.dart';
 import 'package:jugaad_mvp/shared/widgets/animated_counter.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
 import 'package:shimmer/shimmer.dart';
@@ -33,6 +34,8 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
   RealtimeChannel? _realtimeChannel;
   Map<String, dynamic> _jobData = {};
   Map<String, dynamic>? _workerData;
+  List<Map<String, dynamic>> _topRatedWorkers = [];
+  bool _isLoadingTopRated = false;
 
   // ── UI State ─────────────────────────────────────────────
   MatchingState _matchingState = MatchingState.searching;
@@ -203,6 +206,7 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
       }
     } else if (status == 'no_workers_found') {
       newState = MatchingState.noWorkersFound;
+      _fetchTopRatedFallbackWorkers();
     } else if (fallback) {
       newState = MatchingState.expanding;
     } else {
@@ -215,6 +219,10 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
         _matchingState = newState;
         _isActioning = false;
       });
+
+      if (newState == MatchingState.noWorkersFound) {
+        _fetchTopRatedFallbackWorkers();
+      }
 
       if (newState == MatchingState.expanding) {
         _pulseController.duration = const Duration(milliseconds: 2500);
@@ -235,6 +243,89 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
         if (workerId != null) {
           _fetchWorkerDetails(workerId);
         }
+      }
+    }
+  }
+
+  Future<void> _fetchTopRatedFallbackWorkers() async {
+    final skill = _jobData['skill_required'] as String? ??
+        _jobData['skill'] as String? ??
+        _jobData['title'] as String? ??
+        '';
+
+    setState(() => _isLoadingTopRated = true);
+    try {
+      final workers = await SupabaseService().fetchTopRatedWorkersByCategory(
+        category: skill,
+        limit: 8,
+      );
+      if (mounted) {
+        setState(() {
+          _topRatedWorkers = workers;
+          _isLoadingTopRated = false;
+        });
+      }
+    } catch (e) {
+      print('[MATCHING] Error fetching top rated fallback workers: $e');
+      if (mounted) {
+        setState(() => _isLoadingTopRated = false);
+      }
+    }
+  }
+
+  Future<void> _directAssignWorker(Map<String, dynamic> worker) async {
+    final workerId = worker['id']?.toString() ?? '';
+    final workerName = worker['name']?.toString() ?? 'Worker';
+
+    HapticFeedback.mediumImpact();
+    setState(() => _isActioning = true);
+
+    try {
+      // Update job with worker_id in Supabase
+      await SupabaseConfig.client.from('jobs').update({
+        'worker_id': workerId,
+        'status': 'assigned',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', widget.jobId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Successfully requested $workerName! Connecting...',
+              style: UserAppTheme.body(color: Colors.white, weight: FontWeight.bold),
+            ),
+            backgroundColor: UserAppTheme.successGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        setState(() {
+          _workerData = Map<String, dynamic>.from(worker);
+          _workerData!['name'] = workerName;
+          _workerData!['phone'] = worker['phone'] ?? '';
+          _workerData!['specialty'] = _jobData['skill_required'] ?? _jobData['skill'] ?? worker['category'] ?? 'Helper';
+          _workerData!['rating'] = double.tryParse(worker['rating']?.toString() ?? '4.9') ?? 4.9;
+          _workerData!['jobs_done'] = worker['total_jobs'] ?? worker['totalJobsCompleted'] ?? 50;
+          _workerData!['distance_km'] = 2.5;
+          _workerData!['eta_mins'] = 15;
+          _workerData!['initials'] = workerName.isNotEmpty ? workerName.substring(0, 1).toUpperCase() : 'W';
+          _matchingState = MatchingState.assigned;
+          _isActioning = false;
+        });
+        _celebrationController.forward(from: 0);
+        _assignedShimmerController.forward(from: 0);
+        _assignedBgController.forward(from: 0);
+        _acceptCountdown.reset();
+        _acceptCountdown.forward();
+      }
+    } catch (e) {
+      print('[MATCHING] Error directly assigning worker: $e');
+      if (mounted) {
+        setState(() => _isActioning = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not request worker: $e')),
+        );
       }
     }
   }
@@ -273,12 +364,24 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
 
     _fallbackTimer = Timer(const Duration(seconds: 90), () {
       if (!mounted) return;
+      setState(() {
+        _matchingState = MatchingState.noWorkersFound;
+      });
+      _fetchTopRatedFallbackWorkers();
     });
 
     _fallbackCountTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) { t.cancel(); return; }
       setState(() {
-        if (_fallbackSecondsLeft > 0) _fallbackSecondsLeft--;
+        if (_fallbackSecondsLeft > 0) {
+          _fallbackSecondsLeft--;
+        } else {
+          t.cancel();
+          if (_matchingState != MatchingState.assigned && _matchingState != MatchingState.noWorkersFound) {
+            _matchingState = MatchingState.noWorkersFound;
+            _fetchTopRatedFallbackWorkers();
+          }
+        }
       });
     });
   }
@@ -995,6 +1098,11 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
 
   // ─── STATE C: NO WORKERS FOUND ───────────────────────────
   Widget _buildNoWorkersFound() {
+    final skill = _jobData['skill_required'] as String? ??
+        _jobData['skill'] as String? ??
+        _jobData['title'] as String? ??
+        'Service';
+
     return Column(
       children: [
         Container(
@@ -1015,7 +1123,7 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'No Responders Found Nearby',
+                      'Available $skill Specialists',
                       style: UserAppTheme.heading(
                         size: 16,
                         weight: FontWeight.bold,
@@ -1024,7 +1132,7 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'All emergency workers in your area are busy',
+                      'Ranked by highest customer ratings in Mysuru',
                       style: UserAppTheme.body(
                         size: 11,
                         color: Colors.white70,
@@ -1038,82 +1146,360 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 32),
+                // Alert / Status Info Banner
                 Container(
-                  width: 80,
-                  height: 80,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: UserAppTheme.urgentRed.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
+                    color: const Color(0xFFFEF3C7).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFFFACC15).withValues(alpha: 0.35),
+                      width: 1,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.person_off_outlined,
-                    size: 40,
-                    color: UserAppTheme.urgentRed,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.stars_rounded, color: Color(0xFFFBBF24), size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'No direct instant responder within 3km radar. Showing top-rated $skill professionals available for direct booking below:',
+                          style: UserAppTheme.body(
+                            size: 12,
+                            color: Colors.white,
+                            weight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ).animate().scale(duration: 400.ms, curve: Curves.elasticOut),
+                ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05),
+
+                const SizedBox(height: 18),
+
+                // Top Rated Section Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Top-Rated $skill Pros',
+                      style: UserAppTheme.heading(
+                        size: 15,
+                        weight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: UserAppTheme.primaryBlue.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: UserAppTheme.primaryBlue.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.sort_rounded, color: Colors.white, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Highest Rated',
+                            style: UserAppTheme.label(
+                              size: 10,
+                              color: Colors.white,
+                              weight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // List of Top Rated Available Workers
+                if (_isLoadingTopRated) ...[
+                  const SizedBox(height: 40),
+                  const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                  const SizedBox(height: 40),
+                ] else if (_topRatedWorkers.isEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white12),
+                    ),
+                    alignment: Alignment.center,
+                    child: Column(
+                      children: [
+                        const Icon(Icons.person_search_rounded, size: 36, color: Colors.white70),
+                        const SizedBox(height: 10),
+                        Text(
+                          'No available workers in this category right now',
+                          style: UserAppTheme.body(color: Colors.white, weight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _topRatedWorkers.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final worker = _topRatedWorkers[index];
+                      final name = worker['name']?.toString() ?? 'Verified Worker';
+                      final rating = double.tryParse(worker['rating']?.toString() ?? '4.9') ?? 4.9;
+                      final totalJobs = worker['total_jobs'] ?? worker['totalJobsCompleted'] ?? 50;
+                      final hourlyRate = worker['hourly_rate'] ?? worker['rate_per_hour'] ?? 200;
+                      final area = worker['area']?.toString() ?? 'Mysuru';
+                      final initial = name.isNotEmpty ? name[0].toUpperCase() : 'W';
+
+                      return Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E293B),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFF334155),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Avatar with rating badge
+                                Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Container(
+                                      width: 46,
+                                      height: 46,
+                                      decoration: BoxDecoration(
+                                        color: UserAppTheme.primaryBlue.withValues(alpha: 0.2),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: UserAppTheme.primaryBlue.withValues(alpha: 0.5),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        initial,
+                                        style: UserAppTheme.heading(
+                                          size: 18,
+                                          weight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF10B981),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: const Color(0xFF1E293B), width: 2),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              name,
+                                              style: UserAppTheme.heading(
+                                                size: 14.5,
+                                                weight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          const Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 16),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        area.isNotEmpty ? '$skill • $area' : skill,
+                                        style: UserAppTheme.body(
+                                          size: 11.5,
+                                          color: const Color(0xFF94A3B8),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 12),
+                            const Divider(height: 1, color: Color(0xFF334155)),
+                            const SizedBox(height: 10),
+
+                            // Metrics: Rating, Completed Jobs, Rate
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEF3C7).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFBBF24)),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        rating.toStringAsFixed(1),
+                                        style: UserAppTheme.label(
+                                          size: 11.5,
+                                          color: const Color(0xFFFBBF24),
+                                          weight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  '$totalJobs jobs completed',
+                                  style: UserAppTheme.body(
+                                    size: 11.5,
+                                    color: const Color(0xFFCBD5E1),
+                                    weight: FontWeight.w500,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  '₹$hourlyRate/hr',
+                                  style: UserAppTheme.body(
+                                    size: 12.5,
+                                    weight: FontWeight.bold,
+                                    color: const Color(0xFF34D399),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Request / Direct Book Button
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _isActioning
+                                    ? null
+                                    : () => _directAssignWorker(worker),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: UserAppTheme.primaryBlue,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: Text(
+                                  'Request This Pro',
+                                  style: UserAppTheme.body(
+                                    color: Colors.white,
+                                    weight: FontWeight.bold,
+                                    size: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ).animate().fadeIn(delay: (index * 80).ms).slideY(begin: 0.05);
+                    },
+                  ),
+                ],
+
                 const SizedBox(height: 24),
-                Text(
-                  'No helpers found in your area',
-                  style: UserAppTheme.heading(
-                    size: 18,
-                    weight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'We\'re expanding the search radius. You still have options to get urgent help fast.',
-                  style: UserAppTheme.body(
-                    size: 13,
-                    color: Colors.white70,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
+
+                // Retry Search Button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
+                  child: OutlinedButton.icon(
                     onPressed: () {
                       setState(() => _matchingState = MatchingState.searching);
                       _startFallbackTimer();
                     },
-                    icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
+                    icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
                     label: Text(
-                      'Retry Search',
+                      'Retry Live Radar Search',
                       style: UserAppTheme.body(
                         color: Colors.white,
                         weight: FontWeight.bold,
-                        size: 15,
+                        size: 14,
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: UserAppTheme.primaryBlue,
-                      minimumSize: const Size.fromHeight(52),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      elevation: 0,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.05),
-                const SizedBox(height: 16),
-                _buildScheduleCard().animate().fadeIn(delay: 200.ms).slideY(begin: 0.05),
-                const SizedBox(height: 12),
-                _buildCallbackCard().animate().fadeIn(delay: 300.ms).slideY(begin: 0.05),
-                const SizedBox(height: 24),
-                TextButton(
-                  onPressed: _cancelJob,
-                  child: Text(
-                    'Cancel & Go Home',
-                    style: UserAppTheme.body(
-                      size: 13,
-                      color: UserAppTheme.urgentRed,
-                      weight: FontWeight.bold,
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white30),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
+
+                const SizedBox(height: 14),
+                _buildScheduleCard(),
+                const SizedBox(height: 12),
+                _buildCallbackCard(),
+                const SizedBox(height: 20),
+
+                Center(
+                  child: TextButton(
+                    onPressed: _cancelJob,
+                    child: Text(
+                      'Cancel & Go Home',
+                      style: UserAppTheme.body(
+                        size: 13,
+                        color: UserAppTheme.urgentRed,
+                        weight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),

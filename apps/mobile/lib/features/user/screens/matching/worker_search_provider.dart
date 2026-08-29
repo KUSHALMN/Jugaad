@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/supabase_service.dart';
 
 class WorkerSearchState {
   final List<dynamic> workers;
@@ -205,7 +206,15 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
 
       // Fallback: If 0 workers found nearby, load Mysore Citywide Workers sorted by highest rating
       if (fetchedWorkers.isEmpty) {
-        fetchedWorkers = _getMysoreWorkersForService(state.serviceType);
+        final dbWorkers = await SupabaseService().fetchTopRatedWorkersByCategory(
+          category: state.serviceType,
+          limit: 12,
+        );
+        if (dbWorkers.isNotEmpty) {
+          fetchedWorkers = dbWorkers;
+        } else {
+          fetchedWorkers = _getMysoreWorkersForService(state.serviceType);
+        }
         isFallback = true;
       }
 
@@ -224,7 +233,18 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
       );
     } catch (e) {
       // Fallback on network/API exception: show Mysore citywide workers
-      final mysoreWorkers = _getMysoreWorkersForService(state.serviceType);
+      List<dynamic> mysoreWorkers = [];
+      try {
+        mysoreWorkers = await SupabaseService().fetchTopRatedWorkersByCategory(
+          category: state.serviceType,
+          limit: 12,
+        );
+      } catch (_) {}
+
+      if (mysoreWorkers.isEmpty) {
+        mysoreWorkers = _getMysoreWorkersForService(state.serviceType);
+      }
+
       state = state.copyWith(
         workers: mysoreWorkers,
         isLoading: false,
@@ -240,7 +260,116 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
   List<dynamic> _getMysoreWorkersForService(String serviceType) {
     final normalized = serviceType.toLowerCase().replaceAll(' ', '_');
 
-    final List<Map<String, dynamic>> allMysoreWorkers = [];
+    final List<Map<String, dynamic>> allMysoreWorkers = [
+      {
+        "id": "9c141401-2acd-5eba-a988-9f70f405e86b",
+        "name": "SAN TECHNOLOGIES Water Purifier Services",
+        "category": "ro_service",
+        "skills": ["RO Repair", "Water Purifier", "Plumber"],
+        "rating": 5.0,
+        "total_jobs": 440,
+        "hourly_rate": 200.0,
+        "is_verified": true,
+        "area": "Kumbarakoppal, Mysuru",
+        "phone": "+91 99459 15910"
+      },
+      {
+        "id": "8d6fa9db-c83c-5e00-b42a-d139f721355e",
+        "name": "Manu Electrician Mysore",
+        "category": "electrician",
+        "skills": ["Electrician", "Power Outage", "Wiring"],
+        "rating": 4.9,
+        "total_jobs": 365,
+        "hourly_rate": 200.0,
+        "is_verified": true,
+        "area": "Ramachandra Agrahara, Mysuru",
+        "phone": "+91 97396 87998"
+      },
+      {
+        "id": "405cc123-aec0-507e-9196-1fdd4fb230a6",
+        "name": "PRK Services",
+        "category": "refrigerator_service",
+        "skills": ["Refrigerator Repair", "Appliance Repair", "Electrician"],
+        "rating": 4.9,
+        "total_jobs": 346,
+        "hourly_rate": 200.0,
+        "is_verified": true,
+        "area": "Hebbal 1st Stage, Mysuru",
+        "phone": "+91 90193 91170"
+      },
+      {
+        "id": "5420c074-d276-543b-b7af-79b40aa0226b",
+        "name": "Cool Tech",
+        "category": "ac_service",
+        "skills": ["AC Repair", "AC Service", "Electrician"],
+        "rating": 4.9,
+        "total_jobs": 535,
+        "hourly_rate": 200.0,
+        "is_verified": true,
+        "area": "Gayathripuram, Mysuru",
+        "phone": "+91 99022 61785"
+      },
+      {
+        "id": "8f4cdb1d-7277-5f69-857b-6f4d6d59a752",
+        "name": "RJN Plumbing Services",
+        "category": "plumber",
+        "skills": ["Plumber", "Water Leakage", "Drainage"],
+        "rating": 4.9,
+        "total_jobs": 165,
+        "hourly_rate": 200.0,
+        "is_verified": true,
+        "area": "Hebbal, Mysuru",
+        "phone": "+91 89700 25339"
+      },
+      {
+        "id": "04b91e23-4ade-50bc-9d31-3b1302c36f78",
+        "name": "L T Electric Zone",
+        "category": "electrician",
+        "skills": ["Electrician", "Short Circuit", "Appliance Repair"],
+        "rating": 4.9,
+        "total_jobs": 133,
+        "hourly_rate": 200.0,
+        "is_verified": true,
+        "area": "Hootagalli, Mysuru",
+        "phone": "+91 97414 81923"
+      },
+      {
+        "id": "85525bc9-6c27-549d-8f68-ea4089c30f62",
+        "name": "KK Plumbing",
+        "category": "plumber",
+        "skills": ["Plumber", "Pipe Leak", "Sanitary"],
+        "rating": 4.9,
+        "total_jobs": 32,
+        "hourly_rate": 200.0,
+        "is_verified": true,
+        "area": "Shivarampet, Mysuru",
+        "phone": "+91 87480 02207"
+      },
+      {
+        "id": "dc0da591-c2c5-5fdb-94b2-03fc6f48b9a3",
+        "name": "Sriranga Home Cleaning",
+        "category": "cleaning",
+        "skills": ["House Cleaning", "Deep Cleaning", "Sanitization"],
+        "rating": 4.8,
+        "total_jobs": 70,
+        "hourly_rate": 200.0,
+        "is_verified": true,
+        "area": "Vinayakanagar, Mysuru",
+        "phone": "+91 90363 62141"
+      },
+      {
+        "id": "391c19b8-26aa-549e-9962-7e5fa6c0efe1",
+        "name": "Lapserve Laptop Service Center",
+        "category": "laptop_repair",
+        "skills": ["Laptop Repair", "Phone Repair", "Hardware Repair"],
+        "rating": 4.8,
+        "total_jobs": 1908,
+        "hourly_rate": 250.0,
+        "is_verified": true,
+        "area": "Saraswathipuram, Mysuru",
+        "phone": "+91 99026 64488"
+      }
+    ];
 
     List<Map<String, dynamic>> filtered = allMysoreWorkers;
     if (normalized.isNotEmpty && normalized != 'all') {
@@ -250,7 +379,7 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
         return cat.contains(normalized) || skills.any((s) => s.contains(normalized));
       }).toList();
       if (filtered.isEmpty) {
-        filtered = allMysoreWorkers; // fallback to all Mysore workers
+        filtered = allMysoreWorkers;
       }
     }
 

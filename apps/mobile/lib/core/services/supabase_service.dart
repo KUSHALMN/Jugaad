@@ -113,6 +113,61 @@ class SupabaseService {
     }
   }
 
+  /// Fetches approved workers filtered by category/skill, sorted by rating DESC.
+  Future<List<Map<String, dynamic>>> fetchTopRatedWorkersByCategory({
+    String? category,
+    int limit = 10,
+  }) async {
+    try {
+      final response = await _client
+          .from('workers')
+          .select('id, name, rating, total_jobs, totalJobsCompleted, skills, specialities, category, work_category, hourly_rate, is_available, status, approval_status, is_verified, isVerified, area, phone')
+          .order('rating', ascending: false)
+          .limit(50);
+
+      List<Map<String, dynamic>> workers = List<Map<String, dynamic>>.from(response);
+
+      // Filter to approved workers
+      workers = workers.where((w) {
+        final st = (w['status'] ?? w['approval_status'] ?? 'approved').toString().toLowerCase();
+        return st == 'approved';
+      }).toList();
+
+      if (category != null && category.trim().isNotEmpty && category.toLowerCase() != 'all') {
+        final normalizedCat = category.toLowerCase().replaceAll(' ', '_');
+        final filtered = workers.where((w) {
+          final cat = (w['category'] ?? w['work_category'] ?? '').toString().toLowerCase();
+          final skills = List<String>.from(w['skills'] as List? ?? []).map((s) => s.toLowerCase().replaceAll(' ', '_')).toList();
+          final specs = List<String>.from(w['specialities'] as List? ?? []).map((s) => s.toLowerCase().replaceAll(' ', '_')).toList();
+          
+          return cat.contains(normalizedCat) ||
+                 normalizedCat.contains(cat) ||
+                 skills.any((s) => s.contains(normalizedCat) || normalizedCat.contains(s)) ||
+                 specs.any((s) => s.contains(normalizedCat) || normalizedCat.contains(s));
+        }).toList();
+
+        if (filtered.isNotEmpty) {
+          workers = filtered;
+        }
+      }
+
+      // Sort by rating DESC, total_jobs DESC
+      workers.sort((a, b) {
+        final double rA = (a['rating'] as num?)?.toDouble() ?? 0.0;
+        final double rB = (b['rating'] as num?)?.toDouble() ?? 0.0;
+        if (rB != rA) return rB.compareTo(rA);
+        final int jA = (a['total_jobs'] ?? a['totalJobsCompleted'] as num?)?.toInt() ?? 0;
+        final int jB = (b['total_jobs'] ?? b['totalJobsCompleted'] as num?)?.toInt() ?? 0;
+        return jB.compareTo(jA);
+      });
+
+      return workers.take(limit).toList();
+    } catch (e) {
+      debugPrint('[SupabaseService] fetchTopRatedWorkersByCategory error: $e');
+      return [];
+    }
+  }
+
   // ─── Earnings Computation (client-side, no extra schema fields) ──────────
 
   /// Filters [rows] to bookings whose `created_at` falls on today (local).
