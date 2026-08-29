@@ -165,22 +165,22 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
 
     if (screenWidth >= 1024) {
       crossAxisCount = 4;
-      childAspectRatio = 1.20;
+      childAspectRatio = 1.35;
     } else if (screenWidth >= 600) {
       crossAxisCount = 3;
-      childAspectRatio = 1.10;
+      childAspectRatio = 1.25;
     } else {
       crossAxisCount = 2;
-      childAspectRatio = 0.92;
+      childAspectRatio = 1.18;
     }
 
     return GridView.builder(
       key: ValueKey(_selectedCategory),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        mainAxisSpacing: 12.0,
-        crossAxisSpacing: 12.0,
+        mainAxisSpacing: 10.0,
+        crossAxisSpacing: 10.0,
         childAspectRatio: childAspectRatio,
       ),
       itemCount: services.length,
@@ -237,7 +237,7 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
     final accentColor = widget.accentColor;
 
     final double scale = _isPressed ? 0.97 : (_isHovered ? 1.02 : 1.0);
-    final double translateY = _isHovered ? -4.0 : 0.0;
+    final double translateY = _isHovered ? -3.0 : 0.0;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -266,7 +266,7 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
                   Color(0xFFFAFBFC),
                 ],
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: _isHovered
                     ? accentColor.withValues(alpha: 0.50)
@@ -278,15 +278,15 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
                   color: _isHovered
                       ? accentColor.withValues(alpha: 0.14)
                       : Colors.black.withValues(alpha: 0.04),
-                  blurRadius: _isHovered ? 20 : 12,
-                  offset: _isHovered ? const Offset(0, 8) : const Offset(0, 4),
+                  blurRadius: _isHovered ? 16 : 10,
+                  offset: _isHovered ? const Offset(0, 6) : const Offset(0, 3),
                 ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.all(10.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -296,11 +296,11 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
-                          width: 42,
-                          height: 42,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             color: widget.bgTint,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(11),
                             border: Border.all(
                               color: accentColor.withValues(alpha: 0.15),
                             ),
@@ -309,14 +309,14 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
                           child: Icon(
                             service.icon,
                             color: accentColor,
-                            size: 20,
+                            size: 18,
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFFBEB),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: const Color(0xFFFDE68A),
                             ),
@@ -325,11 +325,11 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 12),
-                              const SizedBox(width: 3),
+                              const SizedBox(width: 2.5),
                               Text(
                                 service.rating.toStringAsFixed(1),
                                 style: GoogleFonts.inter(
-                                  fontSize: 10.5,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFF92400E),
                                 ),
@@ -340,32 +340,34 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
                       ],
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 7),
 
                     // Service Title
                     Text(
                       service.title,
                       style: GoogleFonts.inter(
-                        fontSize: 14.5,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF0F172A),
                         letterSpacing: -0.2,
                         height: 1.15,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
 
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
 
                     // Price Range Estimate
                     Text(
                       '₹${service.priceMin.toInt()} - ₹${service.priceMax.toInt()} est.',
                       style: GoogleFonts.inter(
-                        fontSize: 11.5,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF64748B),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
 
                     const Spacer(),
@@ -374,10 +376,10 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                       decoration: BoxDecoration(
                         color: _isHovered ? accentColor : accentColor.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -385,7 +387,7 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
                           Text(
                             'Book Now',
                             style: GoogleFonts.inter(
-                              fontSize: 11.5,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: _isHovered ? Colors.white : accentColor,
                               letterSpacing: -0.1,
