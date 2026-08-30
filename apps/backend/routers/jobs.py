@@ -232,8 +232,22 @@ def cancel_job_delete(job_id: str, uid: str = Depends(verify_firebase_token)):
 # 5. Accept Job
 @router.post("/{job_id}/accept")
 def accept_job(job_id: str, body: AcceptJobRequest, uid: str = Depends(verify_firebase_token)):
+    # Verify the caller is the worker accepting the job
+    worker_user = supabase.table("users").select("id, name, phone, fcm_token").eq("firebase_uid", uid).maybe_single().execute()
+    if not worker_user or not worker_user.data:
+        worker_user = supabase.table("users").select("id, name, phone, fcm_token").eq("id", uid).maybe_single().execute()
+    if not worker_user or not worker_user.data:
+        raise HTTPException(status_code=404, detail="Worker user not found")
+
+    worker_info = worker_user.data
+    worker_uuid = worker_info.get("id")
+
+    # If body.worker_id is passed, it must match caller's firebase_uid or internal id
+    if body.worker_id and body.worker_id != uid and body.worker_id != str(worker_uuid):
+        raise HTTPException(status_code=403, detail="Cannot accept job on behalf of another worker")
+
     lock_key = f"lock:job:{job_id}"
-    acquired = redis_client.acquire_lock(lock_key, body.worker_id, ex=10)
+    acquired = redis_client.acquire_lock(lock_key, str(worker_uuid), ex=10)
     if not acquired:
         raise HTTPException(status_code=409, detail="Job already accepted")
 
@@ -245,10 +259,6 @@ def accept_job(job_id: str, body: AcceptJobRequest, uid: str = Depends(verify_fi
         job = job_result.data
         if job.get("status") not in ("open", "searching", "matched"):
             raise HTTPException(409, f"Job is no longer available (status: {job.get('status')})")
-
-        worker_user = supabase.table("users").select("id, name, phone, fcm_token").eq("firebase_uid", body.worker_id).maybe_single().execute()
-        worker_info = (worker_user.data if worker_user else None) or {}
-        worker_uuid = worker_info.get("id")
 
         # Atomic update with RPC
         try:
@@ -427,6 +437,12 @@ def complete_job(job_id: str, body: CompleteJobRequest, uid: str = Depends(verif
         raise HTTPException(404, "Job not found")
 
     job = result.data
+    user_res = supabase.table("users").select("id").eq("firebase_uid", uid).maybe_single().execute()
+    caller_id = (user_res.data or {}).get("id", uid)
+
+    if caller_id != job.get("worker_id") and caller_id != job.get("employer_id") and uid != job.get("employer_id") and uid != job.get("worker_id"):
+        raise HTTPException(403, "Not authorized to complete this job")
+
     if job.get("status") not in ("in_progress", "accepted"):
         raise HTTPException(400, f"Cannot complete job in status '{job.get('status')}'")
 
@@ -590,6 +606,12 @@ def create_order(job_id: str, uid: str = Depends(verify_firebase_token)):
         raise HTTPException(404, "Job not found")
 
     job = result.data
+    user_res = supabase.table("users").select("id").eq("firebase_uid", uid).maybe_single().execute()
+    caller_id = (user_res.data or {}).get("id", uid)
+
+    if job.get("employer_id") != caller_id and job.get("employer_id") != uid:
+        raise HTTPException(403, "Not authorized to pay for this job")
+
     amount_rupees = job.get("amount", 0) or 500.0
     amount_paise = int(amount_rupees * 100)
 

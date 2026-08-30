@@ -1,5 +1,5 @@
 import shared.firebase_init  # noqa: F401 — must be first
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from core.config import settings
@@ -21,13 +21,17 @@ app = FastAPI(
     debug=settings.DEBUG
 )
 
-# CORS — allow Flutter on Android emulator (10.0.2.2), local web, and Render
-# Resolves the FastAPI credentials + wildcard restriction by using regex for wildcard matching
+# CORS — explicit allowed origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex="https?://.*",
+    allow_origins=settings.CORS_ORIGINS + [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://10.0.2.2:8000"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -85,18 +89,18 @@ def list_services():
 # Single-row config table that the admin dashboard writes and all
 # clients (mobile user app, worker app, admin dashboard) can read.
 
-from fastapi import Header
+from shared.auth import verify_firebase_token
 
-def _verify_admin_for_config(x_admin_id: str = Header(..., alias="X-Admin-Id")) -> str:
+def _verify_admin_for_config(uid: str = Depends(verify_firebase_token)) -> str:
     """Verify that the caller is an admin user (for config writes)."""
-    res = supabase.table("users").select("role").eq("id", x_admin_id).maybe_single().execute()
+    res = supabase.table("users").select("id, role").eq("firebase_uid", uid).maybe_single().execute()
     if not res or not res.data:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="Admin user not found")
+        res = supabase.table("users").select("id, role").eq("id", uid).maybe_single().execute()
+    if not res or not res.data:
+        raise HTTPException(status_code=403, detail="User not found")
     if res.data.get("role") != "admin":
-        from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Access denied: admin role required")
-    return x_admin_id
+    return res.data["id"]
 
 
 # Default config values — used as fallback when platform_config table
@@ -252,11 +256,27 @@ def get_dashboard_stats():
 async def upload_file(
     file: UploadFile = File(...),
     bucket: str = Form("worker-photos"),
-    path: str = Form(...)
+    path: str = Form(...),
+    uid: str = Depends(verify_firebase_token)
 ):
-    """Upload file to Supabase Storage using service role key (bypasses Storage RLS)."""
+    """Upload file to Supabase Storage using service role key with strict validation."""
+    ALLOWED_BUCKETS = {"worker-photos", "worker-documents", "worker-verification", "job-attachments"}
+    if bucket not in ALLOWED_BUCKETS:
+        raise HTTPException(status_code=400, detail="Invalid storage bucket")
+
+    ALLOWED_MIMES = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
+    if file.content_type not in ALLOWED_MIMES:
+        raise HTTPException(status_code=400, detail="Unsupported file format")
+
+    # Path traversal protection
+    if ".." in path or path.startswith("/") or "\\" in path:
+        raise HTTPException(status_code=400, detail="Invalid file path")
+
     try:
         content = await file.read()
+        if len(content) > 10 * 1024 * 1024:  # 10 MB limit
+            raise HTTPException(status_code=400, detail="File exceeds maximum size of 10MB")
+
         res = supabase.storage.from_(bucket).upload(
             path=path,
             file=content,
@@ -264,6 +284,8 @@ async def upload_file(
         )
         public_url = supabase.storage.from_(bucket).get_public_url(path)
         return {"status": "success", "url": public_url}
+    except HTTPException:
+        raise
     except Exception as e:
         err_str = str(e)
         if "already exists" in err_str or "Duplicate" in err_str or "409" in err_str:
