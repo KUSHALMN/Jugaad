@@ -272,22 +272,11 @@ export default function JugaadOpsDashboard() {
 
   const checkAdminRole = async (userId) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const userEmail = user?.email;
-
-      // Secure direct local check for admin emails
-      if (userEmail === 'kushikushal416@gmail.com' || userEmail === 'admin@jugaad.com') {
-        console.log("Admin email verified, granting admin console access.");
-        setIsAdmin(true);
-        setCheckingAuth(false);
-        return;
-      }
-
       const { data, error } = await supabase
         .from('users')
         .select('role')
         .eq('id', userId)
-        .single();
+        .maybe_single();
       
       if (error) throw error;
 
@@ -300,14 +289,8 @@ export default function JugaadOpsDashboard() {
       }
     } catch (err) {
       console.error("Error verifying admin credentials:", err);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email === 'kushikushal416@gmail.com' || user?.email === 'admin@jugaad.com') {
-        console.log("Fallback matching admin email after DB failure.");
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-        await supabase.auth.signOut();
-      }
+      setIsAdmin(false);
+      await supabase.auth.signOut();
     } finally {
       setCheckingAuth(false);
     }
@@ -323,24 +306,8 @@ export default function JugaadOpsDashboard() {
     setAuthLoading(true);
     try {
       if (isSignUpMode) {
-        const { data, error } = await supabase.auth.signUp({
-          email: authEmail,
-          password: authPassword,
-        });
-        if (error) throw error;
-        
-        if (data.user) {
-          const { error: dbErr } = await supabase
-            .from('users')
-            .insert({
-              id: data.user.id,
-              name: authName || authEmail.split('@')[0],
-              email: authEmail,
-              role: 'admin',
-            });
-          if (dbErr) throw dbErr;
-          alert("Admin account registered successfully! Verifying console access...");
-        }
+        alert("Admin registrations are restricted. Please contact your organization owner.");
+        return;
       } else {
         const trimmedEmail = authEmail.trim();
         const trimmedPassword = authPassword.trim();
@@ -463,10 +430,12 @@ export default function JugaadOpsDashboard() {
         websockets_sync: opsConfig.websocketsSync,
       };
       
+      const token = session?.access_token || '';
       const res = await fetch('http://localhost:8000/v1/platform/config', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
           'X-Admin-Id': session.user.id
         },
         body: JSON.stringify(payload)
@@ -583,10 +552,12 @@ export default function JugaadOpsDashboard() {
         throw new Error("No active admin session found.");
       }
       
+      const token = session?.access_token || '';
       const res = await fetch(`http://localhost:8000/v1/workers/${workerId}/approve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
           'X-Admin-Id': adminId
         }
       });
@@ -612,10 +583,12 @@ export default function JugaadOpsDashboard() {
         throw new Error("No active admin session found.");
       }
       
+      const token = session?.access_token || '';
       const res = await fetch(`http://localhost:8000/v1/workers/${workerId}/reject`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
           'X-Admin-Id': adminId
         }
       });
