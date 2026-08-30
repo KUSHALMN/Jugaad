@@ -18,10 +18,18 @@ async def razorpay_webhook(request: Request):
     body_bytes = await request.body()
     sig = request.headers.get("X-Razorpay-Signature", "")
 
-    if WHOOK:
-        expected = hmac.new(WHOOK.encode(), body_bytes, hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(expected, sig):
-            raise HTTPException(400, "Invalid signature")
+    whook_secret = os.getenv("RAZORPAY_WEBHOOK_SECRET") or WHOOK
+    if not whook_secret:
+        logger.error("RAZORPAY_WEBHOOK_SECRET is not configured on the server")
+        raise HTTPException(500, "Webhook secret not configured")
+
+    if not sig:
+        raise HTTPException(400, "Missing webhook signature")
+
+    expected = hmac.new(whook_secret.encode(), body_bytes, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, sig):
+        logger.warning("Invalid Razorpay webhook signature attempt")
+        raise HTTPException(400, "Invalid signature")
 
     try:
         event = json.loads(body_bytes)
@@ -79,13 +87,25 @@ def verify_payment(body: dict, uid: str = Depends(verify_firebase_token)):
     signature = body.get("razorpay_signature", "")
 
     key_secret = os.getenv("RAZORPAY_KEY_SECRET", "")
-    
+    if not key_secret:
+        logger.error("RAZORPAY_KEY_SECRET is not configured on the server")
+        raise HTTPException(500, "Payment verification secret not configured")
+
+    if not order_id or not payment_id or not signature or signature == "mock_signature":
+        raise HTTPException(400, "Valid order_id, payment_id, and signature are required")
+
     # 1. Fetch job details associated with order
-    job_result = supabase.table("jobs").select("id, status").eq("razorpay_order_id", order_id).maybe_single().execute()
+    job_result = supabase.table("jobs").select("id, status, employer_id").eq("razorpay_order_id", order_id).maybe_single().execute()
     if not job_result or not job_result.data:
         raise HTTPException(404, "Job not found for this order")
     job = job_result.data
     job_id = job["id"]
+
+    # Verify caller is the employer of the job
+    user_result = supabase.table("users").select("id").eq("firebase_uid", uid).maybe_single().execute()
+    caller_id = (user_result.data or {}).get("id", uid)
+    if job.get("employer_id") != caller_id and job.get("employer_id") != uid:
+        raise HTTPException(403, "Not authorized to verify payment for this job")
 
     # 2. Assert constraints for releasing payment
     if job.get("status") != "completed":
@@ -94,16 +114,6 @@ def verify_payment(body: dict, uid: str = Depends(verify_firebase_token)):
     pending_requests = supabase.table("price_change_requests").select("id").eq("job_id", job_id).eq("status", "pending").execute()
     if pending_requests.data:
         raise HTTPException(400, "Cannot release payment: a price change request is pending approval")
-
-    # Local simulation bypass
-    if not key_secret or key_secret == "rzp_test_placeholder_key_secret" or signature == "mock_signature":
-        logger.info("Local mode / Mock payment verification bypass activated.")
-        supabase.table("jobs").update({
-            "payment_status": "released",
-            "razorpay_payment_id": payment_id,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("id", job_id).execute()
-        return {"status": "verified", "payment_id": payment_id}
 
     message = f"{order_id}|{payment_id}"
     expected = hmac.new(key_secret.encode(), message.encode(), hashlib.sha256).hexdigest()
