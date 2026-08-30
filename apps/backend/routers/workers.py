@@ -9,6 +9,7 @@ from collections import defaultdict
 import time
 import json
 from shared.models import FCMTokenUpdate
+from shared import redis_client
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
