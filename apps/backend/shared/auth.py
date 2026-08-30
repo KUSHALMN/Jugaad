@@ -111,15 +111,8 @@ def verify_firebase_token(
     In local dev mode (ENV=local), if no token is provided, returns DEV_UID
     so you can test endpoints from Swagger without a real Firebase token.
     """
-    auth_header = request.headers.get("X-Forwarded-Authorization")
     if not auth_header:
-        auth_header = request.headers.get("Authorization", "")
-
-    # Local dev bypass — no token needed for Swagger testing
-    if not auth_header and _IS_LOCAL:
-        log("auth", "verify_firebase_token", "dev_bypass", uid=_DEV_UID)
-        ensure_db_user(_DEV_UID, {"name": "Dev Test User", "email": "dev@example.com"})
-        return _DEV_UID
+        raise HTTPException(401, "Missing Authorization Bearer token")
 
     decoded = verify_token(auth_header)
     uid = decoded["uid"]
