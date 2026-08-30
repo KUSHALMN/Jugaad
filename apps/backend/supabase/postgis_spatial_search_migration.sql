@@ -141,7 +141,7 @@ BEGIN
     -- Exact geodesic distance in meters (spherical Earth model)
     ST_Distance(w.location, user_point)::FLOAT AS distance_meters,
     w.is_available::BOOLEAN,
-    w.id_document_url::VARCHAR AS profile_photo,
+    COALESCE(w.profile_photo_url, '')::VARCHAR AS profile_photo,
     COALESCE(w.total_jobs, 0)::INT AS completed_jobs,
     COALESCE(w.emergency_available, false)::BOOLEAN,
     total_cnt
