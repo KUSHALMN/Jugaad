@@ -45,7 +45,6 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   StreamSubscription<List<Map<String, dynamic>>>? _recentBookingsSub;
 
   List<_ConfettiParticle> _particles = [];
-  Timer? _particleTimer;
   late AnimationController _confettiController;
   bool _showMilestoneBanner = false;
 
@@ -249,48 +248,32 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
       const Color(0xFFEC4899),
     ];
 
-    setState(() {
-      _showMilestoneBanner = true;
-      _particles = List.generate(60, (i) {
-        final xSpawn = random.nextDouble() * 400.0;
-        return _ConfettiParticle(
-          x: xSpawn,
-          y: -10.0,
-          vx: -1.5 + random.nextDouble() * 3.0,
-          vy: 2.0 + random.nextDouble() * 4.0,
-          size: 6.0 + random.nextDouble() * 8.0,
-          color: colors[random.nextInt(colors.length)],
-          rotation: random.nextDouble() * 2 * pi,
-          rotationSpeed: -0.1 + random.nextDouble() * 0.2,
-        );
-      });
+    _particles = List.generate(60, (i) {
+      final xSpawn = random.nextDouble() * 400.0;
+      return _ConfettiParticle(
+        x: xSpawn,
+        y: -10.0,
+        vx: -1.5 + random.nextDouble() * 3.0,
+        vy: 2.0 + random.nextDouble() * 4.0,
+        size: 6.0 + random.nextDouble() * 8.0,
+        color: colors[random.nextInt(colors.length)],
+        rotation: random.nextDouble() * 2 * pi,
+        rotationSpeed: -0.1 + random.nextDouble() * 0.2,
+      );
     });
 
-    _confettiController.forward(from: 0.0);
-
-    _particleTimer?.cancel();
-    _particleTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
+    if (mounted) {
       setState(() {
-        for (var p in _particles) {
-          p.x += p.vx;
-          p.y += p.vy;
-          p.vy += 0.15;
-          p.rotation += p.rotationSpeed;
-        }
+        _showMilestoneBanner = true;
       });
-    });
+    }
 
-    Future.delayed(const Duration(seconds: 4), () {
+    _confettiController.forward(from: 0.0).then((_) {
       if (mounted) {
         setState(() {
           _showMilestoneBanner = false;
           _particles.clear();
         });
-        _particleTimer?.cancel();
       }
     });
   }
@@ -302,7 +285,6 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     _activeBookingSub?.cancel();
     _recentBookingsSub?.cancel();
     _confettiController.dispose();
-    _particleTimer?.cancel();
     super.dispose();
   }
 
@@ -814,7 +796,21 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                 ),
               ),
 
-            if (_showMilestoneBanner)
+            if (_showMilestoneBanner) ...[
+              Positioned.fill(
+                child: RepaintBoundary(
+                  child: IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: _confettiController,
+                      builder: (context, _) {
+                        return CustomPaint(
+                          painter: _ConfettiPainter(_particles, _confettiController.value),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
               Positioned(
                 top: 16,
                 left: 20,
@@ -870,6 +866,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                     .shimmer(duration: 1200.ms, color: Colors.white38)
                     .fadeOut(delay: 3200.ms, duration: 400.ms),
               ),
+            ],
           ],
         ),
       ),
@@ -1137,16 +1134,23 @@ class _ConfettiParticle {
 
 class _ConfettiPainter extends CustomPainter {
   final List<_ConfettiParticle> particles;
-  _ConfettiPainter(this.particles);
+  final double progress;
+  _ConfettiPainter(this.particles, this.progress);
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (particles.isEmpty) return;
     final paint = Paint()..style = PaintingStyle.fill;
+    final frames = progress * 240.0; // 4 seconds at 60fps equivalent
     for (var p in particles) {
-      paint.color = p.color;
+      final currentX = p.x + p.vx * frames;
+      final currentY = p.y + (p.vy * frames) + (0.5 * 0.15 * frames * frames);
+      final currentRotation = p.rotation + p.rotationSpeed * frames;
+
+      paint.color = p.color.withValues(alpha: (1.0 - progress * 0.5).clamp(0.0, 1.0));
       canvas.save();
-      canvas.translate(p.x, p.y);
-      canvas.rotate(p.rotation);
+      canvas.translate(currentX, currentY);
+      canvas.rotate(currentRotation);
       canvas.drawRect(
         Rect.fromCenter(
             center: Offset.zero, width: p.size, height: p.size * 0.6),
@@ -1157,5 +1161,6 @@ class _ConfettiPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ConfettiPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _ConfettiPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }

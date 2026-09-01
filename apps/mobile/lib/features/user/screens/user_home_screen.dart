@@ -108,22 +108,6 @@ class UserHomeScreen extends ConsumerStatefulWidget {
 
 
 class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProviderStateMixin {
-  // Typewriter search placeholder fields
-  final List<String> _suggestions = [
-    "electrician near me...",
-    "emergency plumber...",
-    "water leakage fix...",
-    "AC breakdown repair...",
-    "power outage help...",
-    "locked out of home..."
-  ];
-  int _suggestionIndex = 0;
-  String _currentText = "";
-  bool _isDeleting = false;
-  Timer? _typewriterTimer;
-  bool _cursorVisible = true;
-  Timer? _cursorTimer;
-
   // Bell shake controllers
   late AnimationController _bellShakeController;
   late Animation<double> _bellShakeAnimation;
@@ -136,14 +120,6 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
   @override
   void initState() {
     super.initState();
-    
-    // Typewriter scroll effect
-    _startTypewriterEffect();
-    _cursorTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (mounted) {
-        setState(() => _cursorVisible = !_cursorVisible);
-      }
-    });
 
     // Bell shake anim: 15 degrees shake left-right 3 times
     _bellShakeController = AnimationController(
@@ -161,50 +137,6 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
         _bellShakeController.forward(from: 0.0);
       }
     });
-  }
-
-  void _startTypewriterEffect() {
-    const typingSpeed = Duration(milliseconds: 120);
-    const deletingSpeed = Duration(milliseconds: 50);
-    const pauseDuration = Duration(seconds: 2500); // milliseconds
-
-    _typewriterTimer = Timer.periodic(typingSpeed, (timer) {
-      if (!mounted) return;
-      final targetWord = _suggestions[_suggestionIndex];
-      
-      if (!_isDeleting) {
-        setState(() {
-          _currentText = targetWord.substring(0, _currentText.length + 1);
-        });
-
-        if (_currentText == targetWord) {
-          timer.cancel();
-          Future.delayed(pauseDuration, () {
-            if (!mounted) return;
-            _isDeleting = true;
-            _typewriterTimer = Timer.periodic(deletingSpeed, (timer) {
-              _startTypewriterDeletion(timer);
-            });
-          });
-        }
-      }
-    });
-  }
-
-  void _startTypewriterDeletion(Timer timer) {
-    if (!mounted) return;
-    if (_isDeleting) {
-      setState(() {
-        _currentText = _currentText.substring(0, _currentText.length - 1);
-      });
-
-      if (_currentText.isEmpty) {
-        timer.cancel();
-        _isDeleting = false;
-        _suggestionIndex = (_suggestionIndex + 1) % _suggestions.length;
-        _startTypewriterEffect();
-      }
-    }
   }
 
   void _onNotificationTap() {
@@ -595,8 +527,6 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
 
   @override
   void dispose() {
-    _typewriterTimer?.cancel();
-    _cursorTimer?.cancel();
     _bellShakeController.dispose();
     super.dispose();
   }
@@ -654,13 +584,15 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
-                  // --- HEADER
+                  // --- HEADER (RepaintBoundary for isolated rasterization)
                   SliverToBoxAdapter(
-                    child: DashboardHeader(
-                      name: userNameAsync.value ?? (AuthService().currentUser?.displayName?.split(' ').first ?? 'User'),
-                      notificationCount: _notificationCount,
-                      bellShakeAnimation: _bellShakeAnimation,
-                      onNotificationTap: _onNotificationTap,
+                    child: RepaintBoundary(
+                      child: DashboardHeader(
+                        name: userNameAsync.value ?? (AuthService().currentUser?.displayName?.split(' ').first ?? 'User'),
+                        notificationCount: _notificationCount,
+                        bellShakeAnimation: _bellShakeAnimation,
+                        onNotificationTap: _onNotificationTap,
+                      ),
                     ),
                   ),
 
@@ -987,9 +919,11 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
                     sliver: SliverToBoxAdapter(
-                      child: ServicesGrid(
-                        servicesList: servicesAsync.value ?? kAllServices,
-                        counts: countsAsync.value ?? const {},
+                      child: RepaintBoundary(
+                        child: ServicesGrid(
+                          servicesList: servicesAsync.value ?? kAllServices,
+                          counts: countsAsync.value ?? const {},
+                        ),
                       ),
                     ),
                   ),
@@ -998,10 +932,12 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
 
                   // --- QUICK REBOOK SECTION (NEW)
                   SliverToBoxAdapter(
-                    child: recentAsync.when(
-                      data: (bookings) => QuickRebook(bookings: bookings),
-                      loading: () => const SizedBox.shrink(),
-                      error: (err, stack) => const SizedBox.shrink(),
+                    child: RepaintBoundary(
+                      child: recentAsync.when(
+                        data: (bookings) => QuickRebook(bookings: bookings),
+                        loading: () => const SizedBox.shrink(),
+                        error: (err, stack) => const SizedBox.shrink(),
+                      ),
                     ),
                   ),
 
@@ -1024,7 +960,9 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: RecentJobsList(recentAsync: recentAsync),
+                      child: RepaintBoundary(
+                        child: RecentJobsList(recentAsync: recentAsync),
+                      ),
                     ),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 32)),
