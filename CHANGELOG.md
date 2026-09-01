@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-09-01
+### Added
+- Response-level GZip compression (`GZipMiddleware`) for FastAPI responses reducing mobile payload sizes by 60–80%.
+- In-memory TTL caching with write-through invalidation for service catalogs and platform configurations.
+- Vite 8 / Rolldown manual chunk splitting for vendor modules (React, Supabase, Lucide) for optimal dashboard caching.
+- Android JVM `largeHeap` configuration to eliminate OOM risks during media decoding.
+
+### Fixed & Optimized
+- Eliminated 60 FPS root-level widget rebuilds on `UserHomeScreen` and `WorkerHomeScreen` by isolating typewriter & particle animation timers into self-contained `RepaintBoundary` widgets.
+- Resolved memory leaks and ticker lifecycle leaks across `MatchingScreen`, `TrackingScreen`, and `ActiveJobScreen` with full `dispose()` implementations.
+- Implemented `BouncingScrollPhysics` and `cacheExtent: 500.0` with `RepaintBoundary` on `ServicesGridScreen` and `WorkerSearchScreen` for buttery 60/120Hz scrolling.
+
+---
+
 ## [1.2.0] - 2026-08-26
 ### Added
 - Comprehensive multi-portal documentation in `README.md` for User, Worker, and Admin systems.
