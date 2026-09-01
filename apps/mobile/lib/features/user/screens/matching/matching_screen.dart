@@ -2075,6 +2075,28 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
       ),
     );
   }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _realtimeChannel?.unsubscribe();
+    _fallbackTimer?.cancel();
+    _fallbackCountTimer?.cancel();
+    _acceptCountdown.dispose();
+    _acceptPulse.dispose();
+    _pulseController.dispose();
+    _avatarRippleController.dispose();
+    _lottieBgController.dispose();
+    _orbitController.dispose();
+    _dotController.dispose();
+    _cardController.dispose();
+    _counterController.dispose();
+    _shimmerController.dispose();
+    _celebrationController.dispose();
+    _assignedShimmerController.dispose();
+    _assignedBgController.dispose();
+    super.dispose();
+  }
 }
 
 class PulsingRadar extends StatefulWidget {

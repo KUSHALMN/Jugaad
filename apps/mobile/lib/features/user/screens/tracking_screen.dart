@@ -1017,4 +1017,13 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
       ),
     );
   }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _realtimeChannel?.unsubscribe();
+    _priceRequestChannel?.unsubscribe();
+    _elapsedTimer?.cancel();
+    super.dispose();
+  }
 }

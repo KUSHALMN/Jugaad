@@ -1668,6 +1668,20 @@ class MockMiniMap extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _realtimeChannel?.unsubscribe();
+    _priceRequestChannel?.unsubscribe();
+    _elapsedTimer?.cancel();
+    _tickerTimer?.cancel();
+    _loadingTimeout?.cancel();
+    _progressController.dispose();
+    _pulseController.dispose();
+    _earningsController.dispose();
+    super.dispose();
+  }
 }
 
 class MapPulseRing extends StatefulWidget {
