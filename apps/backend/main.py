@@ -1,12 +1,14 @@
 import shared.firebase_init  # noqa: F401 — must be first
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import RedirectResponse
 from core.config import settings
 from shared.database import supabase
 from shared.logging import log
 import uvicorn
 import logging
+import time
 from datetime import datetime, timezone
 
 logging.basicConfig(
@@ -20,6 +22,9 @@ app = FastAPI(
     version="1.0.0",
     debug=settings.DEBUG
 )
+
+# Enable GZip compression for all responses > 1KB (reduces network transfer by 60-80%)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORS — explicit allowed origins
 app.add_middleware(
@@ -76,14 +81,25 @@ _FALLBACK_SERVICES = [
     {"id": "emergency_electrician", "title": "Emergency Electrician", "category": "Emergency", "icon": "electrical_services", "image_url": "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400", "price_min": 300, "price_max": 800, "rating": 4.9, "sort_order": 21, "is_active": True},
 ]
 
+# In-memory caches for fast sub-millisecond responses
+_SERVICES_CACHE = {"data": None, "timestamp": 0.0, "ttl": 60.0}
+_CONFIG_CACHE = {"data": None, "timestamp": 0.0, "ttl": 30.0}
+
 @app.get("/v1/services")
 @app.get("/api/v1/services")
 def list_services():
+    now = time.time()
+    if _SERVICES_CACHE["data"] is not None and (now - _SERVICES_CACHE["timestamp"]) < _SERVICES_CACHE["ttl"]:
+        return {"services": _SERVICES_CACHE["data"]}
+
     try:
         result = supabase.table("services").select("*").eq("is_active", True).order("sort_order").execute()
-        return {"services": result.data or _FALLBACK_SERVICES}
+        services = result.data or _FALLBACK_SERVICES
+        _SERVICES_CACHE["data"] = services
+        _SERVICES_CACHE["timestamp"] = now
+        return {"services": services}
     except Exception:
-        return {"services": _FALLBACK_SERVICES}
+        return {"services": _SERVICES_CACHE["data"] or _FALLBACK_SERVICES}
 
 # ─── Platform Config Endpoints ────────────────────────────────────
 # Single-row config table that the admin dashboard writes and all
@@ -119,11 +135,15 @@ _DEFAULT_PLATFORM_CONFIG = {
 @app.get("/api/v1/platform/config")
 def get_platform_config():
     """Public endpoint — returns platform-wide config (surge fee, radius, etc.)."""
+    now = time.time()
+    if _CONFIG_CACHE["data"] is not None and (now - _CONFIG_CACHE["timestamp"]) < _CONFIG_CACHE["ttl"]:
+        return _CONFIG_CACHE["data"]
+
     try:
         result = supabase.table("platform_config").select("*").eq("id", 1).maybe_single().execute()
         if result and result.data:
             row = result.data
-            return {
+            config_data = {
                 "surge_fee": float(row.get("surge_fee", 50.0)),
                 "dispatch_radius_km": float(row.get("dispatch_radius_km", 5.0)),
                 "expanded_radius_km": float(row.get("expanded_radius_km", 10.0)),
@@ -132,9 +152,12 @@ def get_platform_config():
                 "system_load": row.get("system_load", "optimal"),
                 "updated_at": row.get("updated_at"),
             }
+            _CONFIG_CACHE["data"] = config_data
+            _CONFIG_CACHE["timestamp"] = now
+            return config_data
     except Exception as e:
         logging.warning(f"Could not read platform_config table (may not exist yet): {e}")
-    return _DEFAULT_PLATFORM_CONFIG
+    return _CONFIG_CACHE["data"] or _DEFAULT_PLATFORM_CONFIG
 
 
 from fastapi import Depends
@@ -151,6 +174,9 @@ def update_platform_config(body: dict, admin_id: str = Depends(_verify_admin_for
 
     try:
         supabase.table("platform_config").update(update_data).eq("id", 1).execute()
+        # Invalidate in-memory config cache
+        _CONFIG_CACHE["data"] = None
+        _CONFIG_CACHE["timestamp"] = 0.0
     except Exception as e:
         logging.error(f"Failed to update platform_config: {e}")
         from fastapi import HTTPException
