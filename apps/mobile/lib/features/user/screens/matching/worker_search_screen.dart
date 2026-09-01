@@ -611,6 +611,8 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
 
     return ListView.builder(
       controller: scrollController,
+      physics: const BouncingScrollPhysics(),
+      cacheExtent: 500.0,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       itemCount: state.workers.length + 1,
       itemBuilder: (context, index) {
@@ -645,7 +647,9 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
         }
 
         final w = state.workers[index - 1];
-        return _buildWorkerCard(w);
+        return RepaintBoundary(
+          child: _buildWorkerCard(w),
+        );
       },
     );
   }

@@ -19,6 +19,21 @@ class SupabaseService {
 
   final SupabaseClient _client = Supabase.instance.client;
 
+  // In-memory TTL caches
+  Map<String, int>? _cachedWorkerCounts;
+  DateTime? _workerCountsCacheTime;
+
+  final Map<String, List<Map<String, dynamic>>> _cachedTopRatedWorkers = {};
+  final Map<String, DateTime> _topRatedCacheTime = {};
+
+  /// Invalidate worker caches when worker statuses change
+  void invalidateWorkerCaches() {
+    _cachedWorkerCounts = null;
+    _workerCountsCacheTime = null;
+    _cachedTopRatedWorkers.clear();
+    _topRatedCacheTime.clear();
+  }
+
   // ─── Worker Streams ──────────────────────────────────────────────────────
 
   /// Real-time stream of the worker record for [uid].
@@ -88,8 +103,13 @@ class SupabaseService {
 
   /// Returns a map of `skill → onlineWorkerCount` for the service grid.
   /// BEFORE: _workers.where('isOnline', isEqualTo: true).get()
-  /// AFTER:  Supabase query on workers.is_available
+  /// AFTER:  Supabase query on workers.is_available (cached with 30s TTL)
   Future<Map<String, int>> fetchNearbyWorkerCounts() async {
+    if (_cachedWorkerCounts != null &&
+        _workerCountsCacheTime != null &&
+        DateTime.now().difference(_workerCountsCacheTime!) < const Duration(seconds: 30)) {
+      return _cachedWorkerCounts!;
+    }
     try {
       final response = await _client
           .from('workers')
@@ -106,18 +126,27 @@ class SupabaseService {
           counts[s] = (counts[s] ?? 0) + 1;
         }
       }
+      _cachedWorkerCounts = counts;
+      _workerCountsCacheTime = DateTime.now();
       return counts;
     } catch (e) {
       debugPrint('[SupabaseService] fetchNearbyWorkerCounts error: $e');
-      return {};
+      return _cachedWorkerCounts ?? {};
     }
   }
 
-  /// Fetches approved workers filtered by category/skill, sorted by rating DESC.
+  /// Fetches approved workers filtered by category/skill, sorted by rating DESC (cached with 60s TTL).
   Future<List<Map<String, dynamic>>> fetchTopRatedWorkersByCategory({
     String? category,
     int limit = 10,
   }) async {
+    final cacheKey = '${category ?? "all"}_$limit';
+    final cachedTime = _topRatedCacheTime[cacheKey];
+    if (_cachedTopRatedWorkers.containsKey(cacheKey) &&
+        cachedTime != null &&
+        DateTime.now().difference(cachedTime) < const Duration(seconds: 60)) {
+      return _cachedTopRatedWorkers[cacheKey]!;
+    }
     try {
       final response = await _client
           .from('workers')
@@ -150,6 +179,16 @@ class SupabaseService {
           workers = filtered;
         }
       }
+
+      final result = workers.take(limit).toList();
+      _cachedTopRatedWorkers[cacheKey] = result;
+      _topRatedCacheTime[cacheKey] = DateTime.now();
+      return result;
+    } catch (e) {
+      debugPrint('[SupabaseService] fetchTopRatedWorkersByCategory error: $e');
+      return _cachedTopRatedWorkers[cacheKey] ?? [];
+    }
+  }
 
       // Sort by rating DESC, total_jobs DESC
       workers.sort((a, b) {

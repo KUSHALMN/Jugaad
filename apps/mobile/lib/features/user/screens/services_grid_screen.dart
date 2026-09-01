@@ -176,6 +176,8 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
 
     return GridView.builder(
       key: ValueKey(_selectedCategory),
+      physics: const BouncingScrollPhysics(),
+      cacheExtent: 500.0,
       padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
@@ -186,7 +188,9 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
       itemCount: services.length,
       itemBuilder: (context, index) {
         final service = services[index];
-        return _buildModernServiceCard(service, index);
+        return RepaintBoundary(
+          child: _buildModernServiceCard(service, index),
+        );
       },
     );
   }
