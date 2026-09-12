@@ -494,9 +494,9 @@ def search_workers(
         ]
       }
     """
-    req_category = category or service_type
-    if not req_category or not str(req_category).strip():
-        raise HTTPException(status_code=400, detail="Category parameter is required.")
+    raw_category = category or service_type
+    req_category = str(raw_category).strip().lower() if raw_category else ""
+    is_all_categories = not req_category or req_category in ["all", "none", "*", "any"]
 
     if lat is None or lng is None:
         raise HTTPException(
@@ -516,10 +516,9 @@ def search_workers(
             detail="Invalid coordinates. Lat must be in [-90, 90], Lng must be in [-180, 180]."
         )
 
-    req_category = str(req_category).strip().lower()
-
     # ── 1. Redis Response Cache check (30s TTL) ──
-    cache_key = f"cache:worker_search_priority:{req_category}:{round(lat, 3)}:{round(lng, 3)}"
+    cache_cat = "all" if is_all_categories else req_category
+    cache_key = f"cache:worker_search_priority:{cache_cat}:{round(lat, 3)}:{round(lng, 3)}"
     r = redis_client.get_client()
     if r:
         try:
@@ -531,61 +530,72 @@ def search_workers(
             logger.error(f"Redis cache retrieve error: {cache_err}")
 
     # ── 2. Priority 1: PostGIS RPC execution attempt (find_nearby_workers) ──
-    for radius_m in RADIUS_TIERS_METERS:
-        try:
-            rpc_res = supabase.rpc("find_nearby_workers", {
-                "lat": lat,
-                "lng": lng,
-                "skill": req_category,
-                "radius_meters": int(radius_m)
-            }).execute()
-            workers_data = rpc_res.data or []
-            if workers_data:
-                w_ids = [str(w["id"]) for w in workers_data if "id" in w]
-                status_map = {}
-                if w_ids:
-                    try:
-                        st_res = supabase.table("workers").select("id, status, approval_status").in_("id", w_ids).execute()
-                        for row in (st_res.data or []):
-                            status_map[str(row["id"])] = str(row.get("status") or row.get("approval_status") or "pending_approval").lower()
-                    except Exception:
-                        pass
-
-                formatted_workers = []
-                for w in workers_data:
-                    wid = str(w["id"])
-                    w_st = status_map.get(wid) or str(w.get("status") or w.get("approval_status") or "pending_approval").lower()
-                    if w_st != "approved":
-                        continue
-                    dist_val = w.get("distance_meters") or w.get("distance_m") or 0.0
-                    formatted_workers.append({
-                        "id": wid,
-                        "name": w.get("name") or "Worker",
-                        "category": req_category,
-                        "rating": float(w.get("rating") or 0.0),
-                        "distance_m": int(round(float(dist_val))),
-                        "is_verified": bool(w.get("is_verified", w.get("isVerified", True))),
-                    })
-                
-                if formatted_workers:
-                    formatted_workers.sort(key=lambda x: x["distance_m"])
-                    formatted_workers = formatted_workers[:20]
-
-                    response_data = {
-                        "mode": "nearest",
-                        "radius_used_m": radius_m,
-                        "count": len(formatted_workers),
-                        "workers": formatted_workers
-                    }
-                    if r:
+    if not is_all_categories:
+        for radius_m in RADIUS_TIERS_METERS:
+            try:
+                rpc_res = supabase.rpc("find_nearby_workers", {
+                    "lat": lat,
+                    "lng": lng,
+                    "skill": req_category,
+                    "radius_meters": int(radius_m)
+                }).execute()
+                workers_data = rpc_res.data or []
+                if workers_data:
+                    w_ids = [str(w["id"]) for w in workers_data if "id" in w]
+                    status_map = {}
+                    if w_ids:
                         try:
-                            r.set(cache_key, json.dumps(response_data), ex=30)
+                            st_res = supabase.table("workers").select("id, status, approval_status").in_("id", w_ids).execute()
+                            for row in (st_res.data or []):
+                                status_map[str(row["id"])] = str(row.get("status") or row.get("approval_status") or "pending_approval").lower()
                         except Exception:
                             pass
-                    return response_data
-        except Exception as rpc_err:
-            logger.debug(f"RPC find_nearby_workers failed for tier {radius_m}: {rpc_err}")
-            break
+
+                    formatted_workers = []
+                    for w in workers_data:
+                        wid = str(w["id"])
+                        w_st = status_map.get(wid) or str(w.get("status") or w.get("approval_status") or "pending_approval").lower()
+                        if w_st != "approved":
+                            continue
+                        dist_val = w.get("distance_meters") or w.get("distance_m") or 0.0
+                        formatted_workers.append({
+                            "id": wid,
+                            "name": w.get("name") or "Worker",
+                            "category": w.get("category") or w.get("work_category") or req_category or "Service Expert",
+                            "work_category": w.get("work_category") or w.get("category") or req_category or "Service Expert",
+                            "service_types": w.get("skills") or [w.get("category") or req_category],
+                            "phone_masked": mask_phone_number(w.get("phone")),
+                            "rating": float(w.get("rating") or 0.0),
+                            "distance_m": int(round(float(dist_val))),
+                            "distance_meters": float(dist_val),
+                            "is_verified": bool(w.get("is_verified", w.get("isVerified", True))),
+                            "is_available": bool(w.get("is_available", True)),
+                            "profile_photo": w.get("profile_photo") or w.get("id_document_url"),
+                            "completed_jobs": int(w.get("completed_jobs") or w.get("total_jobs") or w.get("totalJobsCompleted") or 0),
+                            "total_jobs": int(w.get("total_jobs") or w.get("completed_jobs") or w.get("totalJobsCompleted") or 0),
+                            "hourly_rate": float(w.get("hourly_rate") or w.get("rate_per_hour") or 150.0),
+                            "area": w.get("area") or "Mysuru",
+                        })
+                    
+                    if formatted_workers:
+                        formatted_workers.sort(key=lambda x: x["distance_m"])
+                        formatted_workers = formatted_workers[:20]
+
+                        response_data = {
+                            "mode": "nearest",
+                            "radius_used_m": radius_m,
+                            "count": len(formatted_workers),
+                            "workers": formatted_workers
+                        }
+                        if r:
+                            try:
+                                r.set(cache_key, json.dumps(response_data), ex=30)
+                            except Exception:
+                                pass
+                        return response_data
+            except Exception as rpc_err:
+                logger.debug(f"RPC find_nearby_workers failed for tier {radius_m}: {rpc_err}")
+                break
 
     # ── 3. Database Direct Query Engine (Fallback if RPC not used or returns 0 in tiers) ──
     try:
@@ -601,15 +611,15 @@ def search_workers(
         w_skills = [str(s).lower() for s in (w.get("skills") or [])]
         w_specs = [str(s).lower() for s in (w.get("specialities") or [])]
 
-        if req_category in ["", "all", "none"]:
+        if is_all_categories:
             cat_match = True
+        elif not req_category:
+            cat_match = False
         else:
             cat_match = (
-                w_cat == req_category or
-                req_category in w_cat or
-                w_cat in req_category or
-                any(req_category in s or s in req_category for s in w_skills) or
-                any(req_category in s or s in req_category for s in w_specs)
+                bool(w_cat and (w_cat == req_category or req_category in w_cat or (len(w_cat) >= 3 and w_cat in req_category))) or
+                any(bool(s and (req_category in s or (len(s) >= 3 and s in req_category))) for s in w_skills) or
+                any(bool(s and (req_category in s or (len(s) >= 3 and s in req_category))) for s in w_specs)
             )
         if not cat_match:
             continue
@@ -637,23 +647,40 @@ def search_workers(
                 except Exception:
                     pass
 
+        if (w_lat is None or w_lng is None) and w.get("lat") is not None and w.get("lng") is not None:
+            try:
+                w_lat = float(w["lat"])
+                w_lng = float(w["lng"])
+            except (ValueError, TypeError):
+                pass
+
         dist_m = None
         if w_lat is not None and w_lng is not None:
             dist_m = _haversine_m(lat, lng, w_lat, w_lng)
 
         w_jobs = int(w.get("total_completed_jobs") or w.get("total_jobs") or w.get("totalJobsCompleted") or 0)
         w_raw_rating = w.get("rating")
-        w_rating = float(w_raw_rating) if (w_raw_rating is not None and float(w_raw_rating) > 0.0) else 4.8
+        if w_jobs == 0 or w_raw_rating is None or float(w_raw_rating) == 0.0:
+            w_rating = None
+        else:
+            w_rating = float(w_raw_rating)
         w_masked_phone = mask_phone_number(w.get("phone"))
 
         w_dict = {
             "id": str(w.get("id") or ""),
             "name": w.get("name") or "Verified Worker",
-            "category": w.get("category") or w.get("work_category") or req_category,
+            "category": w.get("category") or w.get("work_category") or (req_category if not is_all_categories else "Service Expert"),
+            "work_category": w.get("work_category") or w.get("category") or "Service Expert",
+            "skills": w.get("skills") or [],
+            "specialities": w.get("specialities") or [],
+            "service_types": w.get("skills") or [w.get("category") or "Service Expert"],
             "phone_masked": w_masked_phone,
             "rating": w_rating,
             "total_completed_jobs": w_jobs,
+            "hourly_rate": float(w.get("hourly_rate") or w.get("rate_per_hour") or 150.0),
+            "profile_photo": w.get("profile_photo") or w.get("id_document_url"),
             "is_verified": bool(w.get("is_verified", w.get("isVerified", w.get("id_verified", True)))),
+            "is_available": is_avail,
             "city": w.get("city") or "Mysuru",
             "area": w.get("area") or "Mysuru",
             "distance_m": dist_m,
@@ -668,17 +695,36 @@ def search_workers(
         ]
         if tier_workers:
             tier_workers.sort(key=lambda x: x["distance_m"])
+            unlocated = [w for w in matching_workers if w["distance_m"] is None]
+            unlocated.sort(
+                key=lambda x: (
+                    x["rating"] if x["rating"] is not None else -1.0,
+                    x["total_completed_jobs"],
+                    1 if x["is_verified"] else 0
+                ),
+                reverse=True
+            )
+            all_found = (tier_workers + unlocated)[:20]
             formatted = [
                 {
                     "id": w["id"],
                     "name": w["name"],
                     "category": w["category"],
+                    "work_category": w.get("work_category", w["category"]),
+                    "service_types": w.get("service_types") or [w["category"]],
                     "phone_masked": w["phone_masked"],
                     "rating": w["rating"],
-                    "distance_m": int(round(w["distance_m"])),
+                    "distance_m": int(round(w["distance_m"])) if w["distance_m"] is not None else None,
+                    "distance_meters": float(w["distance_m"]) if w["distance_m"] is not None else None,
                     "is_verified": w["is_verified"],
+                    "is_available": w.get("is_available", True),
+                    "profile_photo": w.get("profile_photo"),
+                    "completed_jobs": w.get("total_completed_jobs", 0),
+                    "total_jobs": w.get("total_completed_jobs", 0),
+                    "hourly_rate": float(w.get("hourly_rate", 150.0)),
+                    "area": w.get("area") or "Mysuru",
                 }
-                for w in tier_workers[:20]
+                for w in all_found
             ]
             response_data = {
                 "mode": "nearest",
@@ -715,10 +761,19 @@ def search_workers(
                 "id": w["id"],
                 "name": w["name"],
                 "category": w["category"],
+                "work_category": w.get("work_category", w["category"]),
+                "service_types": w.get("service_types") or [w["category"]],
                 "phone_masked": w["phone_masked"],
                 "rating": w["rating"],
                 "distance_m": None,  # Explicitly null in fallback mode per contract
+                "distance_meters": None,
                 "is_verified": w["is_verified"],
+                "is_available": w.get("is_available", True),
+                "profile_photo": w.get("profile_photo"),
+                "completed_jobs": w.get("total_completed_jobs", 0),
+                "total_jobs": w.get("total_completed_jobs", 0),
+                "hourly_rate": float(w.get("hourly_rate", 150.0)),
+                "area": w.get("area") or "Mysuru",
             }
             for w in city_workers[:20]
         ]
