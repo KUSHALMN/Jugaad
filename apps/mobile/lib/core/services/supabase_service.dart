@@ -180,16 +180,6 @@ class SupabaseService {
         }
       }
 
-      final result = workers.take(limit).toList();
-      _cachedTopRatedWorkers[cacheKey] = result;
-      _topRatedCacheTime[cacheKey] = DateTime.now();
-      return result;
-    } catch (e) {
-      debugPrint('[SupabaseService] fetchTopRatedWorkersByCategory error: $e');
-      return _cachedTopRatedWorkers[cacheKey] ?? [];
-    }
-  }
-
       // Sort by rating DESC, total_jobs DESC
       workers.sort((a, b) {
         final double rA = (a['rating'] as num?)?.toDouble() ?? 0.0;
@@ -200,10 +190,13 @@ class SupabaseService {
         return jB.compareTo(jA);
       });
 
-      return workers.take(limit).toList();
+      final result = workers.take(limit).toList();
+      _cachedTopRatedWorkers[cacheKey] = result;
+      _topRatedCacheTime[cacheKey] = DateTime.now();
+      return result;
     } catch (e) {
       debugPrint('[SupabaseService] fetchTopRatedWorkersByCategory error: $e');
-      return [];
+      return _cachedTopRatedWorkers[cacheKey] ?? [];
     }
   }
 
