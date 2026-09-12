@@ -53,19 +53,29 @@ class NearbyWorkerModel {
 
   /// Parse from the JSON map returned by the FastAPI /workers/search endpoint.
   factory NearbyWorkerModel.fromJson(Map<String, dynamic> json) {
+    final rawDistance = json['distance_meters'] ?? json['distance_m'];
+    final double dist = rawDistance != null ? (rawDistance as num).toDouble() : 0.0;
+
+    final rawServices = json['service_types'] ?? json['skills'];
+    final List<String> services = (rawServices is List)
+        ? rawServices.map((e) => e.toString()).toList()
+        : (json['category'] != null
+            ? [json['category'].toString()]
+            : (json['work_category'] != null ? [json['work_category'].toString()] : []));
+
+    final rawJobs = json['completed_jobs'] ?? json['total_jobs'] ?? json['totalJobsCompleted'];
+    final int jobs = rawJobs != null ? (rawJobs as num).toInt() : 0;
+
     return NearbyWorkerModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Worker',
-      phone: json['phone'] as String?,
-      serviceTypes: (json['service_types'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
+      phone: json['phone_masked'] as String? ?? json['phone'] as String?,
+      serviceTypes: services,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
-      distanceMeters: (json['distance_meters'] as num?)?.toDouble() ?? 0.0,
+      distanceMeters: dist,
       isAvailable: json['is_available'] as bool? ?? true,
-      profilePhoto: json['profile_photo'] as String?,
-      completedJobs: json['completed_jobs'] as int? ?? 0,
+      profilePhoto: json['profile_photo'] as String? ?? json['id_document_url'] as String?,
+      completedJobs: jobs,
       emergencyAvailable: json['emergency_available'] as bool? ?? false,
     );
   }
