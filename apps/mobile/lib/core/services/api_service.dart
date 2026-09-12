@@ -110,15 +110,24 @@ class ApiService {
     int page = 0,
     int limit = 10,
   }) async {
+    final cleanCategory = (serviceType != null &&
+            serviceType.trim().isNotEmpty &&
+            serviceType.trim().toLowerCase() != 'all')
+        ? serviceType.trim().toLowerCase().replaceAll(' ', '_')
+        : null;
+
     final response = await client.get('/v1/workers/search', queryParameters: {
       'lat': lat,
       'lng': lng,
       'radius_km': radiusKm,
-      if (serviceType != null && serviceType.isNotEmpty) 'service_type': serviceType,
+      if (cleanCategory != null) 'category': cleanCategory,
+      if (cleanCategory != null) 'service_type': cleanCategory,
       'page': page,
       'limit': limit,
     });
-    return response.data;
+    return response.data is Map<String, dynamic>
+        ? response.data as Map<String, dynamic>
+        : <String, dynamic>{};
   }
 
   /// Update the authenticated worker's GPS coordinates in Supabase.
