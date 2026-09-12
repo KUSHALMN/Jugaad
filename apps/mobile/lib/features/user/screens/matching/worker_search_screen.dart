@@ -171,9 +171,12 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
     final String name = worker['name'] ?? 'Worker';
     final double rating = (worker['rating'] as num? ?? 0.0).toDouble();
     final double distanceMeters = (worker['distance_m'] as num? ?? worker['distance_meters'] as num? ?? 0.0).toDouble();
-    final String category = worker['category'] ?? worker['work_category'] ?? 'Service Expert';
+    final String rawCategory = (worker['category'] ?? worker['work_category'] ?? 'Service Expert').toString();
+    final String category = rawCategory.replaceAll('_', ' ').split(' ').map((s) => s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : '').join(' ');
     final bool isVerified = worker['is_verified'] ?? worker['isVerified'] ?? true;
     final String? profilePhoto = worker['profile_photo'] ?? worker['id_document_url'];
+    final double? hourlyRate = (worker['hourly_rate'] ?? worker['rate_per_hour'] as num?)?.toDouble();
+    final int completedJobs = (worker['total_completed_jobs'] ?? worker['total_jobs'] ?? worker['totalJobsCompleted'] ?? 0) as int;
 
     final int etaMins = (distanceMeters > 0)
         ? ((distanceMeters / 400).ceil() + 4).clamp(5, 45)
@@ -229,9 +232,12 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            name,
-                            style: GoogleFonts.syne(fontSize: 18, fontWeight: FontWeight.bold),
+                          Flexible(
+                            child: Text(
+                              name,
+                              style: GoogleFonts.syne(fontSize: 18, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                           if (isVerified) ...[
                             const SizedBox(width: 6),
@@ -240,16 +246,34 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(category, style: GoogleFonts.dmSans(color: AppColors.textSecondary)),
+                      Text(category, style: GoogleFonts.dmSans(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            rating.toStringAsFixed(1),
-                            style: GoogleFonts.dmSans(fontWeight: FontWeight.bold),
-                          ),
+                          if (rating > 0 && completedJobs > 0) ...[
+                            const Icon(Icons.star, color: Colors.amber, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              rating.toStringAsFixed(1),
+                              style: GoogleFonts.dmSans(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              ' ($completedJobs jobs)',
+                              style: GoogleFonts.dmSans(fontSize: 11, color: AppColors.textSecondary),
+                            ),
+                          ] else ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'NEW PRO',
+                                style: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              ),
+                            ),
+                          ],
                           const SizedBox(width: 12),
                           const Icon(Icons.near_me, color: AppColors.primary, size: 16),
                           const SizedBox(width: 4),
@@ -281,9 +305,17 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                   Container(width: 1, height: 30, color: Colors.blue.withValues(alpha: 0.2)),
                   Column(
                     children: [
+                      Text('RATE', style: GoogleFonts.dmSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(hourlyRate != null && hourlyRate > 0 ? '₹${hourlyRate.toInt()}/hr' : 'Standard', style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
+                    ],
+                  ),
+                  Container(width: 1, height: 30, color: Colors.blue.withValues(alpha: 0.2)),
+                  Column(
+                    children: [
                       Text('STATUS', style: GoogleFonts.dmSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text('Available Now', style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
+                      Text('Available', style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
                     ],
                   ),
                 ],
@@ -296,7 +328,8 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  context.push('/user/post-job/step1?category=$category');
+                  final workerId = worker['id']?.toString() ?? '';
+                  context.push('/user/post-job/step1?category=${Uri.encodeComponent(rawCategory)}&worker_id=${Uri.encodeComponent(workerId)}');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -612,7 +645,6 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
     return ListView.builder(
       controller: scrollController,
       physics: const BouncingScrollPhysics(),
-      cacheExtent: 500.0,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       itemCount: state.workers.length + 1,
       itemBuilder: (context, index) {
@@ -658,12 +690,15 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
     final String name = worker['name'] ?? 'Worker';
     final double rating = (worker['rating'] as num? ?? 0.0).toDouble();
     final double distanceMeters = (worker['distance_m'] as num? ?? worker['distance_meters'] as num? ?? 0.0).toDouble();
-    final String category = worker['category'] ?? worker['work_category'] ?? 'Worker';
+    final String rawCategory = (worker['category'] ?? worker['work_category'] ?? 'Worker').toString();
+    final String category = rawCategory.replaceAll('_', ' ').split(' ').map((s) => s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : '').join(' ');
     final bool isVerified = worker['is_verified'] ?? worker['isVerified'] ?? true;
     final String? profilePhoto = worker['profile_photo'] ?? worker['id_document_url'];
+    final double? hourlyRate = (worker['hourly_rate'] ?? worker['rate_per_hour'] as num?)?.toDouble();
+    final int completedJobs = (worker['total_completed_jobs'] ?? worker['total_jobs'] ?? worker['totalJobsCompleted'] ?? 0) as int;
 
     final distanceText = distanceMeters > 0
-        ? (distanceMeters >= 1000 ? '${(distanceMeters / 1000).toStringAsFixed(1)} km' : '${distanceMeters.toStringAsFixed(0)} m')
+        ? (distanceMeters >= 1000 ? '${(distanceMeters / 1000).toStringAsFixed(1)} km away' : '${distanceMeters.toStringAsFixed(0)} m away')
         : 'Mysuru';
 
     final int etaMins = distanceMeters > 0 ? ((distanceMeters / 400).ceil() + 4).clamp(5, 45) : 15;
@@ -671,13 +706,14 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: isSelected ? 3 : 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: isSelected ? AppColors.primary : const Color(0xFFEEEEEE), width: isSelected ? 2 : 1),
       ),
       child: ListTile(
         onTap: () => _onWorkerCardTap(worker),
-        contentPadding: const EdgeInsets.all(12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         leading: CircleAvatar(
           radius: 26,
           backgroundColor: AppColors.primary.withValues(alpha: 0.1),
@@ -708,16 +744,32 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
           children: [
             const SizedBox(height: 2),
             Text('$category • ETA: ~$etaMins mins', style: GoogleFonts.dmSans(fontSize: 12, color: AppColors.textSecondary)),
-            const SizedBox(height: 4),
+            const SizedBox(height: 5),
             Row(
               children: [
-                const Icon(Icons.star, color: Colors.amber, size: 14),
-                const SizedBox(width: 2),
-                Text(rating.toStringAsFixed(1), style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 12)),
-                const SizedBox(width: 12),
+                if (rating > 0 && completedJobs > 0) ...[
+                  const Icon(Icons.star, color: Colors.amber, size: 14),
+                  const SizedBox(width: 2),
+                  Text(rating.toStringAsFixed(1), style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 12)),
+                  const SizedBox(width: 8),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text('NEW', style: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 const Icon(Icons.near_me, color: AppColors.primary, size: 14),
                 const SizedBox(width: 2),
                 Text(distanceText, style: GoogleFonts.dmSans(fontSize: 11, color: Colors.grey[600])),
+                if (hourlyRate != null && hourlyRate > 0) ...[
+                  const SizedBox(width: 8),
+                  Text('•  ₹${hourlyRate.toInt()}/hr', style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF10B981))),
+                ],
               ],
             ),
           ],
