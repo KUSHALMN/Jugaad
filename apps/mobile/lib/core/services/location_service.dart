@@ -22,8 +22,8 @@ class LocationService {
 
   Position _getFallbackPosition() {
     return Position(
-      latitude: 12.9716,
-      longitude: 77.5946,
+      latitude: 12.3051,
+      longitude: 76.6551,
       timestamp: DateTime.now(),
       accuracy: 1.0,
       altitude: 0.0,

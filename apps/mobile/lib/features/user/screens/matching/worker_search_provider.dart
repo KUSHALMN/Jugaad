@@ -88,12 +88,12 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('[LOCATION_PROVIDER] Location services disabled. Falling back to Bangalore Center.');
+        print('[LOCATION_PROVIDER] Location services disabled. Falling back to Mysuru Center.');
         state = state.copyWith(
           hasLocationPermission: false,
-          lat: 12.9716,
-          lng: 77.5946,
-          activeLocationName: 'Bangalore Center (Fallback)',
+          lat: 12.3051,
+          lng: 76.6551,
+          activeLocationName: 'Mysuru Center (Fallback)',
           isResolvingLocation: false,
         );
         search(refresh: true);
@@ -104,12 +104,12 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          print('[LOCATION_PROVIDER] Location permission denied. Falling back to Bangalore Center.');
+          print('[LOCATION_PROVIDER] Location permission denied. Falling back to Mysuru Center.');
           state = state.copyWith(
             hasLocationPermission: false,
-            lat: 12.9716,
-            lng: 77.5946,
-            activeLocationName: 'Bangalore Center (Fallback)',
+            lat: 12.3051,
+            lng: 76.6551,
+            activeLocationName: 'Mysuru Center (Fallback)',
             isResolvingLocation: false,
           );
           search(refresh: true);
@@ -118,12 +118,12 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        print('[LOCATION_PROVIDER] Location permission permanently denied. Falling back to Bangalore Center.');
+        print('[LOCATION_PROVIDER] Location permission permanently denied. Falling back to Mysuru Center.');
         state = state.copyWith(
           hasLocationPermission: false,
-          lat: 12.9716,
-          lng: 77.5946,
-          activeLocationName: 'Bangalore Center (Fallback)',
+          lat: 12.3051,
+          lng: 76.6551,
+          activeLocationName: 'Mysuru Center (Fallback)',
           isResolvingLocation: false,
         );
         search(refresh: true);
@@ -150,12 +150,12 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
       search(refresh: true);
 
     } catch (e) {
-      print('[LOCATION_PROVIDER] Error resolving location: $e. Falling back to Bangalore Center.');
+      print('[LOCATION_PROVIDER] Error resolving location: $e. Falling back to Mysuru Center.');
       state = state.copyWith(
         hasLocationPermission: false,
-        lat: 12.9716,
-        lng: 77.5946,
-        activeLocationName: 'Bangalore Center (Fallback)',
+        lat: 12.3051,
+        lng: 76.6551,
+        activeLocationName: 'Mysuru Center (Fallback)',
         isResolvingLocation: false,
       );
       search(refresh: true);
