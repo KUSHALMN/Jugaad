@@ -308,7 +308,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
       if (w['id'].toString().startsWith('mock_')) {
         return w['is_available'] == true;
       }
-      return w['availability_status'] == 'online' || w['is_available'] == true;
+      return w['availability_status'] == 'online' || w['is_available'] == true || w['is_online'] == true;
     }).toList();
 
     if (_workers.isEmpty) {
@@ -316,19 +316,46 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
       _userCache['mock_2'] = {'email': 'priya.singh@jugaad.com', 'phone': '+91 98765 43211'};
       _userCache['mock_3'] = {'email': 'amit.kumar@jugaad.com', 'phone': '+91 98765 43212'};
       _userCache['mock_4'] = {'email': 'vikram.patel@jugaad.com', 'phone': '+91 98765 43213'};
+      _userCache['mock_5'] = {'email': 'water.care@jugaad.com', 'phone': '+91 99459 15910'};
+      _userCache['mock_6'] = {'email': 'sriranga.clean@jugaad.com', 'phone': '+91 90363 62141'};
     }
 
     var categoryFiltered = listToFilter;
     if (_selectedCategory != 'All') {
-      final normalizedSel = _selectedCategory.toLowerCase().replaceAll(' ', '_');
+      final selectedClean = _selectedCategory.toLowerCase().replaceAll(' ', '_').replaceAll('-', '_');
+      String rootKeyword = selectedClean;
+      if (selectedClean.startsWith('electr')) {
+        rootKeyword = 'electr';
+      } else if (selectedClean.startsWith('plumb')) {
+        rootKeyword = 'plumb';
+      } else if (selectedClean.startsWith('carpent')) {
+        rootKeyword = 'carpent';
+      } else if (selectedClean.startsWith('paint')) {
+        rootKeyword = 'paint';
+      } else if (selectedClean.startsWith('clean')) {
+        rootKeyword = 'clean';
+      } else if (selectedClean.contains('laptop') || selectedClean.contains('computer')) {
+        rootKeyword = 'laptop';
+      } else if (selectedClean.contains('phone') || selectedClean.contains('mobile')) {
+        rootKeyword = 'phone';
+      } else if (selectedClean.contains('ac')) {
+        rootKeyword = 'ac';
+      }
+
       categoryFiltered = listToFilter.where((w) {
+        final cat = (w['category'] ?? w['work_category'] ?? '').toString().toLowerCase().replaceAll(' ', '_');
         final skills = List<String>.from(w['skills'] as List? ?? [])
             .map((s) => s.toLowerCase().replaceAll(' ', '_'))
             .toList();
         final specialities = List<String>.from(w['specialities'] as List? ?? [])
             .map((s) => s.toLowerCase().replaceAll(' ', '_'))
             .toList();
-        return skills.contains(normalizedSel) || specialities.contains(normalizedSel);
+
+        if (cat.contains(selectedClean) || cat.contains(rootKeyword)) return true;
+        if (skills.any((s) => s.contains(selectedClean) || s.contains(rootKeyword))) return true;
+        if (specialities.any((s) => s.contains(selectedClean) || s.contains(rootKeyword))) return true;
+
+        return false;
       }).toList();
     }
 
@@ -336,23 +363,31 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
       _filteredWorkersCache = categoryFiltered;
       return;
     }
-    final query = _searchQuery.toLowerCase();
+    final query = _searchQuery.trim().toLowerCase();
     _filteredWorkersCache = categoryFiltered.where((w) {
       final name = (w['name'] as String? ?? '').toLowerCase();
       final bio = (w['bio'] as String? ?? '').toLowerCase();
       final area = (w['area'] as String? ?? '').toLowerCase();
+      final category = (w['category'] ?? w['work_category'] ?? '').toString().toLowerCase();
       final skills = List<String>.from(w['skills'] as List? ?? [])
+          .map((s) => s.toLowerCase())
+          .toList();
+      final specialities = List<String>.from(w['specialities'] as List? ?? [])
           .map((s) => s.toLowerCase())
           .toList();
 
       final cachedUser = _userCache[w['id']] ?? {};
       final email = (cachedUser['email'] as String? ?? '').toLowerCase();
+      final phone = (cachedUser['phone'] ?? w['phone'] ?? w['phone_masked'] ?? '').toString().toLowerCase();
 
       return name.contains(query) ||
              bio.contains(query) ||
              area.contains(query) ||
              email.contains(query) ||
-             skills.any((s) => s.contains(query));
+             phone.contains(query) ||
+             category.contains(query) ||
+             skills.any((s) => s.contains(query)) ||
+             specialities.any((s) => s.contains(query));
     }).toList();
   }
 
