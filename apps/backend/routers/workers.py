@@ -429,19 +429,39 @@ def resolve_search_category(query: Optional[str]) -> tuple[str, bool]:
     """Resolves natural language or abbreviated service query to canonical category."""
     if not query:
         return "", True
-    clean = query.strip().lower().replace("-", "_").replace(" ", "_")
-    if clean in ["all", "none", "*", "any", ""]:
+    clean = query.strip().lower().replace("-", " ").replace("_", " ")
+    tokens = [t.strip() for t in clean.split() if t.strip()]
+    if not tokens or clean in ["all", "none", "*", "any"]:
         return "", True
     
-    # Direct match or exact alias
-    for cat, keywords in SERVICE_KEYWORD_MAP.items():
-        if clean == cat or clean in keywords:
+    # 1. Exact canonical category match
+    for cat in SERVICE_KEYWORD_MAP.keys():
+        if clean == cat.replace("_", " "):
             return cat, False
-        for kw in keywords:
-            if kw in clean or (len(clean) >= 3 and clean in kw):
+
+    # 2. Match primary root domain words in query (e.g. 'laptop', 'phone', 'plumber', 'electrician', 'painter')
+    GENERIC_WORDS = {"repair", "service", "fix", "care", "worker", "pro", "center", "center"}
+    for word in tokens:
+        if word in GENERIC_WORDS:
+            continue
+        for cat in SERVICE_KEYWORD_MAP.keys():
+            cat_words = [cw for cw in cat.split("_") if cw not in GENERIC_WORDS]
+            if word in cat_words or (len(word) >= 4 and any(cw.startswith(word) or word.startswith(cw) for cw in cat_words)):
                 return cat, False
 
-    return clean, False
+    # 3. Match multi-word or longer keywords first (e.g. 'water purifier' before 'water')
+    all_pairs = []
+    for cat, keywords in SERVICE_KEYWORD_MAP.items():
+        for kw in keywords:
+            all_pairs.append((len(kw), kw, cat))
+    all_pairs.sort(key=lambda x: x[0], reverse=True)
+
+    for _, kw, cat in all_pairs:
+        if kw in clean or (len(clean) >= 3 and clean in kw):
+            return cat, False
+
+    clean_slug = clean.replace(" ", "_")
+    return clean_slug, False
 
 def _parse_wkb_point(wkb_hex: str):
     """Parse lat, lng from PostGIS EWKB / WKB hex representation."""
