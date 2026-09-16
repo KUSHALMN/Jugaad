@@ -26,7 +26,7 @@ app = FastAPI(
 # Enable GZip compression for all responses > 1KB (reduces network transfer by 60-80%)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# CORS — explicit allowed origins
+# CORS — explicit allowed origins + localhost wildcard regex for Flutter Web dev
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS + [
@@ -35,6 +35,7 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://10.0.2.2:8000"
     ],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
