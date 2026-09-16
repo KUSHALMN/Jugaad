@@ -1135,7 +1135,7 @@ class _ConfettiParticle {
 class _ConfettiPainter extends CustomPainter {
   final List<_ConfettiParticle> particles;
   final double progress;
-  _ConfettiPainter(this.particles, this.progress);
+  _ConfettiPainter(this.particles, [this.progress = 0.0]);
 
   @override
   void paint(Canvas canvas, Size size) {
