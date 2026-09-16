@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -601,19 +603,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
 
   Widget _buildBottomSheetContent(WorkerSearchState state, ScrollController scrollController) {
     if (state.isLoading) {
-      return Column(
-        children: [
-          const SizedBox(height: 12),
-          Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-          const SizedBox(height: 24),
-          const CircularProgressIndicator(color: AppColors.primary),
-          const SizedBox(height: 16),
-          Text(
-            'Searching for nearby ${state.serviceType.isEmpty ? 'workers' : state.serviceType}s...',
-            style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, color: AppColors.textSecondary),
-          ),
-        ],
-      );
+      return _buildScanningState(state, scrollController);
     }
 
     if (state.workers.isEmpty) {
@@ -786,6 +776,99 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
       ),
     );
   }
+
+  Widget _buildScanningState(WorkerSearchState state, ScrollController scrollController) {
+    return ListView(
+      controller: scrollController,
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      children: [
+        Center(
+          child: Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        _ScanningTelemetryHeader(serviceType: state.serviceType),
+        const SizedBox(height: 20),
+        _buildShimmerWorkerCard(),
+        const SizedBox(height: 12),
+        _buildShimmerWorkerCard(),
+      ],
+    );
+  }
+
+  Widget _buildShimmerWorkerCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: const [
+          BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: const BoxDecoration(
+              color: Color(0xFFEEF2F6),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 130,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 90,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEDF2F7),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: 110,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEDF2F7),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 58,
+            height: 28,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEEF2F6),
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _GridMapPainter extends CustomPainter {
@@ -808,6 +891,127 @@ class _GridMapPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+class _ScanningTelemetryHeader extends StatefulWidget {
+  final String serviceType;
+  const _ScanningTelemetryHeader({required this.serviceType});
+
+  @override
+  State<_ScanningTelemetryHeader> createState() => _ScanningTelemetryHeaderState();
+}
+
+class _ScanningTelemetryHeaderState extends State<_ScanningTelemetryHeader> {
+  int _phaseIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 2200), (t) {
+      if (mounted) {
+        setState(() {
+          _phaseIndex = (_phaseIndex + 1) % 3;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final service = widget.serviceType.isEmpty ? 'worker' : widget.serviceType;
+    final phases = [
+      'Locating certified $service experts nearby...',
+      'Scanning 5.0 km radius in active zone...',
+      'Ranking by response time, verified skills & rating...',
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F7FF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.radar_rounded, color: Colors.white, size: 16),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'RADAR TELEMETRY',
+                style: GoogleFonts.syne(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                  color: AppColors.primary,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF10B981),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: Color(0xFF10B981), blurRadius: 4, spreadRadius: 1),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'LIVE',
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF10B981),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: Text(
+              phases[_phaseIndex],
+              key: ValueKey(_phaseIndex),
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1E293B),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: const LinearProgressIndicator(
+              minHeight: 4,
+              backgroundColor: Color(0xFFE2E8F0),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class LocalPulsingRadar extends StatefulWidget {
   final Color color;
   final String serviceType;
@@ -821,86 +1025,286 @@ class LocalPulsingRadar extends StatefulWidget {
   State<LocalPulsingRadar> createState() => _LocalPulsingRadarState();
 }
 
-class _LocalPulsingRadarState extends State<LocalPulsingRadar> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+class _LocalPulsingRadarState extends State<LocalPulsingRadar> with TickerProviderStateMixin {
+  late AnimationController _sweepController;
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _sweepController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 3500),
+    )..repeat();
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
     )..repeat();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _sweepController.dispose();
+    _pulseController.dispose();
     super.dispose();
+  }
+
+  IconData _getServiceIcon(String service) {
+    final s = service.toLowerCase().replaceAll('_', ' ');
+    if (s.contains('electr') || s.contains('power') || s.contains('short')) {
+      return Icons.bolt_rounded;
+    } else if (s.contains('plumb') || s.contains('water') || s.contains('leak') || s.contains('pipe')) {
+      return Icons.plumbing_rounded;
+    } else if (s.contains('laptop') || s.contains('pc') || s.contains('computer')) {
+      return Icons.laptop_chromebook_rounded;
+    } else if (s.contains('phone') || s.contains('mobile')) {
+      return Icons.phone_android_rounded;
+    } else if (s.contains('carpent') || s.contains('wood')) {
+      return Icons.handyman_rounded;
+    } else if (s.contains('paint')) {
+      return Icons.format_paint_rounded;
+    } else if (s.contains('ac') || s.contains('cool')) {
+      return Icons.ac_unit_rounded;
+    } else if (s.contains('clean')) {
+      return Icons.cleaning_services_rounded;
+    } else if (s.contains('ro') || s.contains('purifier')) {
+      return Icons.water_drop_rounded;
+    } else {
+      return Icons.person_search_rounded;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 220,
-      height: 220,
+      width: 280,
+      height: 280,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          _buildRing(0),
-          _buildRing(0.33),
-          _buildRing(0.66),
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: widget.color,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: widget.color.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  spreadRadius: 4,
-                )
-              ],
-            ),
-            child: const Icon(
-              Icons.search_rounded,
-              color: Colors.white,
-              size: 26,
+          // 1. Radar canvas with sweep, concentric rings, and target blips
+          AnimatedBuilder(
+            animation: Listenable.merge([_sweepController, _pulseController]),
+            builder: (context, child) {
+              return CustomPaint(
+                size: const Size(280, 280),
+                painter: _RadarSweepPainter(
+                  sweepAngle: _sweepController.value * 2 * math.pi,
+                  pulseProgress: _pulseController.value,
+                  radarColor: widget.color,
+                ),
+              );
+            },
+          ),
+
+          // 2. Concentric expanding sonar wave rings
+          ...List.generate(3, (i) {
+            return AnimatedBuilder(
+              animation: _pulseController,
+              builder: (context, child) {
+                final double delay = i * 0.33;
+                final double t = (_pulseController.value - delay) % 1.0;
+                final double scale = 0.8 + (t * 1.8);
+                final double opacity = (1.0 - t).clamp(0.0, 0.45);
+
+                return Opacity(
+                  opacity: opacity,
+                  child: Transform.scale(
+                    scale: scale,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: widget.color.withValues(alpha: 0.6),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+
+          // 3. Central pulsing dish core
+          AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              final scale = 0.95 + 0.08 * math.sin(_pulseController.value * 2 * math.pi);
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: widget.color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.color.withValues(alpha: 0.45),
+                        blurRadius: 18,
+                        spreadRadius: 6,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    _getServiceIcon(widget.serviceType),
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // 4. Glassmorphic live telemetry pill
+          Positioned(
+            bottom: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
+                ],
+                border: Border.all(color: widget.color.withValues(alpha: 0.3), width: 1.2),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: Color(0xFF10B981), blurRadius: 4, spreadRadius: 1),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'LIVE RADAR • 5.0 KM RANGE',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildRing(double delayFraction) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        double t = (_controller.value - delayFraction) % 1.0;
-        double scale = 1.0 + (t * 1.4);
-        double opacity = (1.0 - t) * 0.5;
+class _RadarSweepPainter extends CustomPainter {
+  final double sweepAngle;
+  final double pulseProgress;
+  final Color radarColor;
 
-        return Opacity(
-          opacity: opacity.clamp(0.0, 1.0),
-          child: Transform.scale(
-            scale: scale,
-            child: Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: widget.color,
-                  width: 2.0,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+  _RadarSweepPainter({
+    required this.sweepAngle,
+    required this.pulseProgress,
+    required this.radarColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxRadius = size.width / 2 - 14;
+
+    // 1. Concentric range circle rings (25%, 50%, 75%, 100%)
+    final ringPaint = Paint()
+      ..color = radarColor.withValues(alpha: 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    for (final fraction in [0.28, 0.52, 0.76, 1.0]) {
+      canvas.drawCircle(center, maxRadius * fraction, ringPaint);
+    }
+
+    // 2. Crosshair grid lines
+    final crossPaint = Paint()
+      ..color = radarColor.withValues(alpha: 0.15)
+      ..strokeWidth = 1.0;
+    canvas.drawLine(Offset(center.dx - maxRadius, center.dy), Offset(center.dx + maxRadius, center.dy), crossPaint);
+    canvas.drawLine(Offset(center.dx, center.dy - maxRadius), Offset(center.dx, center.dy + maxRadius), crossPaint);
+
+    // 3. Rotating radar sweep beam (SweepGradient)
+    final sweepPaint = Paint()
+      ..shader = SweepGradient(
+        center: Alignment.center,
+        startAngle: 0.0,
+        endAngle: math.pi / 2,
+        colors: [
+          radarColor.withValues(alpha: 0.0),
+          radarColor.withValues(alpha: 0.35),
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: maxRadius));
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(sweepAngle - (math.pi / 2));
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset.zero, radius: maxRadius),
+      0.0,
+      math.pi / 2,
+      true,
+      sweepPaint,
     );
+
+    // Bright leading edge line
+    final leadingPaint = Paint()
+      ..color = radarColor.withValues(alpha: 0.8)
+      ..strokeWidth = 2.0;
+    final edgeX = maxRadius * math.cos(math.pi / 2);
+    final edgeY = maxRadius * math.sin(math.pi / 2);
+    canvas.drawLine(Offset.zero, Offset(edgeX, edgeY), leadingPaint);
+    canvas.restore();
+
+    // 4. Detected target worker blips
+    final blipPositions = [
+      Offset(center.dx + maxRadius * 0.48 * math.cos(0.8), center.dy + maxRadius * 0.48 * math.sin(0.8)),
+      Offset(center.dx + maxRadius * 0.68 * math.cos(2.4), center.dy + maxRadius * 0.68 * math.sin(2.4)),
+      Offset(center.dx + maxRadius * 0.82 * math.cos(4.1), center.dy + maxRadius * 0.82 * math.sin(4.1)),
+      Offset(center.dx + maxRadius * 0.35 * math.cos(5.3), center.dy + maxRadius * 0.35 * math.sin(5.3)),
+    ];
+
+    for (int i = 0; i < blipPositions.length; i++) {
+      final pos = blipPositions[i];
+      final angleToBlip = math.atan2(pos.dy - center.dy, pos.dx - center.dx);
+      double normalizedAngle = angleToBlip < 0 ? angleToBlip + 2 * math.pi : angleToBlip;
+      double normalizedSweep = sweepAngle % (2 * math.pi);
+      double diff = (normalizedSweep - normalizedAngle).abs();
+      if (diff > math.pi) diff = 2 * math.pi - diff;
+
+      // Glow intensity spikes when sweep line is near
+      final double intensity = (1.0 - (diff / (math.pi / 2))).clamp(0.2, 1.0);
+
+      final blipGlow = Paint()
+        ..color = (i % 2 == 0 ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withValues(alpha: 0.4 * intensity)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(pos, 8 * intensity, blipGlow);
+
+      final blipDot = Paint()
+        ..color = (i % 2 == 0 ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withValues(alpha: intensity)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(pos, 4, blipDot);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RadarSweepPainter oldDelegate) {
+    return oldDelegate.sweepAngle != sweepAngle || oldDelegate.pulseProgress != pulseProgress;
   }
 }
