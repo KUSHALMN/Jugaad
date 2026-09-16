@@ -110,6 +110,9 @@ class ApiService {
     int page = 0,
     int limit = 10,
   }) async {
+    final double safeLat = (lat != 0.0) ? lat : 12.3051;
+    final double safeLng = (lng != 0.0) ? lng : 76.6551;
+
     final cleanCategory = (serviceType != null &&
             serviceType.trim().isNotEmpty &&
             serviceType.trim().toLowerCase() != 'all')
@@ -117,8 +120,8 @@ class ApiService {
         : null;
 
     final response = await client.get('/v1/workers/search', queryParameters: {
-      'lat': lat,
-      'lng': lng,
+      'lat': safeLat,
+      'lng': safeLng,
       'radius_km': radiusKm,
       if (cleanCategory != null) 'category': cleanCategory,
       if (cleanCategory != null) 'service_type': cleanCategory,

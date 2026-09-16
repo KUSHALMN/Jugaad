@@ -142,7 +142,7 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
         hasLocationPermission: true,
         lat: position.latitude,
         lng: position.longitude,
-        activeLocationName: 'GPS Location',
+        activeLocationName: 'GPS (${position.latitude.toStringAsFixed(2)}, ${position.longitude.toStringAsFixed(2)})',
         isResolvingLocation: false,
       );
 
@@ -150,19 +150,19 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
       search(refresh: true);
 
     } catch (e) {
-      print('[LOCATION_PROVIDER] Error resolving location: $e. Falling back to Mysuru Center.');
+      print('[LOCATION_PROVIDER] Error resolving location: $e. Falling back to default coordinates.');
       state = state.copyWith(
         hasLocationPermission: false,
         lat: 12.3051,
         lng: 76.6551,
-        activeLocationName: 'Mysuru Center (Fallback)',
+        activeLocationName: 'Mysuru Center (Default)',
         isResolvingLocation: false,
       );
       search(refresh: true);
     }
   }
 
-  /// Pick a preset Mysuru neighborhood location
+  /// Pick a preset neighborhood or custom location
   void selectManualLocation(double lat, double lng, String name) {
     state = state.copyWith(
       lat: lat,
@@ -176,9 +176,16 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
 
   /// Run search API call
   Future<void> search({bool refresh = false}) async {
-    if (state.lat == 0.0 && state.lng == 0.0) {
-      state = state.copyWith(errorMessage: 'Please resolve location first.');
-      return;
+    double searchLat = state.lat;
+    double searchLng = state.lng;
+    if (searchLat == 0.0 && searchLng == 0.0) {
+      searchLat = 12.3051;
+      searchLng = 76.6551;
+      state = state.copyWith(
+        lat: searchLat,
+        lng: searchLng,
+        activeLocationName: 'Mysuru Center (Default)',
+      );
     }
 
     final int targetPage = refresh ? 0 : state.page;

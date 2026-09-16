@@ -24,11 +24,14 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
   bool _isPickerShowing = false;
 
   final List<Map<String, dynamic>> _mysorePresets = [
-    {'name': 'Mysore Palace', 'lat': 12.3051, 'lng': 76.6551},
-    {'name': 'Gokulam', 'lat': 12.3308, 'lng': 76.6267},
-    {'name': 'Vijayanagar', 'lat': 12.3374, 'lng': 76.6111},
-    {'name': 'Kuvempunagar', 'lat': 12.2905, 'lng': 76.6277},
-    {'name': 'Hebbal Industrial Area', 'lat': 12.3562, 'lng': 76.6047},
+    {'name': 'Mysore Palace Center', 'lat': 12.3051, 'lng': 76.6551},
+    {'name': 'Gokulam, Mysuru', 'lat': 12.3308, 'lng': 76.6267},
+    {'name': 'Vijayanagar, Mysuru', 'lat': 12.3374, 'lng': 76.6111},
+    {'name': 'Kuvempunagar, Mysuru', 'lat': 12.2905, 'lng': 76.6277},
+    {'name': 'Hebbal Industrial, Mysuru', 'lat': 12.3562, 'lng': 76.6047},
+    {'name': 'Koramangala, Bengaluru', 'lat': 12.9352, 'lng': 77.6245},
+    {'name': 'Indiranagar, Bengaluru', 'lat': 12.9784, 'lng': 77.6408},
+    {'name': 'Mandya City Center', 'lat': 12.5226, 'lng': 76.8974},
   ];
 
   final List<String> _services = [
@@ -98,7 +101,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                 ),
               ),
               Text(
-                'Select Zone in Mysuru',
+                'Select Location & Service Zone',
                 style: GoogleFonts.syne(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
