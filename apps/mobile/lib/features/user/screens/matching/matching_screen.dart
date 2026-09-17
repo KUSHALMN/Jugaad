@@ -1103,6 +1103,9 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
         _jobData['title'] as String? ??
         'Service';
 
+    final jobArea = _jobData['area'] as String? ?? _jobData['address'] as String? ?? 'your area';
+    final jobCity = _jobData['city'] as String? ?? 'Mysuru';
+
     return Column(
       children: [
         Container(
@@ -1132,7 +1135,7 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Ranked by highest customer ratings in Mysuru',
+                      'Top-rated specialists across $jobCity',
                       style: UserAppTheme.body(
                         size: 11,
                         color: Colors.white70,
@@ -1154,25 +1157,40 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7).withValues(alpha: 0.12),
+                    color: const Color(0xFFFEF3C7).withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: const Color(0xFFFACC15).withValues(alpha: 0.35),
-                      width: 1,
+                      color: const Color(0xFFFACC15).withValues(alpha: 0.4),
+                      width: 1.2,
                     ),
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.stars_rounded, color: Color(0xFFFBBF24), size: 22),
+                      const Icon(Icons.bolt_rounded, color: Color(0xFFFBBF24), size: 22),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          'No direct instant responder within 3km radar. Showing top-rated $skill professionals available for direct booking below:',
-                          style: UserAppTheme.body(
-                            size: 12,
-                            color: Colors.white,
-                            weight: FontWeight.w500,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Region Busy Advisory',
+                              style: UserAppTheme.heading(
+                                size: 12.5,
+                                weight: FontWeight.bold,
+                                color: const Color(0xFFFBBF24),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Workers in your region ($jobArea) are currently busy. You can book these high-rated $skill specialists across $jobCity for immediate direct dispatch:',
+                              style: UserAppTheme.body(
+                                size: 12,
+                                color: Colors.white,
+                                weight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
