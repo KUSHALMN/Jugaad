@@ -107,6 +107,8 @@ class ApiService {
     required double lng,
     double radiusKm = 5.0,
     String? serviceType,
+    String? area,
+    String? division,
     int page = 0,
     int limit = 10,
   }) async {
@@ -125,6 +127,8 @@ class ApiService {
       'radius_km': radiusKm,
       if (cleanCategory != null) 'category': cleanCategory,
       if (cleanCategory != null) 'service_type': cleanCategory,
+      if (area != null && area.isNotEmpty) 'area': area,
+      if (division != null && division.isNotEmpty) 'division': division,
       'page': page,
       'limit': limit,
     });

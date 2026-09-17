@@ -19,6 +19,10 @@ class WorkerSearchState {
   final bool isResolvingLocation;
   final String activeLocationName;
   final bool isCitywideFallback;
+  final String? advisoryMessage;
+  final String userCity;
+  final String userDivision;
+  final bool isUpcomingCity;
 
   WorkerSearchState({
     this.workers = const [],
@@ -36,6 +40,10 @@ class WorkerSearchState {
     this.isResolvingLocation = false,
     this.activeLocationName = 'Not Set',
     this.isCitywideFallback = false,
+    this.advisoryMessage,
+    this.userCity = 'Mysuru',
+    this.userDivision = 'Your Region',
+    this.isUpcomingCity = false,
   });
 
   WorkerSearchState copyWith({
@@ -54,6 +62,10 @@ class WorkerSearchState {
     bool? isResolvingLocation,
     String? activeLocationName,
     bool? isCitywideFallback,
+    String? advisoryMessage,
+    String? userCity,
+    String? userDivision,
+    bool? isUpcomingCity,
   }) {
     return WorkerSearchState(
       workers: workers ?? this.workers,
@@ -71,6 +83,10 @@ class WorkerSearchState {
       isResolvingLocation: isResolvingLocation ?? this.isResolvingLocation,
       activeLocationName: activeLocationName ?? this.activeLocationName,
       isCitywideFallback: isCitywideFallback ?? this.isCitywideFallback,
+      advisoryMessage: advisoryMessage ?? this.advisoryMessage,
+      userCity: userCity ?? this.userCity,
+      userDivision: userDivision ?? this.userDivision,
+      isUpcomingCity: isUpcomingCity ?? this.isUpcomingCity,
     );
   }
 }
@@ -202,6 +218,7 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
         lng: state.lng,
         radiusKm: state.radiusKm,
         serviceType: state.serviceType.toLowerCase().replaceAll(' ', '_'),
+        division: state.activeLocationName,
         page: targetPage,
         limit: 8,
       );
@@ -209,9 +226,13 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
       List<dynamic> fetchedWorkers = res['workers'] ?? [];
       final int total = res['total'] ?? 0;
       final bool hasMore = res['has_more'] ?? false;
-      bool isFallback = res['mode'] == 'citywide_rating_fallback';
+      bool isFallback = res['mode'] == 'citywide_rating_fallback' || res['is_fallback'] == true;
+      String? advisory = res['advisory_message'] as String?;
+      String resolvedCity = res['user_city'] as String? ?? state.userCity;
+      String resolvedDiv = res['user_division'] as String? ?? (state.activeLocationName.isNotEmpty ? state.activeLocationName : 'Your Region');
+      bool isUpcoming = res['is_upcoming_city'] as bool? ?? false;
 
-      // Fallback: If 0 workers found nearby, load Mysore Citywide Workers sorted by highest rating
+      // Fallback: If 0 workers found nearby, load Top-Rated Workers sorted by highest rating
       if (fetchedWorkers.isEmpty) {
         final dbWorkers = await SupabaseService().fetchTopRatedWorkersByCategory(
           category: state.serviceType,
@@ -223,6 +244,13 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
           fetchedWorkers = _getMysoreWorkersForService(state.serviceType);
         }
         isFallback = true;
+        if (advisory == null || advisory.isEmpty) {
+          final catLabel = state.serviceType.isNotEmpty ? state.serviceType : 'Service';
+          advisory = 'Workers in your region ($resolvedDiv) are currently busy. You can book these high-rated $catLabel workers across the entire city of $resolvedCity!';
+        }
+      } else if (isFallback && (advisory == null || advisory.isEmpty)) {
+        final catLabel = state.serviceType.isNotEmpty ? state.serviceType : 'Service';
+        advisory = 'Workers in your region ($resolvedDiv) are currently busy. You can book these high-rated $catLabel workers across the entire city of $resolvedCity!';
       }
 
       final updatedWorkers = refresh 
@@ -237,9 +265,13 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
         hasMore: hasMore,
         total: total > 0 ? total : updatedWorkers.length,
         isCitywideFallback: isFallback,
+        advisoryMessage: advisory,
+        userCity: resolvedCity,
+        userDivision: resolvedDiv,
+        isUpcomingCity: isUpcoming,
       );
     } catch (e) {
-      // Fallback on network/API exception: show Mysore citywide workers
+      // Fallback on network/API exception: show citywide workers with advisory
       List<dynamic> mysoreWorkers = [];
       try {
         mysoreWorkers = await SupabaseService().fetchTopRatedWorkersByCategory(
@@ -252,12 +284,19 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
         mysoreWorkers = _getMysoreWorkersForService(state.serviceType);
       }
 
+      final catLabel = state.serviceType.isNotEmpty ? state.serviceType : 'Service';
+      final fallbackAdvisory = 'Workers in your region (${state.activeLocationName}) are currently busy. You can book these high-rated $catLabel workers across the entire city of Mysuru!';
+
       state = state.copyWith(
         workers: mysoreWorkers,
         isLoading: false,
         isLoadingMore: false,
         total: mysoreWorkers.length,
         isCitywideFallback: true,
+        advisoryMessage: fallbackAdvisory,
+        userCity: 'Mysuru',
+        userDivision: state.activeLocationName,
+        isUpcomingCity: false,
         errorMessage: null,
       );
     }
