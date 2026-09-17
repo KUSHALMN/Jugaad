@@ -617,6 +617,24 @@ def resolve_city_and_division(lat: float, lng: float, area_hint: Optional[str] =
     return f"Upcoming City ({round(lat, 2)}, {round(lng, 2)})", "Regional Division", True
 
 
+def format_customer_busy_advisory(division: str, city: str, category: Optional[str] = None, is_upcoming: bool = False) -> str:
+    """
+    Constructs an empathetic, actionable customer advisory advising that workers in the customer's
+    local region/division are currently busy or unavailable, and highlighting verified top-rated
+    service specialists available across the entire city.
+    """
+    cat_label = (category or "service").replace("_", " ").title() if category else "Service"
+    if is_upcoming:
+        return (
+            f"Workers in your region ({division}) are currently busy or onboarding. "
+            f"You can book these high-rated {cat_label} specialists available in nearby {city} hubs!"
+        )
+    return (
+        f"Workers in your region ({division}) are currently busy. "
+        f"You can book these high-rated {cat_label} workers across the entire city of {city}!"
+    )
+
+
 def _parse_wkb_point(wkb_hex: str):
     """Parse lat, lng from PostGIS EWKB / WKB hex representation."""
     if not wkb_hex or not isinstance(wkb_hex, str) or len(wkb_hex) < 42:
@@ -677,6 +695,9 @@ def search_workers(
             lat = DEFAULT_FALLBACK_LAT
             lng = DEFAULT_FALLBACK_LNG
             is_default_coords = True
+
+    # Resolve user's city and division
+    user_city, user_division, is_upcoming = resolve_city_and_division(lat, lng)
 
     # ── 1. Redis Response Cache check (30s TTL) ──
     cache_cat = "all" if is_all_categories else req_category
@@ -745,6 +766,12 @@ def search_workers(
 
                         response_data = {
                             "mode": "nearest",
+                            "is_fallback": False,
+                            "advisory_message": None,
+                            "user_city": user_city,
+                            "user_division": user_division,
+                            "is_upcoming_city": is_upcoming,
+                            "category": req_category,
                             "radius_used_m": radius_m,
                             "count": len(formatted_workers),
                             "workers": formatted_workers
@@ -892,12 +919,19 @@ def search_workers(
                     "completed_jobs": w.get("total_completed_jobs", 0),
                     "total_jobs": w.get("total_completed_jobs", 0),
                     "hourly_rate": float(w.get("hourly_rate", 150.0)),
+                    "city": w.get("city") or user_city or "Mysuru",
                     "area": w.get("area") or "Mysuru",
                 }
                 for w in all_found
             ]
             response_data = {
                 "mode": "nearest",
+                "is_fallback": False,
+                "advisory_message": None,
+                "user_city": user_city,
+                "user_division": user_division,
+                "is_upcoming_city": is_upcoming,
+                "category": req_category,
                 "radius_used_m": radius,
                 "count": len(formatted),
                 "workers": formatted,
@@ -938,12 +972,20 @@ def search_workers(
                 "completed_jobs": w.get("total_completed_jobs", 0),
                 "total_jobs": w.get("total_completed_jobs", 0),
                 "hourly_rate": float(w.get("hourly_rate", 150.0)),
+                "city": w.get("city") or user_city or "Mysuru",
                 "area": w.get("area") or "Mysuru",
             }
             for w in matching_workers[:20]
         ]
+        advisory_msg = format_customer_busy_advisory(user_division, user_city, req_category, is_upcoming)
         response_data = {
             "mode": "citywide_rating_fallback",
+            "is_fallback": True,
+            "advisory_message": advisory_msg,
+            "user_city": user_city,
+            "user_division": user_division,
+            "is_upcoming_city": is_upcoming,
+            "category": req_category,
             "count": len(formatted_fallback),
             "workers": formatted_fallback,
         }
@@ -955,8 +997,19 @@ def search_workers(
         return response_data
 
     # Zero workers found for category across all locations
+    cat_label = (req_category or "service").replace("_", " ").title() if req_category else "Service"
+    advisory_msg = (
+        f"Workers in your region ({user_division}) are currently busy. "
+        f"No {cat_label} experts are currently online in {user_city}."
+    )
     response_data = {
         "mode": "no_workers_found",
+        "is_fallback": True,
+        "advisory_message": advisory_msg,
+        "user_city": user_city,
+        "user_division": user_division,
+        "is_upcoming_city": is_upcoming,
+        "category": req_category,
         "count": 0,
         "workers": [],
     }
