@@ -659,6 +659,8 @@ def search_workers(
     lat: Optional[float] = None,
     lng: Optional[float] = None,
     service_type: Optional[str] = None,
+    area: Optional[str] = None,
+    division: Optional[str] = None,
     radius_km: Optional[float] = None,
     page: int = 0,
     limit: int = 20,
@@ -696,12 +698,14 @@ def search_workers(
             lng = DEFAULT_FALLBACK_LNG
             is_default_coords = True
 
-    # Resolve user's city and division
-    user_city, user_division, is_upcoming = resolve_city_and_division(lat, lng)
+    # Resolve user's city, division, and upcoming city status
+    area_hint = area or division
+    user_city, user_division, is_upcoming = resolve_city_and_division(lat, lng, area_hint=area_hint)
 
     # ── 1. Redis Response Cache check (30s TTL) ──
     cache_cat = "all" if is_all_categories else req_category
-    cache_key = f"cache:worker_search_priority:{cache_cat}:{round(lat, 3)}:{round(lng, 3)}"
+    div_slug = user_division.lower().replace(" ", "_")
+    cache_key = f"cache:worker_search_priority:{cache_cat}:{round(lat, 3)}:{round(lng, 3)}:{div_slug}"
     r = redis_client.get_client()
     if r:
         try:
@@ -1029,6 +1033,8 @@ def search_workers_legacy(payload: dict):
         category=payload.get("category") or payload.get("skill") or payload.get("service_type"),
         lat=payload.get("lat"),
         lng=payload.get("lng"),
+        area=payload.get("area") or payload.get("division") or payload.get("location_name"),
+        division=payload.get("division"),
     )
 
 
