@@ -2,10 +2,13 @@
 Automated Test Suite for Universal Worker Search Engine & Animations
 =====================================================================
 Validates:
-1. Coordinate fault-tolerance: null, 0.0, string, out-of-bound coords never crash.
-2. Multi-location queries: Mysuru, Bengaluru, Mandya, Delhi, global test points.
-3. Natural language category aliases: "pipe leak", "short circuit", "ac gas", "purifier".
-4. Contract integrity: returns valid JSON with count, mode, and worker fields.
+1. Category alias & natural language resolution.
+2. Coordinate fault-tolerance: null, 0.0, string, out-of-bound coords never crash.
+3. Multi-location queries across active cities & regions.
+4. Response contract integrity & worker schema verification.
+5. Geospatial division & multi-city resolution (Mysuru, Bengaluru, Mandya, etc.).
+6. Citywide high-rated worker fallback & customer busy advisory generation.
+7. Upcoming city expansion detection & onboarding advisory.
 """
 
 import sys
@@ -14,7 +17,14 @@ import os
 # Ensure backend root is on sys.path
 sys.path.insert(0, os.path.dirname(__file__))
 
-from routers.workers import search_workers, resolve_search_category, SERVICE_KEYWORD_MAP
+from routers.workers import (
+    search_workers,
+    resolve_search_category,
+    resolve_city_and_division,
+    CITY_DIVISIONS_REGISTRY,
+    SERVICE_KEYWORD_MAP,
+)
+
 
 def test_category_alias_resolution():
     print("\n--- Test 1: Category Alias & Natural Language Resolution ---")
@@ -97,11 +107,75 @@ def test_response_contract_fields():
     print("Response contract test passed!")
 
 
+def test_division_resolution():
+    print("\n--- Test 5: Geospatial Division & Multi-City Resolution ---")
+    test_coords = [
+        (12.3308, 76.6267, "Mysuru", "Gokulam"),
+        (12.2905, 76.6277, "Mysuru", "Kuvempunagar"),
+        (12.9352, 77.6245, "Bengaluru", "Koramangala"),
+        (12.9784, 77.6408, "Bengaluru", "Indiranagar"),
+        (12.5226, 76.8974, "Mandya", "Mandya City Center"),
+        (13.0072, 76.1029, "Hassan", "Hassan City Center"),
+        (15.3647, 75.1240, "Hubli", "Hubli City Center"),
+        (12.9141, 74.8560, "Mangaluru", "Mangaluru Central"),
+    ]
+    for lat, lng, exp_city, exp_div in test_coords:
+        city, div, is_up = resolve_city_and_division(lat, lng)
+        assert city == exp_city, f"Expected city {exp_city}, got {city}"
+        assert div == exp_div, f"Expected division {exp_div}, got {div}"
+        assert not is_up, f"Expected is_upcoming=False for registered city {city}"
+        print(f"  [OK] Coords ({lat}, {lng}) -> City: {city}, Division: {div}")
+    print("All division and multi-city resolution tests passed!")
+
+
+def test_citywide_high_rated_fallback_advisory():
+    print("\n--- Test 6: Citywide High-Rated Fallback & Customer Busy Advisory ---")
+    # Query Koramangala, Bengaluru where local workers might not be registered:
+    res = search_workers(lat=12.9352, lng=77.6245, category="plumber")
+    assert res is not None
+    assert "advisory_message" in res
+    assert "user_city" in res
+    assert "user_division" in res
+    assert "is_fallback" in res
+
+    advisory = res["advisory_message"]
+    print(f"  [Advisory Generated] {advisory}")
+    assert "Workers in your region (Koramangala) are currently busy" in advisory
+    assert "high-rated Plumber" in advisory or "Plumber" in advisory
+    assert "Bengaluru" in advisory
+
+    workers = res.get("workers", [])
+    if len(workers) >= 2:
+        # Check that workers are sorted by rating DESC (highest rated first)
+        ratings = [w.get("rating") for w in workers if w.get("rating") is not None]
+        for i in range(len(ratings) - 1):
+            assert ratings[i] >= ratings[i + 1], f"Workers must be sorted rating DESC: {ratings}"
+        print(f"  [OK] Workers properly ranked by rating DESC: {ratings[:5]}")
+    print("Citywide high-rated fallback and customer busy advisory tests passed!")
+
+
+def test_upcoming_city_expansion_advisory():
+    print("\n--- Test 7: Upcoming City & Regional Hub Expansion Advisory ---")
+    # Query an upcoming location (e.g. 14.5, 75.8)
+    res = search_workers(lat=14.5, lng=75.8, category="electrician")
+    assert res is not None
+    assert res.get("is_upcoming_city") is True or "Upcoming City" in res.get("user_city", "")
+    advisory = res.get("advisory_message", "")
+    print(f"  [Upcoming Advisory] {advisory}")
+    assert "Workers in your region" in advisory
+    assert "Electrician" in advisory
+    print("Upcoming city expansion advisory tests passed!")
+
+
 if __name__ == "__main__":
     test_category_alias_resolution()
     test_coordinate_fault_tolerance()
     test_multi_location_searches()
     test_response_contract_fields()
+    test_division_resolution()
+    test_citywide_high_rated_fallback_advisory()
+    test_upcoming_city_expansion_advisory()
     print("\n==================================================")
-    print(">>> ALL 4 TEST SUITES COMPLETED WITH 100% SUCCESS!")
+    print(">>> ALL 7 TEST SUITES COMPLETED WITH 100% SUCCESS!")
     print("==================================================")
+
