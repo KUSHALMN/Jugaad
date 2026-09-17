@@ -19,6 +19,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
   String _searchQuery = '';
   Timer? _debounceTimer;
   bool _isLoading = true;
+  bool _isAreaBusyFallback = false;
 
   List<Map<String, dynamic>> _workers = [];
   List<Map<String, dynamic>> _filteredWorkersCache = [];
@@ -361,10 +362,11 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
 
     if (_searchQuery.trim().isEmpty) {
       _filteredWorkersCache = categoryFiltered;
+      _isAreaBusyFallback = false;
       return;
     }
     final query = _searchQuery.trim().toLowerCase();
-    _filteredWorkersCache = categoryFiltered.where((w) {
+    final directMatches = categoryFiltered.where((w) {
       final name = (w['name'] as String? ?? '').toLowerCase();
       final bio = (w['bio'] as String? ?? '').toLowerCase();
       final area = (w['area'] as String? ?? '').toLowerCase();
@@ -389,6 +391,24 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
              skills.any((s) => s.contains(query)) ||
              specialities.any((s) => s.contains(query));
     }).toList();
+
+    if (directMatches.isNotEmpty) {
+      _filteredWorkersCache = directMatches;
+      _isAreaBusyFallback = false;
+    } else {
+      // Fallback: If no workers match the specific area/query, sort all citywide workers by highest rating
+      final sortedCitywide = List<Map<String, dynamic>>.from(categoryFiltered);
+      sortedCitywide.sort((a, b) {
+        final double rA = (a['rating'] as num?)?.toDouble() ?? 0.0;
+        final double rB = (b['rating'] as num?)?.toDouble() ?? 0.0;
+        if (rB != rA) return rB.compareTo(rA);
+        final int jA = (a['total_jobs'] as num?)?.toInt() ?? 0;
+        final int jB = (b['total_jobs'] as num?)?.toInt() ?? 0;
+        return jB.compareTo(jA);
+      });
+      _filteredWorkersCache = sortedCitywide;
+      _isAreaBusyFallback = true;
+    }
   }
 
   @override
@@ -529,6 +549,55 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
               ),
             ),
             const SizedBox(height: 8),
+
+            if (_isAreaBusyFallback && !_isLoading)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.amber.withValues(alpha: 0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.bolt_rounded, color: Color(0xFFD97706), size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Region Busy Advisory',
+                            style: GoogleFonts.syne(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF92400E),
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Workers in your region are currently busy. You can book these high-rated ${_selectedCategory == 'All' ? 'service specialists' : '$_selectedCategory experts'} across the entire city!',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              color: const Color(0xFF78350F),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             // Main List with lazy building and no per-scroll animation overhead
             Expanded(
