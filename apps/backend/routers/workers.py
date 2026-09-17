@@ -463,6 +463,160 @@ def resolve_search_category(query: Optional[str]) -> tuple[str, bool]:
     clean_slug = clean.replace(" ", "_")
     return clean_slug, False
 
+def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate geodesic distance in meters between two lat/lng coordinates."""
+    import math
+    R = 6371000
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+
+    a = math.sin(delta_phi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+
+# ── Multi-City & Division Geospatial Registry ─────────────────────────────
+# Comprehensive geospatial division registry covering Mysuru, Bengaluru, Mandya,
+# Hassan, Hubli-Dharwad, Mangaluru, and dynamic expansion for all upcoming cities.
+CITY_DIVISIONS_REGISTRY = {
+    "Mysuru": {
+        "lat_min": 12.18, "lat_max": 12.45, "lng_min": 76.50, "lng_max": 76.78,
+        "divisions": [
+            ("Kuvempunagar", 12.2905, 76.6277),
+            ("Gokulam", 12.3308, 76.6267),
+            ("Vijayanagar", 12.3374, 76.6111),
+            ("Jayalakshmipuram", 12.3215, 76.6321),
+            ("Hebbal Industrial", 12.3562, 76.6047),
+            ("Saraswathipuram", 12.3021, 76.6345),
+            ("Mysore Palace / Central", 12.3051, 76.6551),
+            ("Vidyaranyapuram", 12.2780, 76.6490),
+            ("Chamundipuram", 12.2920, 76.6620),
+            ("Bannimantap", 12.3340, 76.6530),
+            ("Mandi Mohalla", 12.3160, 76.6520),
+            ("Alanahalli", 12.2910, 76.7020),
+            ("Metagalli", 12.3480, 76.6320),
+            ("Bogadi", 12.3040, 76.5980),
+            ("Dattagalli", 12.2850, 76.6050),
+            ("Roopa Nagar", 12.2960, 76.5890),
+            ("Ramakrishnanagar", 12.2795, 76.6210),
+            ("JP Nagar Mysuru", 12.2680, 76.6370),
+            ("Nazarbad", 12.3090, 76.6680),
+            ("Yadavagiri", 12.3280, 76.6420),
+        ]
+    },
+    "Bengaluru": {
+        "lat_min": 12.75, "lat_max": 13.20, "lng_min": 77.40, "lng_max": 77.85,
+        "divisions": [
+            ("Koramangala", 12.9352, 77.6245),
+            ("Indiranagar", 12.9784, 77.6408),
+            ("HSR Layout", 12.9121, 77.6446),
+            ("Whitefield", 12.9698, 77.7500),
+            ("Jayanagar", 12.9308, 77.5838),
+            ("Electronic City", 12.8452, 77.6602),
+            ("BTM Layout", 12.9166, 77.6101),
+            ("Malleshwaram", 13.0031, 77.5643),
+            ("Hebbal Bengaluru", 13.0358, 77.5970),
+            ("Marathahalli", 12.9591, 77.6974),
+            ("Yelahanka", 13.1007, 77.5963),
+            ("Rajajinagar", 12.9918, 77.5529),
+            ("Banashankari", 12.9255, 77.5468),
+            ("Bellandur", 12.9304, 77.6784),
+            ("Sarjapur Road", 12.9081, 77.6891),
+            ("Basavanagudi", 12.9416, 77.5755),
+        ]
+    },
+    "Mandya": {
+        "lat_min": 12.45, "lat_max": 12.65, "lng_min": 76.80, "lng_max": 77.05,
+        "divisions": [
+            ("Mandya City Center", 12.5226, 76.8974),
+            ("Sugar Town", 12.5350, 76.9120),
+            ("Srirangapatna", 12.4225, 76.6946),
+            ("Maddur", 12.5838, 77.0454),
+            ("Pandavapura", 12.4960, 76.6710),
+            ("Malavalli", 12.3850, 77.0580),
+        ]
+    },
+    "Hassan": {
+        "lat_min": 12.90, "lat_max": 13.15, "lng_min": 76.00, "lng_max": 76.25,
+        "divisions": [
+            ("Hassan City Center", 13.0072, 76.1029),
+            ("Vidyanagar Hassan", 13.0180, 76.0950),
+            ("Channarayapatna", 12.9040, 76.3880),
+            ("Arsikere", 13.3130, 76.2570),
+        ]
+    },
+    "Hubli": {
+        "lat_min": 15.25, "lat_max": 15.55, "lng_min": 75.00, "lng_max": 75.30,
+        "divisions": [
+            ("Hubli City Center", 15.3647, 75.1240),
+            ("Vidyanagar Hubli", 15.3710, 75.1180),
+            ("Dharwad Central", 15.4589, 75.0078),
+            ("Navanagar", 15.3920, 75.0920),
+            ("Gokul Road", 15.3520, 75.1050),
+        ]
+    },
+    "Mangaluru": {
+        "lat_min": 12.75, "lat_max": 13.05, "lng_min": 74.75, "lng_max": 75.00,
+        "divisions": [
+            ("Mangaluru Central", 12.9141, 74.8560),
+            ("Hampankatta", 12.8680, 74.8420),
+            ("Kadri", 12.8840, 74.8620),
+            ("Bejai", 12.8890, 74.8480),
+            ("Surathkal", 13.0110, 74.7930),
+        ]
+    },
+}
+
+def resolve_city_and_division(lat: float, lng: float, area_hint: Optional[str] = None) -> tuple[str, str, bool]:
+    """
+    Geospatially maps user coordinates or area hint to City, Division, and Upcoming City status.
+    Returns: (city_name, division_name, is_upcoming_city)
+    """
+    if area_hint:
+        hint_clean = area_hint.lower()
+        for city_name, city_info in CITY_DIVISIONS_REGISTRY.items():
+            if city_name.lower() in hint_clean:
+                for div_name, _, _ in city_info["divisions"]:
+                    if div_name.lower() in hint_clean:
+                        return city_name, div_name, False
+                return city_name, city_info["divisions"][0][0], False
+            for div_name, _, _ in city_info["divisions"]:
+                if div_name.lower() in hint_clean:
+                    return city_name, div_name, False
+
+    # Check known city bounding boxes
+    for city_name, city_info in CITY_DIVISIONS_REGISTRY.items():
+        if (city_info["lat_min"] <= lat <= city_info["lat_max"] and
+            city_info["lng_min"] <= lng <= city_info["lng_max"]):
+            closest_div = city_info["divisions"][0][0]
+            min_dist = float("inf")
+            for div_name, d_lat, d_lng in city_info["divisions"]:
+                dist = _haversine_m(lat, lng, d_lat, d_lng)
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_div = div_name
+            return city_name, closest_div, False
+
+    # Dynamic Upcoming City / Regional Hub Mapping
+    nearest_city = "Mysuru"
+    nearest_div = "Mysore Palace / Central"
+    min_dist = float("inf")
+    for city_name, city_info in CITY_DIVISIONS_REGISTRY.items():
+        for div_name, d_lat, d_lng in city_info["divisions"]:
+            dist = _haversine_m(lat, lng, d_lat, d_lng)
+            if dist < min_dist:
+                min_dist = dist
+                nearest_city = city_name
+                nearest_div = div_name
+
+    if min_dist <= 75000:
+        return nearest_city, f"{nearest_div} (Expansion Zone)", False
+
+    return f"Upcoming City ({round(lat, 2)}, {round(lng, 2)})", "Regional Division", True
+
+
 def _parse_wkb_point(wkb_hex: str):
     """Parse lat, lng from PostGIS EWKB / WKB hex representation."""
     if not wkb_hex or not isinstance(wkb_hex, str) or len(wkb_hex) < 42:
@@ -479,19 +633,6 @@ def _parse_wkb_point(wkb_hex: str):
         return lat, lng
     except Exception:
         return None, None
-
-def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Calculate geodesic distance in meters between two lat/lng coordinates."""
-    import math
-    R = 6371000
-    phi1 = math.radians(lat1)
-    phi2 = math.radians(lat2)
-    delta_phi = math.radians(lat2 - lat1)
-    delta_lambda = math.radians(lon2 - lon1)
-
-    a = math.sin(delta_phi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return R * c
 
 
 @router.get("/search")
