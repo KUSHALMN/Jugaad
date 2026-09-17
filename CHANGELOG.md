@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2026-09-17
+### Added
+- **Multi-City & Division Geospatial Registry**: Comprehensive division-level bounding boxes and centroids for all divisions of Mysuru, Bengaluru, Mandya, Hassan, Hubli-Dharwad, Mangaluru, and dynamic upcoming expansion cities.
+- **Citywide High-Rated Fallback Engine**: When no workers are available in a local neighborhood/division, the search engine automatically surfaces verified top-rated specialists (sorted by rating DESC, total completed jobs DESC) across the entire city.
+- **Customer Region Busy Advisory**: Dynamic advisory messaging alerting customers when workers in their division are busy and enabling direct booking of top-rated citywide specialists.
+- **Flutter UI Banners & Badges**: Integrated high-demand region advisory cards and "Top-Rated" badges across `WorkerSearchScreen`, `MatchingScreen`, and `WorkerListScreen`.
+- **Automated Test Suite**: 7 comprehensive test suites in `test_universal_search_engine.py` validating division resolution, fallback contracts, and customer advisory messaging.
+
+---
+
 ## [1.3.0] - 2026-09-01
 ### Added
 - Response-level GZip compression (`GZipMiddleware`) for FastAPI responses reducing mobile payload sizes by 60–80%.
