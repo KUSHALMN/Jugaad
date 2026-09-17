@@ -652,11 +652,71 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                   decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
                 ),
               ),
+              if (state.isCitywideFallback) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.withValues(alpha: 0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFEF3C7),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.bolt_rounded, color: Color(0xFFD97706), size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'High-Demand Region Advisory',
+                              style: GoogleFonts.syne(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF92400E),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              state.advisoryMessage ??
+                                  'Workers in your region (${state.userDivision}) are currently busy. You can book these high-rated ${state.serviceType.isEmpty ? 'Service' : state.serviceType} specialists across ${state.userCity}!',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 12,
+                                height: 1.35,
+                                color: const Color(0xFF78350F),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${state.workers.length} ${state.serviceType.isEmpty ? 'Workers' : '${state.serviceType}s'} Available',
+                    state.isCitywideFallback
+                        ? 'Top-Rated ${state.serviceType.isEmpty ? 'Workers' : state.serviceType} (${state.userCity})'
+                        : '${state.workers.length} ${state.serviceType.isEmpty ? 'Workers' : '${state.serviceType}s'} Available',
                     style: GoogleFonts.syne(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   TextButton.icon(
@@ -673,13 +733,13 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
 
         final w = state.workers[index - 1];
         return RepaintBoundary(
-          child: _buildWorkerCard(w),
+          child: _buildWorkerCard(w, isFallback: state.isCitywideFallback),
         );
       },
     );
   }
 
-  Widget _buildWorkerCard(dynamic worker) {
+  Widget _buildWorkerCard(dynamic worker, {bool isFallback = false}) {
     final String name = worker['name'] ?? 'Worker';
     final double rating = (worker['rating'] as num? ?? 0.0).toDouble();
     final double distanceMeters = (worker['distance_m'] as num? ?? worker['distance_meters'] as num? ?? 0.0).toDouble();
@@ -689,10 +749,11 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
     final String? profilePhoto = worker['profile_photo'] ?? worker['id_document_url'];
     final double? hourlyRate = (worker['hourly_rate'] ?? worker['rate_per_hour'] as num?)?.toDouble();
     final int completedJobs = (worker['total_completed_jobs'] ?? worker['total_jobs'] ?? worker['totalJobsCompleted'] ?? 0) as int;
+    final String? areaName = worker['area'] ?? worker['city'];
 
     final distanceText = distanceMeters > 0
         ? (distanceMeters >= 1000 ? '${(distanceMeters / 1000).toStringAsFixed(1)} km away' : '${distanceMeters.toStringAsFixed(0)} m away')
-        : 'Mysuru';
+        : (areaName != null && areaName.isNotEmpty ? areaName : 'Mysuru');
 
     final int etaMins = distanceMeters > 0 ? ((distanceMeters / 400).ceil() + 4).clamp(5, 45) : 15;
     final isSelected = _selectedWorker != null && _selectedWorker['id'] == worker['id'];
@@ -729,6 +790,32 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            if (isFallback || rating >= 4.9) ...[
+              Container(
+                margin: const EdgeInsets.only(right: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFFDE68A), width: 0.8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star, size: 10, color: Color(0xFFD97706)),
+                    const SizedBox(width: 2),
+                    Text(
+                      'Top-Rated',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF92400E),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (isVerified) const Icon(Icons.verified, color: AppColors.primary, size: 16),
           ],
         ),
@@ -758,7 +845,13 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                 ],
                 const Icon(Icons.near_me, color: AppColors.primary, size: 14),
                 const SizedBox(width: 2),
-                Text(distanceText, style: GoogleFonts.dmSans(fontSize: 11, color: Colors.grey[600])),
+                Expanded(
+                  child: Text(
+                    distanceText,
+                    style: GoogleFonts.dmSans(fontSize: 11, color: Colors.grey[600]),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 if (hourlyRate != null && hourlyRate > 0) ...[
                   const SizedBox(width: 8),
                   Text('•  ₹${hourlyRate.toInt()}/hr', style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF10B981))),
