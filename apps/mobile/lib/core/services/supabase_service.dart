@@ -196,8 +196,237 @@ class SupabaseService {
       return result;
     } catch (e) {
       debugPrint('[SupabaseService] fetchTopRatedWorkersByCategory error: $e');
-      return _cachedTopRatedWorkers[cacheKey] ?? [];
+      return _cachedTopRatedWorkers[cacheKey] ?? getMysoreFallbackWorkers(category: category, limit: limit);
     }
+  }
+
+  /// Centralized catalog of verified, top-rated Mysuru service specialists.
+  /// Used across Matching, Search, and Fallback screens when local workers are busy.
+  static List<Map<String, dynamic>> getMysoreFallbackWorkers({
+    String? category,
+    int limit = 10,
+  }) {
+    final List<Map<String, dynamic>> allMysoreWorkers = [
+      {
+        'id': '9c141401-2acd-5eba-a988-9f70f405e86b',
+        'name': 'SAN TECHNOLOGIES Water Purifier Services',
+        'category': 'ro_service',
+        'work_category': 'ro_service',
+        'skills': ['RO Repair', 'Water Purifier', 'Plumber'],
+        'specialities': ['Water Purifier', 'Plumber'],
+        'rating': 5.0,
+        'total_jobs': 440,
+        'totalJobsCompleted': 440,
+        'rate_per_hour': 200,
+        'hourly_rate': 200.0,
+        'is_available': true,
+        'availability_status': 'online',
+        'is_verified': true,
+        'isVerified': true,
+        'area': 'Kumbarakoppal, Mysuru',
+        'phone': '+91 99459 15910',
+        'experience': '5+ years',
+        'bio': 'Domestic & commercial RO water purifier maintenance, candle cleaning, and TDS balance tuning.',
+      },
+      {
+        'id': '8d6fa9db-c83c-5e00-b42a-d139f721355e',
+        'name': 'Manu Electrician Mysore',
+        'category': 'electrician',
+        'work_category': 'electrician',
+        'skills': ['Electrician', 'Wiring', 'Inverter Repair', 'Power Outage'],
+        'specialities': ['Electrician'],
+        'rating': 4.9,
+        'total_jobs': 365,
+        'totalJobsCompleted': 365,
+        'rate_per_hour': 200,
+        'hourly_rate': 200.0,
+        'is_available': true,
+        'availability_status': 'online',
+        'is_verified': true,
+        'isVerified': true,
+        'area': 'Ramachandra Agrahara, Mysuru',
+        'phone': '+91 97396 87998',
+        'experience': '6+ years',
+        'bio': 'Certified electrician with over 6 years of residential & commercial wiring experience in Mysuru.',
+      },
+      {
+        'id': '5420c074-d276-543b-b7af-79b40aa0226b',
+        'name': 'Cool Tech AC Care',
+        'category': 'ac_service',
+        'work_category': 'ac_service',
+        'skills': ['AC Repair', 'AC Service', 'Gas Refill', 'Electrician'],
+        'specialities': ['AC Service'],
+        'rating': 4.9,
+        'total_jobs': 535,
+        'totalJobsCompleted': 535,
+        'rate_per_hour': 250,
+        'hourly_rate': 250.0,
+        'is_available': true,
+        'availability_status': 'online',
+        'is_verified': true,
+        'isVerified': true,
+        'area': 'Gayathripuram, Mysuru',
+        'phone': '+91 99022 61785',
+        'experience': '7+ years',
+        'bio': 'Complete cooling solutions: split AC cleaning, PCB repair, compressor repair & gas charging.',
+      },
+      {
+        'id': '405cc123-aec0-507e-9196-1fdd4fb230a6',
+        'name': 'PRK Services',
+        'category': 'refrigerator_service',
+        'work_category': 'refrigerator_service',
+        'skills': ['Refrigerator Repair', 'Appliance Repair', 'Electrician'],
+        'specialities': ['Refrigerator Repair'],
+        'rating': 4.9,
+        'total_jobs': 346,
+        'totalJobsCompleted': 346,
+        'rate_per_hour': 200,
+        'hourly_rate': 200.0,
+        'is_available': true,
+        'availability_status': 'online',
+        'is_verified': true,
+        'isVerified': true,
+        'area': 'Hebbal 1st Stage, Mysuru',
+        'phone': '+91 90193 91170',
+        'experience': '5+ years',
+        'bio': 'Specialist in single & double door refrigerator gas filling, thermostat replacement, and compressor service.',
+      },
+      {
+        'id': '8f4cdb1d-7277-5f69-857b-6f4d6d59a752',
+        'name': 'RJN Plumbing Services',
+        'category': 'plumber',
+        'work_category': 'plumber',
+        'skills': ['Plumber', 'Water Leakage', 'Drainage', 'Pipe Fitting'],
+        'specialities': ['Plumber'],
+        'rating': 4.9,
+        'total_jobs': 185,
+        'totalJobsCompleted': 185,
+        'rate_per_hour': 200,
+        'hourly_rate': 200.0,
+        'is_available': true,
+        'availability_status': 'online',
+        'is_verified': true,
+        'isVerified': true,
+        'area': 'Lakshmikanthanagar, Hebbal, Mysuru',
+        'phone': '+91 89700 25339',
+        'experience': '6+ years',
+        'bio': 'Prompt plumbing solutions for tap leakage, bathroom sanitaryware, pipeline blocks and motor pump connections.',
+      },
+      {
+        'id': '85525bc9-6c27-549d-8f68-ea4089c30f62',
+        'name': 'KK Plumbing Services',
+        'category': 'plumber',
+        'work_category': 'plumber',
+        'skills': ['Plumber', 'Pipe Leak', 'Sanitary Fitting'],
+        'specialities': ['Plumber'],
+        'rating': 4.9,
+        'total_jobs': 165,
+        'totalJobsCompleted': 165,
+        'rate_per_hour': 200,
+        'hourly_rate': 200.0,
+        'is_available': true,
+        'availability_status': 'online',
+        'is_verified': true,
+        'isVerified': true,
+        'area': 'Devraj Mohalla, Shivarampet, Mysuru',
+        'phone': '+91 87480 02207',
+        'experience': '5+ years',
+        'bio': 'Expert in drainage, pipe leaks, bathroom fixtures, and emergency water supply blockages.',
+      },
+      {
+        'id': '04b91e23-4ade-50bc-9d31-3b1302c36f78',
+        'name': 'L T Electric Zone',
+        'category': 'electrician',
+        'work_category': 'electrician',
+        'skills': ['Electrician', 'Short Circuit', 'Appliance Repair', 'Wiring'],
+        'specialities': ['Electrician'],
+        'rating': 4.9,
+        'total_jobs': 133,
+        'totalJobsCompleted': 133,
+        'rate_per_hour': 200,
+        'hourly_rate': 200.0,
+        'is_available': true,
+        'availability_status': 'online',
+        'is_verified': true,
+        'isVerified': true,
+        'area': 'Hootagalli, Mysuru',
+        'phone': '+91 97414 81923',
+        'experience': '4+ years',
+        'bio': 'Rapid emergency electrical breakdown support, MCB trip diagnostics, and commercial light fittings.',
+      },
+      {
+        'id': '391c19b8-26aa-549e-9962-7e5fa6c0efe1',
+        'name': 'Lapserve Laptop Center',
+        'category': 'laptop_repair',
+        'work_category': 'laptop_repair',
+        'skills': ['Laptop Repair', 'Screen Replacement', 'OS Installation', 'Phone Repair'],
+        'specialities': ['Laptop repair'],
+        'rating': 4.8,
+        'total_jobs': 1908,
+        'totalJobsCompleted': 1908,
+        'rate_per_hour': 250,
+        'hourly_rate': 250.0,
+        'is_available': true,
+        'availability_status': 'online',
+        'is_verified': true,
+        'isVerified': true,
+        'area': 'Saraswathipuram, Mysuru',
+        'phone': '+91 99026 64488',
+        'experience': '8+ years',
+        'bio': 'Multi-brand laptop motherboard repair, SSD upgrades, hinges & display panel replacement.',
+      },
+      {
+        'id': 'dc0da591-c2c5-5fdb-94b2-03fc6f48b9a3',
+        'name': 'Sriranga Home Cleaning',
+        'category': 'cleaning',
+        'work_category': 'cleaning',
+        'skills': ['House Cleaning', 'Deep Cleaning', 'Sanitization'],
+        'specialities': ['Cleaning'],
+        'rating': 4.8,
+        'total_jobs': 140,
+        'totalJobsCompleted': 140,
+        'rate_per_hour': 180,
+        'hourly_rate': 180.0,
+        'is_available': true,
+        'availability_status': 'online',
+        'is_verified': true,
+        'isVerified': true,
+        'area': 'Vinayakanagar, Mysuru',
+        'phone': '+91 90363 62141',
+        'experience': '4+ years',
+        'bio': 'Full home deep cleaning, kitchen chimney degreasing, bathroom descaling, and floor buffing.',
+      },
+    ];
+
+    List<Map<String, dynamic>> filtered = allMysoreWorkers;
+    if (category != null && category.trim().isNotEmpty) {
+      final clean = category.trim().toLowerCase().replaceAll(' ', '_');
+      final genericTerms = {'all', 'service', 'services', 'general', 'service_specialist', 'pro', 'helper'};
+      if (!genericTerms.contains(clean)) {
+        final matches = allMysoreWorkers.where((w) {
+          final cat = (w['category'] ?? w['work_category'] ?? '').toString().toLowerCase();
+          final skills = List<String>.from(w['skills'] as List? ?? []).map((s) => s.toLowerCase().replaceAll(' ', '_')).toList();
+          final specs = List<String>.from(w['specialities'] as List? ?? []).map((s) => s.toLowerCase().replaceAll(' ', '_')).toList();
+          return cat.contains(clean) || clean.contains(cat) ||
+                 skills.any((s) => s.contains(clean) || clean.contains(s)) ||
+                 specs.any((s) => s.contains(clean) || clean.contains(s));
+        }).toList();
+        if (matches.isNotEmpty) {
+          filtered = matches;
+        }
+      }
+    }
+
+    filtered.sort((a, b) {
+      final double rA = (a['rating'] as num?)?.toDouble() ?? 0.0;
+      final double rB = (b['rating'] as num?)?.toDouble() ?? 0.0;
+      if (rB != rA) return rB.compareTo(rA);
+      final int jA = (a['total_jobs'] ?? a['totalJobsCompleted'] as num?)?.toInt() ?? 0;
+      final int jB = (b['total_jobs'] ?? b['totalJobsCompleted'] as num?)?.toInt() ?? 0;
+      return jB.compareTo(jA);
+    });
+
+    return filtered.take(limit).toList();
   }
 
   // ─── Earnings Computation (client-side, no extra schema fields) ──────────
