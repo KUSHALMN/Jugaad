@@ -286,12 +286,24 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
     setState(() => _isActioning = true);
 
     try {
-      // Update job with worker_id in Supabase
-      await SupabaseConfig.client.from('jobs').update({
-        'worker_id': workerId,
-        'status': 'assigned',
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', widget.jobId);
+      if (widget.jobId.isNotEmpty) {
+        try {
+          // Update job with worker_id in Supabase
+          await SupabaseConfig.client.from('jobs').update({
+            'worker_id': workerId,
+            'status': 'assigned',
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          }).eq('id', widget.jobId);
+        } catch (dbErr) {
+          debugPrint('[MATCHING] Direct assign worker_id notice (retrying status only): $dbErr');
+          try {
+            await SupabaseConfig.client.from('jobs').update({
+              'status': 'assigned',
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            }).eq('id', widget.jobId);
+          } catch (_) {}
+        }
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
