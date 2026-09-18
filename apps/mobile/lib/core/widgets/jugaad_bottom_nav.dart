@@ -74,20 +74,18 @@ class _JugaadBottomNavState extends State<JugaadBottomNav>
         boxShadow: isUser
             ? const [
                 BoxShadow(
-                  color: Color(0x14000000), // rgba(0,0,0,0.08)
+                  color: Color(0x0A000000),
                   blurRadius: 20,
                   offset: Offset(0, -4),
                 )
               ]
             : [],
-        border: isUser
-            ? null
-            : const Border(
-                top: BorderSide(
-                  color: Color(0xFFEEEEEE),
-                  width: 0.5,
-                ),
-              ),
+        border: Border(
+          top: BorderSide(
+            color: isUser ? const Color(0xFFE2E8F0) : const Color(0xFFEEEEEE),
+            width: isUser ? 0.8 : 0.5,
+          ),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -145,23 +143,24 @@ class _JugaadBottomNavState extends State<JugaadBottomNav>
           Icon(
             isActive ? item.activeIcon : item.icon,
             color: isActive ? activeColor : inactiveColor,
-            size: 24,
+            size: 23,
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             item.label,
             style: TextStyle(
               fontFamily: 'Plus Jakarta Sans',
               color: isActive ? activeColor : inactiveColor,
-              fontSize: 10,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+              fontSize: 10.5,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              letterSpacing: -0.1,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            width: isActive ? 4 : 0,
-            height: isActive ? 4 : 0,
+            width: isActive ? 5 : 0,
+            height: isActive ? 5 : 0,
             decoration: BoxDecoration(
               color: activeColor,
               shape: BoxShape.circle,

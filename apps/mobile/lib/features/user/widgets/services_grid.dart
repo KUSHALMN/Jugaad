@@ -232,28 +232,21 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
             curve: Curves.easeOutCubic,
             transform: Matrix4.translationValues(0, translateY, 0),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFFFFFFF),
-                  Color(0xFFFAFBFC),
-                ],
-              ),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: _isHovered
                     ? cfg.accentColor.withValues(alpha: 0.50)
-                    : const Color(0xFFECECEC),
+                    : const Color(0xFFE2E8F0),
                 width: _isHovered ? 1.5 : 1.0,
               ),
               boxShadow: [
                 BoxShadow(
                   color: _isHovered
-                      ? cfg.accentColor.withValues(alpha: 0.16)
-                      : const Color.fromRGBO(0, 0, 0, 0.06),
-                  blurRadius: _isHovered ? 24 : 16,
-                  offset: _isHovered ? const Offset(0, 10) : const Offset(0, 6),
+                      ? cfg.accentColor.withValues(alpha: 0.12)
+                      : const Color(0x08000000),
+                  blurRadius: _isHovered ? 20 : 12,
+                  offset: _isHovered ? const Offset(0, 8) : const Offset(0, 4),
                 ),
               ],
             ),

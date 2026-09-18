@@ -35,80 +35,119 @@ class DashboardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final greeting = _getDynamicGreeting();
     return Container(
-      color: const Color(0xFFF8FAFF),
-      padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 14.0),
+      color: const Color(0xFFF8FAFC),
+      padding: const EdgeInsets.fromLTRB(20.0, 16.0, 20.0, 12.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  greeting + (name.isNotEmpty ? name : 'Guest'),
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0F172A),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 5),
+                // Top row: Location & status pill
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.location_on_rounded,
-                      color: Color(0xFF1A56DB),
-                      size: 12,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      "Mysuru",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: const Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x06000000),
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        '● Workers online',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          color: const Color(0xFF15803D),
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.location_on_rounded,
+                            color: Color(0xFF2563EB),
+                            size: 13,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "Mysuru",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11.5,
+                              color: const Color(0xFF334155),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            width: 3,
+                            height: 3,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF94A3B8),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF22C55E),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "Online",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: const Color(0xFF16A34A),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  greeting + (name.isNotEmpty ? name : 'Guest'),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0F172A),
+                    letterSpacing: -0.6,
+                    height: 1.15,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
+          const SizedBox(width: 12),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Notification Bell button
               GestureDetector(
                 onTap: onNotificationTap,
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 42,
+                      height: 42,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(14),
                         boxShadow: const [
                           BoxShadow(
                             color: Color(0x0A000000),
-                            blurRadius: 12,
+                            blurRadius: 10,
                             offset: Offset(0, 3),
                           ),
                         ],
@@ -126,27 +165,38 @@ class DashboardHeader extends StatelessWidget {
                         },
                         child: const Icon(
                           Icons.notifications_none_rounded,
-                          color: Color(0xFF0F172A),
-                          size: 20,
+                          color: Color(0xFF1E293B),
+                          size: 21,
                         ),
                       ),
                     ),
                     if (notificationCount > 0)
                       Positioned(
-                        right: -2,
-                        top: -2,
+                        right: -3,
+                        top: -3,
                         child: Container(
-                          padding: const EdgeInsets.all(4.0),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFDC2626),
-                            shape: BoxShape.circle,
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x33DC2626),
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Text(
                             '$notificationCount',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w900,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
                             ),
                           ),
                         ),
@@ -155,20 +205,40 @@ class DashboardHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
+              // User Monogram Avatar
               GestureDetector(
                 onTap: () {
                   HapticFeedback.lightImpact();
                   context.go('/user/profile');
                 },
                 child: Container(
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF1A56DB), width: 1.5),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0A000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  padding: const EdgeInsets.all(1.5),
-                  child: CircleAvatar(
-                    radius: 18,
-                    backgroundColor: const Color(0xFFEFF6FF),
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
                     child: Text(
                       name.trim().isEmpty || name == 'Loading...'
                           ? 'U'
@@ -180,9 +250,10 @@ class DashboardHeader extends StatelessWidget {
                               .join()
                               .toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF1A56DB),
-                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
                         fontSize: 12,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -545,7 +544,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
     final recentAsync = ref.watch(recentJobsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFF),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: NotificationListener<ScrollNotification>(
           onNotification: (ScrollNotification scroll) {
@@ -596,153 +595,202 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
-                  // --- EMERGENCY LANDING CTA (Primary Action) — Clean Minimal Light Card
+                  // --- EMERGENCY HERO CARD (Premium Minimalist Light Aesthetic)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20.0, 8.0, 20.0, 16.0),
-                      // ── Light premium card ──
+                      padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 14.0),
                       child: Container(
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(24.0),
-                          boxShadow: [
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1.2,
+                          ),
+                          boxShadow: const [
                             BoxShadow(
-                              color: const Color(0x0A000000),
-                              blurRadius: 24,
-                              offset: const Offset(0, 10),
-                            ),
-                            BoxShadow(
-                              color: const Color(0xFFDC2626).withValues(alpha: 0.02),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
+                              color: Color(0x08000000),
+                              blurRadius: 20,
+                              offset: Offset(0, 8),
                             ),
                           ],
-                          border: Border.all(
-                            color: const Color(0xFFF1F5F9),
-                            width: 1,
-                          ),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24.0),
+                        child: Padding(
+                          padding: const EdgeInsets.all(22.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Red accent top strip
-                              Container(
-                                height: 3,
-                                decoration: const BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [Color(0xFFDC2626), Color(0xFFEF4444), Color(0xFFFCA5A5)],
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Live badge
-                                    Row(
+                              // Live indicator tag + badge
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFF1F2),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: const Color(0xFFFFE4E6),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Container(
                                           width: 7,
                                           height: 7,
                                           decoration: const BoxDecoration(
-                                            color: Color(0xFFEF4444),
+                                            color: Color(0xFFE11D48),
                                             shape: BoxShape.circle,
                                           ),
                                         )
                                         .animate(onPlay: (c) => c.repeat(reverse: true))
-                                        .scaleXY(begin: 0.7, end: 1.3, duration: 700.ms),
-                                        const SizedBox(width: 7),
+                                        .scaleXY(begin: 0.75, end: 1.3, duration: 700.ms),
+                                        const SizedBox(width: 6),
                                         Text(
-                                          'Emergency dispatch active',
+                                          'Priority Dispatch',
                                           style: GoogleFonts.plusJakartaSans(
-                                            color: const Color(0xFFEF4444),
+                                            color: const Color(0xFFE11D48),
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.2,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF1F5F9),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.flash_on_rounded,
+                                          size: 13,
+                                          color: Color(0xFFD97706),
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          'Fastest response',
+                                          style: GoogleFonts.plusJakartaSans(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
-                                            letterSpacing: 0.3,
+                                            color: const Color(0xFF475569),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 14),
-                                    Text(
-                                      'Need help now?',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 26,
-                                        fontWeight: FontWeight.w800,
-                                        color: const Color(0xFF0F172A),
-                                        height: 1.1,
-                                        letterSpacing: -0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      'Get a verified local worker in 30 minutes.',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        color: const Color(0xFF475569),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    // CTA Button
-                                    ScaleOnTap(
-                                      onTap: () {
-                                        HapticFeedback.heavyImpact();
-                                        ref.read(postJobProvider.notifier).reset();
-                                        ref.read(postJobProvider.notifier).setEmergency(true);
-                                        context.push('/user/post-job/step1');
-                                      },
-                                      child: Container(
-                                        width: double.infinity,
-                                        height: 52,
-                                        decoration: BoxDecoration(
-                                          gradient: const LinearGradient(
-                                            colors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(
-                                              Icons.flash_on_rounded,
-                                              color: Colors.white,
-                                              size: 18,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Get Emergency Help',
-                                              style: GoogleFonts.plusJakartaSans(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 15,
-                                                letterSpacing: 0.2,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 18),
-                                    // Stats row inside card
-                                    Row(
-                                      children: [
-                                        _StatPill(label: '30 min', sublabel: 'Avg arrival'),
-                                        const SizedBox(width: 10),
-                                        _StatPill(label: '500+', sublabel: 'Workers'),
-                                        const SizedBox(width: 10),
-                                        _StatPill(label: '4.8★', sublabel: 'Rated'),
-                                      ],
-                                    ),
-                                  ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Need help right now?',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF0F172A),
+                                  letterSpacing: -0.6,
+                                  height: 1.15,
                                 ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                'Connect with verified top-rated professionals near you in under 30 minutes.',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF64748B),
+                                  height: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              // CTA Button with refined warm vermilion gradient & elegant soft shadow
+                              ScaleOnTap(
+                                onTap: () {
+                                  HapticFeedback.heavyImpact();
+                                  ref.read(postJobProvider.notifier).reset();
+                                  ref.read(postJobProvider.notifier).setEmergency(true);
+                                  context.push('/user/post-job/step1');
+                                },
+                                child: Container(
+                                  width: double.infinity,
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFFE11D48), Color(0xFFBE123C)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Color(0x38BE123C),
+                                        blurRadius: 16,
+                                        offset: Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.bolt_rounded,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Request Instant Help',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                          letterSpacing: 0.1,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      const Icon(
+                                        Icons.arrow_forward_rounded,
+                                        color: Colors.white70,
+                                        size: 16,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              // Sleek stat pills row
+                              Row(
+                                children: [
+                                  _StatPill(
+                                    icon: Icons.timer_outlined,
+                                    iconColor: const Color(0xFFE11D48),
+                                    label: '30 min',
+                                    sublabel: 'Avg response',
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _StatPill(
+                                    icon: Icons.people_outline_rounded,
+                                    iconColor: const Color(0xFF2563EB),
+                                    label: '500+',
+                                    sublabel: 'Verified pros',
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _StatPill(
+                                    icon: Icons.star_rounded,
+                                    iconColor: const Color(0xFFF59E0B),
+                                    label: '4.8★',
+                                    sublabel: 'Customer score',
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -751,36 +799,37 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
-                  // --- TRUST INDICATORS STRIP (minimal)
+                  // --- TRUST INDICATORS STRIP (Clean borderless pills)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20.0, 0, 20.0, 20.0),
+                      padding: const EdgeInsets.fromLTRB(20.0, 2.0, 20.0, 16.0),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
                         child: Row(
                           children: [
                             _TrustChip(
-                              icon: Icons.verified_rounded,
+                              icon: Icons.verified_user_rounded,
                               color: const Color(0xFF16A34A),
                               label: 'Verified Workers',
                             ),
                             const SizedBox(width: 8),
                             _TrustChip(
-                              icon: Icons.timer_rounded,
-                              color: const Color(0xFFDC2626),
-                              label: '30-Min Response',
+                              icon: Icons.bolt_rounded,
+                              color: const Color(0xFFE11D48),
+                              label: '30-Min Arrival',
                             ),
                             const SizedBox(width: 8),
                             _TrustChip(
-                              icon: Icons.my_location_rounded,
+                              icon: Icons.near_me_rounded,
                               color: const Color(0xFF2563EB),
-                              label: 'Live Tracking',
+                              label: 'Live GPS',
                             ),
                             const SizedBox(width: 8),
                             _TrustChip(
-                              icon: Icons.shield_rounded,
+                              icon: Icons.security_rounded,
                               color: const Color(0xFFEA580C),
-                              label: 'Insured Jobs',
+                              label: 'Insured Work',
                             ),
                           ],
                         ),
@@ -788,39 +837,50 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 4)),
-
-                  // --- SEARCH BAR
+                  // --- SEARCH BAR (Floating luxury pill)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: GestureDetector(
                         onTap: () => context.push('/user/worker-search'),
                         child: Container(
-                          height: 52.0,
-                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                          height: 54.0,
+                          padding: const EdgeInsets.symmetric(horizontal: 18.0),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(30.0),
+                            borderRadius: BorderRadius.circular(18.0),
+                            border: Border.all(
+                              color: const Color(0xFFE2E8F0),
+                              width: 1.2,
+                            ),
                             boxShadow: const [
                               BoxShadow(
-                                color: Color(0x14000000), // Shadow: rgba(0,0,0,0.08)
-                                blurRadius: 20,
+                                color: Color(0x0A000000),
+                                blurRadius: 16,
                                 offset: Offset(0, 4),
                               ),
                             ],
                           ),
                           child: Row(
                             children: [
-                              const Icon(
-                                Icons.search_rounded,
-                                color: Color(0xFF1A56DB),
-                                size: 24,
+                              Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  Icons.search_rounded,
+                                  color: Color(0xFF2563EB),
+                                  size: 20,
+                                ),
                               ),
                               const SizedBox(width: 12.0),
                               Expanded(
                                 child: Text(
-                                  "Search emergency electrician, plumber...",
+                                  "Search electrician, plumber, AC...",
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 14,
                                     color: const Color(0xFF64748B),
@@ -832,16 +892,22 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                                 onTap: () {
                                   showDialog(
                                     context: context,
-                                    barrierColor: Colors.black.withValues(alpha: 0.15),
+                                    barrierColor: Colors.black.withValues(alpha: 0.2),
                                     builder: (context) => const VoiceSearchOverlay(),
                                   );
                                 },
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                                  child: Icon(
+                                child: Container(
+                                  width: 34,
+                                  height: 34,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF7ED),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Icon(
                                     Icons.mic_rounded,
-                                    color: Colors.orange,
-                                    size: 20,
+                                    color: Color(0xFFEA580C),
+                                    size: 18,
                                   ),
                                 ),
                               ),
@@ -852,7 +918,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 28.0)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24.0)),
 
                   // --- CATEGORY GRID TITLE
                   SliverToBoxAdapter(
@@ -863,18 +929,22 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                         children: [
                           Row(
                             children: [
-                              const Icon(
-                                Icons.warning_amber_rounded,
-                                color: Color(0xFFDC2626),
-                                size: 16,
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFE11D48),
+                                  shape: BoxShape.circle,
+                                ),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 8),
                               Text(
                                 'Emergency Services',
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 18,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w800,
                                   color: const Color(0xFF0F172A),
+                                  letterSpacing: -0.3,
                                 ),
                               ),
                             ],
@@ -885,7 +955,12 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                               context.push('/user/book');
                             },
                             style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: const BorderSide(color: Color(0xFFE2E8F0)),
+                              ),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
@@ -894,16 +969,16 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                                 Text(
                                   "All Services",
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF1A56DB),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF2563EB),
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 const Icon(
                                   Icons.arrow_forward_rounded,
-                                  color: Color(0xFF1A56DB),
-                                  size: 14,
+                                  color: Color(0xFF2563EB),
+                                  size: 13,
                                 ),
                               ],
                             ),
@@ -1040,14 +1115,31 @@ class _TrustChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(30),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x05000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 6),
+          Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(icon, size: 11, color: color),
+          ),
+          const SizedBox(width: 7),
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
@@ -1064,19 +1156,26 @@ class _TrustChip extends StatelessWidget {
 
 /// Compact stat pill for inside the light CTA card
 class _StatPill extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
   final String label;
   final String sublabel;
 
-  const _StatPill({required this.label, required this.sublabel});
+  const _StatPill({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.sublabel,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         decoration: BoxDecoration(
           color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: const Color(0xFFE2E8F0),
             width: 1,
@@ -1085,22 +1184,35 @@ class _StatPill extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFF0F172A),
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              children: [
+                Icon(icon, size: 14, color: iconColor),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFF0F172A),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Text(
               sublabel,
               style: GoogleFonts.plusJakartaSans(
                 color: const Color(0xFF64748B),
                 fontSize: 10,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
