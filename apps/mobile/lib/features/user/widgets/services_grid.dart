@@ -17,6 +17,9 @@ class EmergencyServiceConfig {
   final IconData iconData;
   final String rating;
   final String jobsCount;
+  final String startingPrice;
+  final String strikePrice;
+  final String perk;
 
   const EmergencyServiceConfig({
     required this.id,
@@ -28,6 +31,9 @@ class EmergencyServiceConfig {
     required this.iconData,
     required this.rating,
     required this.jobsCount,
+    required this.startingPrice,
+    required this.strikePrice,
+    required this.perk,
   });
 }
 
@@ -52,6 +58,9 @@ class ServicesGrid extends ConsumerWidget {
       iconData: Icons.electrical_services_rounded,
       rating: '4.9',
       jobsCount: '1.2k',
+      startingPrice: '₹199',
+      strikePrice: '₹299',
+      perk: 'Zero inspection fee',
     ),
     'emergency_plumbing': EmergencyServiceConfig(
       id: 'emergency_plumbing',
@@ -63,6 +72,9 @@ class ServicesGrid extends ConsumerWidget {
       iconData: Icons.plumbing_rounded,
       rating: '4.8',
       jobsCount: '980',
+      startingPrice: '₹149',
+      strikePrice: '₹249',
+      perk: '30-day warranty',
     ),
     'water_leakage': EmergencyServiceConfig(
       id: 'water_leakage',
@@ -74,6 +86,9 @@ class ServicesGrid extends ConsumerWidget {
       iconData: Icons.water_damage_rounded,
       rating: '4.9',
       jobsCount: '1.5k',
+      startingPrice: '₹199',
+      strikePrice: '₹299',
+      perk: 'Rapid pipe seal',
     ),
     'power_outage': EmergencyServiceConfig(
       id: 'power_outage',
@@ -85,6 +100,9 @@ class ServicesGrid extends ConsumerWidget {
       iconData: Icons.power_off_rounded,
       rating: '4.9',
       jobsCount: '850',
+      startingPrice: '₹249',
+      strikePrice: '₹349',
+      perk: 'Safety check',
     ),
     'locked_out_of_home': EmergencyServiceConfig(
       id: 'locked_out_of_home',
@@ -96,6 +114,9 @@ class ServicesGrid extends ConsumerWidget {
       iconData: Icons.vpn_key_rounded,
       rating: '4.9',
       jobsCount: '2.1k',
+      startingPrice: '₹199',
+      strikePrice: '₹299',
+      perk: 'Safe unlock',
     ),
     'ac_breakdown': EmergencyServiceConfig(
       id: 'ac_breakdown',
@@ -107,6 +128,9 @@ class ServicesGrid extends ConsumerWidget {
       iconData: Icons.ac_unit_rounded,
       rating: '4.8',
       jobsCount: '740',
+      startingPrice: '₹299',
+      strikePrice: '₹449',
+      perk: 'Deep coil clean',
     ),
   };
 
@@ -125,16 +149,19 @@ class ServicesGrid extends ConsumerWidget {
     final int crossAxisCount;
     final double childAspectRatio;
 
-    if (screenWidth >= 1024) {
+    if (screenWidth >= 1100) {
       crossAxisCount = 3;
-      childAspectRatio = 1.45;
-    } else if (screenWidth >= 600) {
+      childAspectRatio = 1.95;
+    } else if (screenWidth >= 768) {
+      crossAxisCount = 3;
+      childAspectRatio = 1.65;
+    } else if (screenWidth >= 540) {
       crossAxisCount = 2;
-      childAspectRatio = 1.35;
+      childAspectRatio = 1.6;
     } else {
-      // Mobile 2-column: perfect proportion (compact, rich, no dead white space)
+      // Standard mobile phone screen (e.g. 360px - 430px)
       crossAxisCount = 2;
-      childAspectRatio = 1.15;
+      childAspectRatio = 1.14;
     }
 
     return GridView.builder(
@@ -228,10 +255,10 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isHovered
-                    ? cfg.accentColor.withValues(alpha: 0.5)
+                    ? cfg.accentColor.withValues(alpha: 0.45)
                     : const Color(0xFFE2E8F0),
                 width: 1.0,
               ),
@@ -246,25 +273,25 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.symmetric(horizontal: 11.0, vertical: 10.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Top Bar: Icon + Availability Pill + Bookmark
+                    // 1. Top Bar: Icon + Live Pill Badge
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
-                          width: 38,
-                          height: 38,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             color: cfg.bgTint,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: cfg.accentColor.withValues(alpha: 0.2),
+                              color: cfg.accentColor.withValues(alpha: 0.18),
                               width: 1,
                             ),
                           ),
@@ -272,7 +299,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                           child: Icon(
                             cfg.iconData,
                             color: cfg.accentColor,
-                            size: 20,
+                            size: 19,
                           ),
                         ),
                         const Spacer(),
@@ -308,7 +335,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                       ],
                     ),
 
-                    // Middle: Title & Arrival info
+                    // 2. Middle Section: Title + Arrival + Rating
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -319,7 +346,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                             fontSize: 13,
                             color: const Color(0xFF0F172A),
                             letterSpacing: -0.3,
-                            height: 1.2,
+                            height: 1.15,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -338,7 +365,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                                 cfg.subtitle,
                                 style: GoogleFonts.plusJakartaSans(
                                   color: const Color(0xFF64748B),
-                                  fontSize: 11,
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 maxLines: 1,
@@ -347,43 +374,136 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 4),
+                        // Rating & Verified row
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star_rounded, size: 13, color: Color(0xFFF59E0B)),
+                              const SizedBox(width: 2),
+                              Text(
+                                cfg.rating,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '(${cfg.jobsCount})',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF94A3B8),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Container(
+                                width: 3,
+                                height: 3,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFCBD5E1),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.verified_rounded, size: 11, color: Color(0xFF16A34A)),
+                              const SizedBox(width: 2),
+                              Text(
+                                'Verified',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF16A34A),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
 
-                    // Bottom Row: Rating + Quick Action
+                    // 3. Urban Company Value Perk Chip
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.shield_outlined, size: 10, color: const Color(0xFF64748B)),
+                          const SizedBox(width: 3),
+                          Text(
+                            cfg.perk,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF475569),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // 4. Bottom Row: Price & Book Pill
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
-                            const SizedBox(width: 2),
-                            Text(
-                              cfg.rating,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF0F172A),
-                              ),
+                            Row(
+                              children: [
+                                Text(
+                                  'From ',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFF94A3B8),
+                                  ),
+                                ),
+                                Text(
+                                  cfg.strikePrice,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 9,
+                                    decoration: TextDecoration.lineThrough,
+                                    color: const Color(0xFFCBD5E1),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 3),
                             Text(
-                              '(${cfg.jobsCount})',
+                              cfg.startingPrice,
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF94A3B8),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0F172A),
+                                letterSpacing: -0.2,
                               ),
                             ),
                           ],
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                           decoration: BoxDecoration(
-                            color: cfg.accentColor.withValues(alpha: 0.1),
+                            color: cfg.accentColor,
                             borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: cfg.accentColor.withValues(alpha: 0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -391,16 +511,16 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                               Text(
                                 'Book',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11,
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.w700,
-                                  color: cfg.accentColor,
+                                  color: Colors.white,
                                 ),
                               ),
                               const SizedBox(width: 2),
-                              Icon(
+                              const Icon(
                                 Icons.arrow_forward_rounded,
-                                size: 11,
-                                color: cfg.accentColor,
+                                size: 10.5,
+                                color: Colors.white,
                               ),
                             ],
                           ),
