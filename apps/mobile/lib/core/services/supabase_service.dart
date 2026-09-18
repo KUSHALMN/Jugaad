@@ -156,28 +156,44 @@ class SupabaseService {
 
       List<Map<String, dynamic>> workers = List<Map<String, dynamic>>.from(response);
 
-      // Filter to approved workers
-      workers = workers.where((w) {
-        final st = (w['status'] ?? w['approval_status'] ?? 'approved').toString().toLowerCase();
-        return st == 'approved';
+      // Filter to approved/verified workers without dropping offline approved pros
+      final approved = workers.where((w) {
+        final approval = (w['approval_status'] ?? '').toString().toLowerCase();
+        final status = (w['status'] ?? '').toString().toLowerCase();
+        final isVer = (w['is_verified'] == true || w['isVerified'] == true || w['id_verified'] == true || w['is_seed_verified'] == true);
+        return approval == 'approved' || approval == 'verified' || approval == 'active' ||
+               status == 'approved' || status == 'verified' || status == 'active' || status == 'online' ||
+               isVer ||
+               (approval.isEmpty && status != 'rejected' && status != 'suspended');
       }).toList();
 
-      if (category != null && category.trim().isNotEmpty && category.toLowerCase() != 'all') {
-        final normalizedCat = category.toLowerCase().replaceAll(' ', '_');
-        final filtered = workers.where((w) {
-          final cat = (w['category'] ?? w['work_category'] ?? '').toString().toLowerCase();
-          final skills = List<String>.from(w['skills'] as List? ?? []).map((s) => s.toLowerCase().replaceAll(' ', '_')).toList();
-          final specs = List<String>.from(w['specialities'] as List? ?? []).map((s) => s.toLowerCase().replaceAll(' ', '_')).toList();
-          
-          return cat.contains(normalizedCat) ||
-                 normalizedCat.contains(cat) ||
-                 skills.any((s) => s.contains(normalizedCat) || normalizedCat.contains(s)) ||
-                 specs.any((s) => s.contains(normalizedCat) || normalizedCat.contains(s));
-        }).toList();
+      if (approved.isNotEmpty) {
+        workers = approved;
+      }
 
-        if (filtered.isNotEmpty) {
-          workers = filtered;
+      if (category != null && category.trim().isNotEmpty) {
+        final normalizedCat = category.trim().toLowerCase().replaceAll(' ', '_');
+        final genericTerms = {'all', 'service', 'services', 'general', 'service_specialist', 'pro', 'helper', 'specialists'};
+        if (!genericTerms.contains(normalizedCat)) {
+          final filtered = workers.where((w) {
+            final cat = (w['category'] ?? w['work_category'] ?? '').toString().toLowerCase();
+            final skills = List<String>.from(w['skills'] as List? ?? []).map((s) => s.toLowerCase().replaceAll(' ', '_')).toList();
+            final specs = List<String>.from(w['specialities'] as List? ?? []).map((s) => s.toLowerCase().replaceAll(' ', '_')).toList();
+            
+            return cat.contains(normalizedCat) ||
+                   normalizedCat.contains(cat) ||
+                   skills.any((s) => s.contains(normalizedCat) || normalizedCat.contains(s)) ||
+                   specs.any((s) => s.contains(normalizedCat) || normalizedCat.contains(s));
+          }).toList();
+
+          if (filtered.isNotEmpty) {
+            workers = filtered;
+          }
         }
+      }
+
+      if (workers.isEmpty) {
+        workers = getMysoreFallbackWorkers(category: category, limit: limit);
       }
 
       // Sort by rating DESC, total_jobs DESC
