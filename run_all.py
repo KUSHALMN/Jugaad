@@ -19,7 +19,17 @@ import subprocess
 import argparse
 import threading
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+# Resolve repository root whether invoked from root or from within apps/
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if os.path.exists(os.path.join(current_dir, "apps")):
+    ROOT_DIR = current_dir
+elif os.path.exists(os.path.join(current_dir, "..", "..", "apps")):
+    ROOT_DIR = os.path.abspath(os.path.join(current_dir, "..", ".."))
+elif os.path.exists(os.path.join(current_dir, "..", "apps")):
+    ROOT_DIR = os.path.abspath(os.path.join(current_dir, ".."))
+else:
+    ROOT_DIR = current_dir
+
 BACKEND_DIR = os.path.join(ROOT_DIR, "apps", "backend")
 MOBILE_DIR = os.path.join(ROOT_DIR, "apps", "mobile")
 ADMIN_DIR = os.path.join(ROOT_DIR, "apps", "admin")
@@ -105,15 +115,15 @@ def main():
             os.system(cmd_admin)
 
         if run_mobile:
-            device_flag = f"-d {args.device}" if args.device else ""
-            print("[2/2] Launching Flutter Mobile in dedicated window...")
-            cmd_mobile = f'start "Jugaad Flutter Mobile" cmd /k "cd /d {MOBILE_DIR} && flutter run {device_flag}"'
+            target_dev = args.device if args.device else "chrome"
+            print(f"[2/2] Launching Flutter Mobile (-d {target_dev}) in dedicated window...")
+            cmd_mobile = f'start "Jugaad Flutter Mobile" cmd /k "cd /d {MOBILE_DIR} && flutter run -d {target_dev}"'
             os.system(cmd_mobile)
 
         print("\n" + "=" * 60)
         print("  [SUCCESS] Both Backend and Frontend are now RUNNING!")
         print("  - Backend API:    http://localhost:8000 (Swagger docs at /docs)")
-        print("  - Flutter Mobile: Compiling and running in dedicated window")
+        print(f"  - Flutter Mobile: Compiling on '{target_dev}' in dedicated window")
         print("    (You can press 'r' to hot-reload in the Flutter window)")
         if run_web:
             print("  - Admin Web:      http://localhost:5173")
@@ -154,9 +164,8 @@ def main():
     # 3. Start Flutter Mobile if requested
     if run_mobile:
         flutter_cmd = "flutter.bat" if sys.platform == "win32" else "flutter"
-        flutter_args = [flutter_cmd, "run"]
-        if args.device:
-            flutter_args.extend(["-d", args.device])
+        target_dev = args.device if args.device else "chrome"
+        flutter_args = [flutter_cmd, "run", "-d", target_dev]
 
         print(f"--> [Starting] Flutter Mobile ({' '.join(flutter_args)})...")
         mobile_proc = subprocess.Popen(
