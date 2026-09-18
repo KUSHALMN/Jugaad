@@ -431,16 +431,25 @@ def resolve_search_category(query: Optional[str]) -> tuple[str, bool]:
         return "", True
     clean = query.strip().lower().replace("-", " ").replace("_", " ")
     tokens = [t.strip() for t in clean.split() if t.strip()]
-    if not tokens or clean in ["all", "none", "*", "any"]:
+    GENERIC_ALL_TERMS = {
+        "all", "none", "*", "any", "service", "services", "service specialist",
+        "service specialists", "general", "expert", "experts", "worker", "workers",
+        "pro", "pros", "helper", "helpers", "service expert", "service pros"
+    }
+    if not tokens or clean in GENERIC_ALL_TERMS:
         return "", True
-    
+
+    GENERIC_WORDS = {"repair", "service", "fix", "care", "worker", "pro", "center", "expert", "specialist", "helper"}
+    non_generic = [w for w in tokens if w not in GENERIC_WORDS]
+    if not non_generic:
+        return "", True
+
     # 1. Exact canonical category match
     for cat in SERVICE_KEYWORD_MAP.keys():
         if clean == cat.replace("_", " "):
             return cat, False
 
     # 2. Match primary root domain words in query (e.g. 'laptop', 'phone', 'plumber', 'electrician', 'painter')
-    GENERIC_WORDS = {"repair", "service", "fix", "care", "worker", "pro", "center", "center"}
     for word in tokens:
         if word in GENERIC_WORDS:
             continue
