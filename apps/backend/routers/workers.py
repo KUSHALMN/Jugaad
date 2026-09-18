@@ -741,17 +741,31 @@ def search_workers(
                     status_map = {}
                     if w_ids:
                         try:
-                            st_res = supabase.table("workers").select("id, status, approval_status").in_("id", w_ids).execute()
+                            st_res = supabase.table("workers").select("id, status, approval_status, is_verified, isVerified").in_("id", w_ids).execute()
                             for row in (st_res.data or []):
-                                status_map[str(row["id"])] = str(row.get("status") or row.get("approval_status") or "pending_approval").lower()
+                                appr = str(row.get("approval_status") or "").lower()
+                                stat = str(row.get("status") or "").lower()
+                                status_map[str(row["id"])] = (
+                                    appr in ["approved", "verified", "active"] or
+                                    stat in ["approved", "verified", "active", "online"] or
+                                    bool(row.get("is_verified", row.get("isVerified", False)))
+                                )
                         except Exception:
                             pass
 
                     formatted_workers = []
                     for w in workers_data:
                         wid = str(w["id"])
-                        w_st = status_map.get(wid) or str(w.get("status") or w.get("approval_status") or "pending_approval").lower()
-                        if w_st not in ["approved", "verified", "active"]:
+                        is_appr = status_map.get(wid)
+                        if is_appr is None:
+                            appr = str(w.get("approval_status") or "").lower()
+                            stat = str(w.get("status") or "").lower()
+                            is_appr = (
+                                appr in ["approved", "verified", "active"] or
+                                stat in ["approved", "verified", "active", "online"] or
+                                bool(w.get("is_verified", w.get("isVerified", True)))
+                            )
+                        if not is_appr:
                             continue
                         dist_val = w.get("distance_meters") or w.get("distance_m") or 0.0
                         formatted_workers.append({
@@ -839,8 +853,15 @@ def search_workers(
         if not (is_act and is_avail):
             continue
 
-        w_st = str(w.get("status") or w.get("approval_status") or "approved").lower()
-        if w_st not in ["approved", "verified", "active"]:
+        w_appr = str(w.get("approval_status") or "").lower()
+        w_stat = str(w.get("status") or "").lower()
+        is_approved = (
+            w_appr in ["approved", "verified", "active"] or
+            w_stat in ["approved", "verified", "active", "online"] or
+            bool(w.get("is_verified") or w.get("isVerified") or w.get("is_seed_verified")) or
+            (not w_appr and w_stat != "rejected" and w_stat != "suspended")
+        )
+        if not is_approved:
             continue
 
         loc_val = w.get("location")
