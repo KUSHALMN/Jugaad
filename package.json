@@ -1,0 +1,16 @@
+{
+  "name": "jugaad-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jugaad Hyperlocal Marketplace Workspace",
+  "scripts": {
+    "start": "python run_all.py",
+    "dev": "python run_all.py",
+    "dev:web": "python run_all.py --web",
+    "dev:all": "python run_all.py --all",
+    "dev:windows": "python run_all.py -w",
+    "backend": "cd apps/backend && python main.py",
+    "admin": "cd apps/admin && npm run dev",
+    "mobile": "cd apps/mobile && flutter run"
+  }
+}
