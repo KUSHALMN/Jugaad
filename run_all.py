@@ -71,7 +71,7 @@ def main():
     parser.add_argument("--all", action="store_true", help="Run Backend, Flutter Mobile, AND Admin Web")
     parser.add_argument("--backend-only", action="store_true", help="Run only Backend")
     parser.add_argument("-d", "--device", type=str, default="", help="Target Flutter device (e.g. chrome, windows, android)")
-    parser.add_argument("-w", "--windows", action="store_true", help="Open each service in its own dedicated command window")
+    parser.add_argument("-i", "--inline", action="store_true", help="Stream all logs in the same terminal instead of separate windows")
     args = parser.parse_args()
 
     signal.signal(signal.SIGINT, kill_all_processes)
@@ -89,13 +89,15 @@ def main():
 
     print_banner(mode_str)
 
-    if args.windows and sys.platform == "win32":
-        # Launch each in its own styled CMD window on Windows
-        print("[1/3] Launching FastAPI Backend in dedicated window...")
+    # On Windows, launch in dedicated windows by default unless --inline is specified
+    use_windows = (sys.platform == "win32") and not args.inline
+
+    if use_windows:
+        print("[1/2] Launching FastAPI Backend in dedicated window...")
         cmd_backend = f'start "Jugaad Backend API (Port 8000)" cmd /k "cd /d {BACKEND_DIR} && python main.py"'
         os.system(cmd_backend)
 
-        time.sleep(1.5)
+        time.sleep(2)
 
         if run_web:
             print("[2/3] Launching Admin Web in dedicated window...")
@@ -104,12 +106,18 @@ def main():
 
         if run_mobile:
             device_flag = f"-d {args.device}" if args.device else ""
-            print("[3/3] Launching Flutter Mobile in dedicated window...")
+            print("[2/2] Launching Flutter Mobile in dedicated window...")
             cmd_mobile = f'start "Jugaad Flutter Mobile" cmd /k "cd /d {MOBILE_DIR} && flutter run {device_flag}"'
             os.system(cmd_mobile)
 
-        print("\nAll requested services have been launched in separate terminal windows.")
-        print("You can interact with Flutter hot-reload (r/R) directly in its window.")
+        print("\n" + "=" * 60)
+        print("  [SUCCESS] Both Backend and Frontend are now RUNNING!")
+        print("  - Backend API:    http://localhost:8000 (Swagger docs at /docs)")
+        print("  - Flutter Mobile: Compiling and running in dedicated window")
+        print("    (You can press 'r' to hot-reload in the Flutter window)")
+        if run_web:
+            print("  - Admin Web:      http://localhost:5173")
+        print("=" * 60 + "\n")
         return
 
     # In-terminal process management with log streaming
