@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shimmer/shimmer.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/config/services_list.dart';
@@ -46,18 +45,31 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
     final servicesAsync = ref.watch(servicesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(
-          'All Services',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-            fontSize: 19,
-            letterSpacing: -0.3,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'All Services',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+                fontSize: 20,
+                letterSpacing: -0.5,
+              ),
+            ),
+            Text(
+              'Select a specialist for instant booking',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF64748B),
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
-        backgroundColor: AppColors.background,
+        backgroundColor: const Color(0xFFF8FAFC),
         elevation: 0,
         scrolledUnderElevation: 0,
         automaticallyImplyLeading: true,
@@ -66,13 +78,14 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 4),
             // Filter Pills
             Container(
-              height: 48,
-              margin: const EdgeInsets.only(bottom: 12),
+              height: 44,
+              margin: const EdgeInsets.only(bottom: 10),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 2.0),
                 itemCount: _categories.length,
                 itemBuilder: (context, index) {
                   final category = _categories[index];
@@ -88,32 +101,38 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
                             _selectedCategory = category;
                           });
                         },
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(14),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary : const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(20),
+                            color: isSelected ? const Color(0xFF2563EB) : Colors.white,
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+                              color: isSelected ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
                               width: 1,
                             ),
                             boxShadow: isSelected
                                 ? [
-                                    BoxShadow(
-                                      color: AppColors.primary.withValues(alpha: 0.25),
+                                    const BoxShadow(
+                                      color: Color(0x332563EB),
                                       blurRadius: 8,
-                                      offset: const Offset(0, 3),
+                                      offset: Offset(0, 3),
                                     ),
                                   ]
-                                : [],
+                                : [
+                                    const BoxShadow(
+                                      color: Color(0x05000000),
+                                      blurRadius: 4,
+                                      offset: Offset(0, 1),
+                                    ),
+                                  ],
                           ),
                           child: Center(
                             child: Text(
                               category,
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12.5,
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                                 color: isSelected ? Colors.white : const Color(0xFF475569),
                               ),
@@ -165,24 +184,24 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
 
     if (screenWidth >= 1024) {
       crossAxisCount = 4;
-      childAspectRatio = 1.35;
+      childAspectRatio = 1.45;
     } else if (screenWidth >= 600) {
       crossAxisCount = 3;
-      childAspectRatio = 1.25;
+      childAspectRatio = 1.35;
     } else {
+      // Mobile: compact 2-column SaaS card with zero empty white gap
       crossAxisCount = 2;
-      childAspectRatio = 1.18;
+      childAspectRatio = 1.15;
     }
 
     return GridView.builder(
       key: ValueKey(_selectedCategory),
       physics: const BouncingScrollPhysics(),
-      cacheExtent: 500.0,
-      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        mainAxisSpacing: 10.0,
-        crossAxisSpacing: 10.0,
+        mainAxisSpacing: 12.0,
+        crossAxisSpacing: 12.0,
         childAspectRatio: childAspectRatio,
       ),
       itemCount: services.length,
@@ -241,7 +260,6 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
     final accentColor = widget.accentColor;
 
     final double scale = _isPressed ? 0.97 : (_isHovered ? 1.02 : 1.0);
-    final double translateY = _isHovered ? -3.0 : 0.0;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -257,42 +275,33 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
           scale: scale,
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOutCubic,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            transform: Matrix4.translationValues(0, translateY, 0),
+          child: Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFFFFFFF),
-                  Color(0xFFFAFBFC),
-                ],
-              ),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: _isHovered
                     ? accentColor.withValues(alpha: 0.50)
-                    : const Color(0xFFECECEC),
-                width: _isHovered ? 1.5 : 1.0,
+                    : const Color(0xFFE2E8F0),
+                width: 1.0,
               ),
               boxShadow: [
                 BoxShadow(
                   color: _isHovered
-                      ? accentColor.withValues(alpha: 0.14)
-                      : Colors.black.withValues(alpha: 0.04),
-                  blurRadius: _isHovered ? 16 : 10,
-                  offset: _isHovered ? const Offset(0, 6) : const Offset(0, 3),
+                      ? accentColor.withValues(alpha: 0.12)
+                      : const Color(0x060F172A),
+                  blurRadius: _isHovered ? 16 : 8,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: Padding(
-                padding: const EdgeInsets.all(10.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Top Row: Icon Container + Rating Badge
                     Row(
@@ -300,40 +309,42 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
-                          width: 36,
-                          height: 36,
+                          width: 38,
+                          height: 38,
                           decoration: BoxDecoration(
                             color: widget.bgTint,
-                            borderRadius: BorderRadius.circular(11),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: accentColor.withValues(alpha: 0.15),
+                              color: accentColor.withValues(alpha: 0.20),
+                              width: 1,
                             ),
                           ),
                           alignment: Alignment.center,
                           child: Icon(
                             service.icon,
                             color: accentColor,
-                            size: 18,
+                            size: 20,
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFFBEB),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: const Color(0xFFFDE68A),
+                              width: 1,
                             ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 12),
+                              const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 13),
                               const SizedBox(width: 2.5),
                               Text(
                                 service.rating.toStringAsFixed(1),
-                                style: GoogleFonts.inter(
-                                  fontSize: 10,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFF92400E),
                                 ),
@@ -344,72 +355,83 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
                       ],
                     ),
 
-                    const SizedBox(height: 7),
-
-                    // Service Title
-                    Text(
-                      service.title,
-                      style: GoogleFonts.inter(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F172A),
-                        letterSpacing: -0.2,
-                        height: 1.15,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    // Middle: Service Title & Pricing estimate
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          service.title,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F172A),
+                            letterSpacing: -0.3,
+                            height: 1.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '₹${service.priceMin.toInt()} - ₹${service.priceMax.toInt()} est.',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF64748B),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
 
-                    const SizedBox(height: 2),
-
-                    // Price Range Estimate
-                    Text(
-                      '₹${service.priceMin.toInt()} - ₹${service.priceMax.toInt()} est.',
-                      style: GoogleFonts.inter(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF64748B),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-
-                    const Spacer(),
-
-                    // Book Action Button
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                      decoration: BoxDecoration(
-                        color: _isHovered ? accentColor : accentColor.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Book Now',
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: _isHovered ? Colors.white : accentColor,
-                              letterSpacing: -0.1,
+                    // Bottom Row: Category chip & compact Book button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            service.category,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF475569),
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          AnimatedSlide(
-                            offset: _isHovered ? const Offset(0.25, 0) : Offset.zero,
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeOutCubic,
-                            child: Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 13,
-                              color: _isHovered ? Colors.white : accentColor,
-                            ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: accentColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Book',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: accentColor,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 11,
+                                color: accentColor,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
