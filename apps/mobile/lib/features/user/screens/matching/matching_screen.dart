@@ -261,14 +261,19 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
       );
       if (mounted) {
         setState(() {
-          _topRatedWorkers = workers;
+          _topRatedWorkers = workers.isNotEmpty
+              ? workers
+              : SupabaseService.getMysoreFallbackWorkers(category: skill, limit: 8);
           _isLoadingTopRated = false;
         });
       }
     } catch (e) {
       print('[MATCHING] Error fetching top rated fallback workers: $e');
       if (mounted) {
-        setState(() => _isLoadingTopRated = false);
+        setState(() {
+          _topRatedWorkers = SupabaseService.getMysoreFallbackWorkers(category: skill, limit: 8);
+          _isLoadingTopRated = false;
+        });
       }
     }
   }
