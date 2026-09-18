@@ -150,7 +150,7 @@ class SupabaseService {
     try {
       final response = await _client
           .from('workers')
-          .select('id, name, rating, total_jobs, totalJobsCompleted, skills, specialities, category, work_category, hourly_rate, is_available, status, approval_status, is_verified, isVerified, area, phone')
+          .select('*')
           .order('rating', ascending: false)
           .limit(50);
 
