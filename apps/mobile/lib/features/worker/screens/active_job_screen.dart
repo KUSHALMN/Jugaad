@@ -12,6 +12,9 @@ import 'package:jugaad_mvp/core/theme/worker_app_theme.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
 import 'package:jugaad_mvp/shared/widgets/jugaad_card.dart';
 import 'package:jugaad_mvp/shared/widgets/jugaad_button.dart';
+import 'package:jugaad_mvp/core/services/offline_queue_service.dart';
+import 'package:jugaad_mvp/core/services/offline_sync_manager.dart';
+import 'package:jugaad_mvp/core/widgets/offline_sync_banner.dart';
 
 class ActiveJobScreen extends StatefulWidget {
   final String jobId;
@@ -52,6 +55,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     });
 
     WidgetsBinding.instance.addObserver(this);
+    OfflineSyncManager().start();
     _startRealtimeListener();
 
     // Failsafe: if still loading after 10s, force empty state
@@ -280,10 +284,24 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
       await ApiService().confirmOnTheWay(widget.jobId);
       JugaadHaptics.success();
     } catch (e) {
-      print('[ACTIVE_JOB] Confirm on the way failed: $e');
+      print('[ACTIVE_JOB] Confirm on the way failed, enqueueing offline: $e');
+      await OfflineQueueService().enqueue(
+        jobId: widget.jobId,
+        actionType: 'confirm_on_the_way',
+      );
       if (mounted) {
+        setState(() {
+          if (_jobData != null) {
+            _jobData!['on_the_way'] = true;
+            _jobData!['worker_on_the_way_at'] = DateTime.now().toIso8601String();
+          }
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not confirm status: $e')),
+          const SnackBar(
+            content: Text('Status saved offline. Will sync once connected!'),
+            backgroundColor: Color(0xFFF59E0B),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -295,11 +313,27 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     setState(() => _isActioning = true);
     try {
       await ApiService().ackJob(widget.jobId);
+      JugaadHaptics.success();
     } catch (e) {
-      print('[ACTIVE_JOB] Ack failed: $e');
+      print('[ACTIVE_JOB] Ack failed, enqueueing offline: $e');
+      await OfflineQueueService().enqueue(
+        jobId: widget.jobId,
+        actionType: 'ack_arrival',
+      );
       if (mounted) {
+        setState(() {
+          if (_jobData != null) {
+            _jobData!['worker_ack'] = true;
+            _jobData!['status'] = 'in_progress';
+            _jobData!['started_at'] = DateTime.now().toIso8601String();
+          }
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not mark arrived: $e')),
+          const SnackBar(
+            content: Text('Arrival saved offline. Will sync once connected!'),
+            backgroundColor: Color(0xFFF59E0B),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -389,12 +423,22 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     setState(() => _isActioning = true);
     try {
       await ApiService().completeJob(widget.jobId, confirmer: 'worker');
+      JugaadHaptics.success();
     } catch (e) {
-      print('[ACTIVE_JOB] Complete failed: $e');
+      print('[ACTIVE_JOB] Complete failed, enqueueing offline: $e');
+      await OfflineQueueService().enqueue(
+        jobId: widget.jobId,
+        actionType: 'complete_job',
+        payload: {'confirmer': 'worker'},
+      );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not complete job: $e')),
-        );
+        setState(() {
+          if (_jobData != null) {
+            _jobData!['status'] = 'completed';
+            _jobData!['completed_at'] = DateTime.now().toIso8601String();
+          }
+        });
+        _handlePaymentReceived();
       }
     } finally {
       if (mounted) setState(() => _isActioning = false);
@@ -1240,6 +1284,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
       ),
       body: Column(
         children: [
+          const OfflineSyncBanner(),
           _buildProgressBar(),
           Expanded(
             child: SingleChildScrollView(
@@ -1319,6 +1364,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
       ),
       body: Column(
         children: [
+          const OfflineSyncBanner(),
           _buildProgressBar(),
           Expanded(
             child: SingleChildScrollView(
