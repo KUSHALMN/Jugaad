@@ -18,9 +18,17 @@ import {
   Mail,
   User,
   Clock,
-  Search
+  Search,
+  Radio,
+  ShieldAlert,
+  Zap,
+  ShieldCheck
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import RadarMapModal from './components/RadarMapModal';
+import DisputesManager from './components/DisputesManager';
+import SurgeGeofencingHub from './components/SurgeGeofencingHub';
+import EnhancedKycAudit from './components/EnhancedKycAudit';
 
 // === SECURE IMAGE LOADER COMPONENT (ADMIN-ONLY RLS BYPASS CAPABLE) ===
 const SecureImage = ({ srcUrl, className, alt, onClick }) => {
@@ -913,6 +921,10 @@ export default function JugaadOpsDashboard() {
                 { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
                 { id: 'Jobs', label: 'Jobs', icon: CheckSquare },
                 { id: 'Workers', label: 'Workers', icon: Users },
+                { id: 'Radar', label: 'Radar Map', icon: Radio },
+                { id: 'Disputes', label: 'Disputes', icon: ShieldAlert },
+                { id: 'Surge', label: 'Surge Hub', icon: Zap },
+                { id: 'KYC', label: 'KYC Suite', icon: ShieldCheck },
                 { id: 'Ops', label: 'Operations', icon: Sliders }
               ].map((tab) => {
                 const Icon = tab.icon;
@@ -1775,6 +1787,18 @@ export default function JugaadOpsDashboard() {
               </div>
             </div>
           )}
+
+          {/* ================= TAB: RADAR MAP ================= */}
+          {activeTab === 'Radar' && <RadarMapModal />}
+
+          {/* ================= TAB: DISPUTES ================= */}
+          {activeTab === 'Disputes' && <DisputesManager />}
+
+          {/* ================= TAB: SURGE HUB ================= */}
+          {activeTab === 'Surge' && <SurgeGeofencingHub />}
+
+          {/* ================= TAB: KYC SUITE ================= */}
+          {activeTab === 'KYC' && <EnhancedKycAudit />}
 
         </main>
       </div>
