@@ -290,7 +290,7 @@ export default function JugaadOpsDashboard() {
         .from('users')
         .select('role')
         .eq('id', userId)
-        .maybe_single();
+        .maybeSingle();
       
       if (data && data.role === 'admin') {
         setIsAdmin(true);
