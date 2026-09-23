@@ -11,6 +11,8 @@ import 'package:jugaad_mvp/features/user/screens/user_home_screen.dart';
 import 'package:jugaad_mvp/core/theme/user_app_theme.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
 import 'package:jugaad_mvp/core/services/api_service.dart';
+import 'package:jugaad_mvp/core/utils/kalman_filter.dart';
+import 'package:jugaad_mvp/core/utils/smooth_location_interpolator.dart';
 
 class TrackingScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -31,6 +33,31 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
   DateTime? _lastBackgroundTime;
   bool _showArrivalBanner = false;
   bool _isDialogShowing = false;
+
+  // Kalman filter & smooth trajectory estimation
+  final KalmanLatLong _kalmanFilter = KalmanLatLong(qMetersPerSecond: 2.5);
+  SmoothPosition _currentSmoothPos = const SmoothPosition(
+    lat: 12.3051,
+    lng: 76.6551,
+    bearingDegrees: 45.0,
+  );
+
+  void _updateWorkerTrackingPosition(double rawLat, double rawLng, double accuracy) {
+    _kalmanFilter.process(rawLat, rawLng, accuracy, DateTime.now().millisecondsSinceEpoch);
+    final newBearing = SmoothLocationInterpolator.computeBearing(
+      _currentSmoothPos.lat,
+      _currentSmoothPos.lng,
+      _kalmanFilter.lat,
+      _kalmanFilter.lng,
+    );
+    setState(() {
+      _currentSmoothPos = SmoothPosition(
+        lat: _kalmanFilter.lat,
+        lng: _kalmanFilter.lng,
+        bearingDegrees: newBearing,
+      );
+    });
+  }
 
   @override
   void initState() {
@@ -292,6 +319,12 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
           });
         }
       });
+    }
+
+    final wLat = (data['worker_lat'] as num?)?.toDouble() ?? (data['lat'] as num?)?.toDouble();
+    final wLng = (data['worker_lng'] as num?)?.toDouble() ?? (data['lng'] as num?)?.toDouble();
+    if (wLat != null && wLng != null) {
+      _updateWorkerTrackingPosition(wLat, wLng, 6.0);
     }
 
     setState(() {
@@ -597,7 +630,7 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
                             .scale(begin: const Offset(0.5, 0.5), end: const Offset(2.0, 2.0), duration: 2.seconds, delay: 1.seconds, curve: Curves.easeOut)
                             .fadeOut(duration: 2.seconds),
 
-                            // Main Scooter Icon Badge
+                            // Main Scooter Icon Badge with smoothed Kalman bearing
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: const BoxDecoration(
@@ -611,7 +644,10 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
                                   )
                                 ],
                               ),
-                              child: const Icon(Icons.two_wheeler_rounded, color: Colors.white, size: 24),
+                              child: Transform.rotate(
+                                angle: _currentSmoothPos.bearingRadians,
+                                child: const Icon(Icons.two_wheeler_rounded, color: Colors.white, size: 24),
+                              ),
                             ),
                           ],
                         ),
