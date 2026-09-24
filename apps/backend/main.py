@@ -168,7 +168,11 @@ from fastapi import Depends
 def update_platform_config(body: dict, admin_id: str = Depends(_verify_admin_for_config)):
     """Admin-only endpoint — updates platform-wide config row."""
     from datetime import datetime, timezone as tz
-    allowed_keys = {"surge_fee", "dispatch_radius_km", "expanded_radius_km", "sms_mode", "websockets_sync", "system_load"}
+    allowed_keys = {
+        "surge_fee", "dispatch_radius_km", "expanded_radius_km", "sms_mode",
+        "websockets_sync", "system_load", "surge_multiplier", "maintenance_mode",
+        "min_base_fare", "cancellation_fee", "auto_assign", "otp_bypass"
+    }
     update_data = {k: v for k, v in body.items() if k in allowed_keys}
     update_data["updated_at"] = datetime.now(tz.utc).isoformat()
     update_data["updated_by"] = admin_id

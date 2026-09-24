@@ -406,3 +406,58 @@ def reject_worker(
     except Exception as e:
         logger.error(f"Error rejecting worker {worker_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to reject worker: {str(e)}")
+
+
+class BroadcastPayload(BaseModel):
+    title: str
+    body: str
+    target: Optional[str] = "all"  # "all", "workers", "users"
+
+
+# ── 5. POST /api/v1/admin/broadcast — Dispatch fleet announcements ──────────
+@router.post("/broadcast")
+def broadcast_admin_notification(
+    payload: BroadcastPayload,
+    admin_id: str = Depends(verify_admin),
+):
+    """
+    Broadcast system-wide alert from Admin Console to Users and/or Workers.
+    Inserts into notifications table and creates audit log.
+    """
+    try:
+        now_iso = datetime.now(timezone.utc).isoformat()
+        notification_row = {
+            "user_id": f"all_{payload.target}",
+            "title": payload.title,
+            "body": payload.body,
+            "type": "ADMIN_BROADCAST",
+            "created_at": now_iso,
+        }
+        try:
+            supabase.table("notifications").insert(notification_row).execute()
+        except Exception as notif_err:
+            logger.warning(f"Broadcast notification insert note: {notif_err}")
+
+        # Audit log
+        try:
+            supabase.table("admin_log").insert({
+                "admin_id": admin_id,
+                "action": "ADMIN_BROADCAST",
+                "target_table": "notifications",
+                "metadata": {
+                    "target": payload.target,
+                    "title": payload.title,
+                    "sent_at": now_iso,
+                }
+            }).execute()
+        except Exception:
+            pass
+
+        return {
+            "status": "success",
+            "message": f"Broadcast dispatched to {payload.target}",
+            "broadcast": notification_row,
+        }
+    except Exception as e:
+        logger.error(f"Error dispatching broadcast: {e}")
+        raise HTTPException(status_code=500, detail=f"Broadcast failed: {str(e)}")
