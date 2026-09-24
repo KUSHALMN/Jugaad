@@ -20,6 +20,7 @@ import '../widgets/quick_rebook.dart';
 import '../widgets/recent_jobs_list.dart';
 import '../widgets/sync_alert_banner.dart';
 import 'post_job/post_job_state.dart';
+import '../../../core/services/platform_config_service.dart';
 
 // --- RIVERPOD PROVIDERS ---
 
@@ -592,6 +593,107 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                         bellShakeAnimation: _bellShakeAnimation,
                         onNotificationTap: _onNotificationTap,
                       ),
+                    ),
+                  ),
+
+                  // --- LIVE ADMIN SURGE & PLATFORM NOTICES BANNER ---
+                  SliverToBoxAdapter(
+                    child: AnimatedBuilder(
+                      animation: PlatformConfigService(),
+                      builder: (context, _) {
+                        final cfg = PlatformConfigService();
+                        if (cfg.maintenanceMode) {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(20.0, 4.0, 20.0, 10.0),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF2F2),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: const Color(0xFFFCA5A5)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.build_circle_rounded, color: Color(0xFFDC2626), size: 20),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Platform Upgrades: Scheduled maintenance in progress by Admin Ops.',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF991B1B),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        if (!cfg.isSurgeActive) return const SizedBox.shrink();
+
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(20.0, 4.0, 20.0, 10.0),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFFFBEB), Color(0xFFFEF3C7)],
+                              ),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: const Color(0xFFFDE68A)),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x08F59E0B),
+                                  blurRadius: 12,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF59E0B),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'High Demand Surge Active in Mysuru ⚡',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF92400E),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Live Admin pricing: +₹${cfg.surgeFee.toInt()} hazard guarantee enabled.',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFFB45309),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
 
