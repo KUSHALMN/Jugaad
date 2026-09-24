@@ -40,7 +40,7 @@ const ACTIVE_DISPATCH_ROUTES = [
   { id: 'r2', fromX: 195, fromY: 125, toX: 220, toY: 145, customer: 'Vikram Joshi', worker: 'Arun Prakash', eta: '9 mins' },
 ];
 
-export default function RadarMapModal() {
+export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
   const [workers, setWorkers] = useState(INITIAL_WORKERS);
   const [selectedWorker, setSelectedWorker] = useState(null);
   const [filterTrade, setFilterTrade] = useState('all');
@@ -49,6 +49,37 @@ export default function RadarMapModal() {
   const [showRoutes, setShowRoutes] = useState(true);
   const [isLivePinging, setIsLivePinging] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState(new Date().toLocaleTimeString());
+
+  // Ingest real Supabase workers when available
+  useEffect(() => {
+    if (liveWorkers && liveWorkers.length > 0) {
+      const mapped = liveWorkers.map((lw, index) => {
+        const lat = parseFloat(lw.lat) || (12.3051 + Math.sin(index * 1.5) * 0.03);
+        const lng = parseFloat(lw.lng) || (76.6551 + Math.cos(index * 1.5) * 0.03);
+        const normX = Math.max(80, Math.min(520, ((lng - 76.58) / 0.12) * 600));
+        const normY = Math.max(60, Math.min(460, (1 - ((lat - 12.26) / 0.12)) * 520));
+
+        const tradeStr = lw.category || lw.work_category || 'General';
+        const formattedTrade = tradeStr.charAt(0).toUpperCase() + tradeStr.slice(1).replace('_', ' ');
+
+        return {
+          id: lw.id || `w-${index}`,
+          name: lw.name || 'Worker',
+          trade: formattedTrade,
+          status: lw.is_online || lw.isOnline ? 'online' : (lw.status || 'online'),
+          lat: lat.toFixed(4),
+          lng: lng.toFixed(4),
+          x: normX,
+          y: normY,
+          battery: `${75 + (index * 7) % 23}%`,
+          phone: lw.phone || '+91 98450 00000',
+          job: lw.current_job_id || null,
+          speed: lw.is_online ? '0 km/h' : '22 km/h'
+        };
+      });
+      setWorkers(mapped);
+    }
+  }, [liveWorkers]);
 
   // Simulate subtle real-time GPS jitter for moving en-route workers
   useEffect(() => {
