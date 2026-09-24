@@ -13,6 +13,7 @@ import 'package:jugaad_mvp/shared/widgets/shimmer_card.dart';
 import 'package:jugaad_mvp/core/services/job_dispatch_service.dart';
 import 'package:jugaad_mvp/core/config/supabase_config.dart';
 import 'package:jugaad_mvp/core/services/location_service.dart';
+import 'package:jugaad_mvp/core/services/platform_config_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class WorkerHomeScreen extends StatefulWidget {
@@ -28,6 +29,10 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   bool _isOnline = false;
   bool _emergencyAvailable = false;
   bool _workerDocExists = false;
+  String _approvalStatus = 'approved';
+  String? _rejectionReason;
+  bool _isBanned = false;
+  int _strikesCount = 0;
 
   double _todayEarnings = 0;
   int _weekJobCount = 0;
@@ -94,11 +99,20 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
       }
       _prevTotalEarnings = totalEarnings;
 
+      final appr = (data['approval_status'] ?? data['status'] ?? 'pending').toString().toLowerCase();
+      final banned = (data['is_banned'] as bool? ?? false) || appr == 'suspended';
+      final strikes = (data['strike_count'] as num? ?? data['strikes'] as num? ?? 0).toInt();
+      final reason = data['rejection_reason'] as String?;
+
       setState(() {
         _workerDocExists = true;
         _workerName = data['name'] as String? ?? '';
-        _isOnline = data['is_available'] as bool? ?? false;
-        _emergencyAvailable = data['emergency_available'] as bool? ?? false;
+        _approvalStatus = appr;
+        _isBanned = banned;
+        _strikesCount = strikes;
+        _rejectionReason = reason;
+        _isOnline = (banned || appr != 'approved') ? false : (data['is_available'] as bool? ?? false);
+        _emergencyAvailable = (banned || appr != 'approved') ? false : (data['emergency_available'] as bool? ?? false);
         
         final skillsData = data['skills'];
         if (skillsData is List) {
@@ -223,6 +237,30 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   }
 
   void _cycleState() {
+    if (_isBanned || _strikesCount >= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Account Suspended by Admin Operations (3/3 strikes). Contact support."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_approvalStatus != 'approved') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _approvalStatus == 'rejected'
+                ? "Application rejected: ${_rejectionReason ?? 'Criteria not met'}. Re-submit in profile."
+                : "Verification in progress: Admin Ops is reviewing your profile.",
+          ),
+          backgroundColor: Colors.amber.shade800,
+        ),
+      );
+      return;
+    }
+
     if (!_isOnline) {
       _setAvailabilityState(true, false); // Go Online
     } else if (!_emergencyAvailable) {
@@ -493,36 +531,180 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                     ),
                   ),
 
-                  // ── Registration Pending Banner ──────────────────
-                  if (!_workerDocExists)
+                  // ── Real-Time Admin KYC & Account Status Banners ──
+                  if (_isBanned || _strikesCount >= 3)
                     Container(
                       margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFEE2E2),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                            color: WorkerAppTheme.urgentRed.withValues(alpha: 0.3),
-                            width: 1.5),
+                        border: Border.all(color: const Color(0xFFEF4444), width: 1.5),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.access_time_filled,
-                              color: WorkerAppTheme.urgentRed, size: 20),
+                          const Icon(Icons.block_rounded, color: Color(0xFFDC2626), size: 22),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Text(
-                              'Registration pending approval — you\'ll go live within 24 hours.',
-                              style: WorkerAppTheme.body(
-                                color: WorkerAppTheme.urgentRed,
-                                size: 13,
-                                weight: FontWeight.w600,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Partner Account Suspended',
+                                  style: WorkerAppTheme.body(
+                                    color: const Color(0xFF991B1B),
+                                    size: 13,
+                                    weight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Policy strike limit reached ($_strikesCount/3). Contact Admin Operations to appeal.',
+                                  style: WorkerAppTheme.body(
+                                    color: const Color(0xFFB91C1C),
+                                    size: 12,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
+                    ).animate().fadeIn(duration: 400.ms)
+                  else if (_approvalStatus == 'rejected')
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF1F2),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFB7185), width: 1.5),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline_rounded, color: Color(0xFFE11D48), size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Registration Application Rejected',
+                                  style: WorkerAppTheme.body(
+                                    color: const Color(0xFF9F1239),
+                                    size: 13,
+                                    weight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _rejectionReason ?? 'Identity criteria not met. Please re-submit verification.',
+                                  style: WorkerAppTheme.body(
+                                    color: const Color(0xFFBE123C),
+                                    size: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).animate().fadeIn(duration: 400.ms)
+                  else if (_approvalStatus == 'pending' || !_workerDocExists)
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.hourglass_top_rounded, color: Color(0xFFD97706), size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'KYC Pending Admin Approval',
+                                  style: WorkerAppTheme.body(
+                                    color: const Color(0xFF92400E),
+                                    size: 13,
+                                    weight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Admin Operations is reviewing your profile. You will go live automatically upon approval.',
+                                  style: WorkerAppTheme.body(
+                                    color: const Color(0xFFB45309),
+                                    size: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).animate().fadeIn(duration: 400.ms)
+                  else
+                    // Live Surge Bonus Banner for Approved Workers
+                    AnimatedBuilder(
+                      animation: PlatformConfigService(),
+                      builder: (context, _) {
+                        final cfg = PlatformConfigService();
+                        if (!cfg.isSurgeActive) return const SizedBox.shrink();
+                        return Container(
+                          margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFECFDF5), Color(0xFFD1FAE5)],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFF6EE7B7), width: 1.5),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF059669),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '⚡ Active Fleet Surge Bonus!',
+                                      style: WorkerAppTheme.body(
+                                        color: const Color(0xFF065F46),
+                                        size: 13,
+                                        weight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Earn +₹${cfg.surgeFee.toInt()} hazard allowance on every emergency job dispatched.',
+                                      style: WorkerAppTheme.body(
+                                        color: const Color(0xFF047857),
+                                        size: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
 
                   // ── Active Booking Banner ────────────────────────
                   if (_activeBookingId != null) ...[
