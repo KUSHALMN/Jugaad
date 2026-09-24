@@ -520,8 +520,15 @@ export default function JugaadOpsDashboard() {
         fetchAllJobs();
       } else if (activeTab === 'Workers') {
         fetchAllWorkers();
-      } else if (activeTab === 'Ops') {
+      } else if (activeTab === 'Ops' || activeTab === 'Surge') {
         fetchPlatformConfig();
+      } else if (activeTab === 'Radar') {
+        fetchAllWorkers();
+        fetchAllJobs();
+      } else if (activeTab === 'Disputes') {
+        fetchAllJobs();
+      } else if (activeTab === 'KYC') {
+        fetchPendingWorkers();
       }
     }
   }, [isAdmin, activeTab]);
@@ -585,65 +592,217 @@ export default function JugaadOpsDashboard() {
     }
   }, [activeTab, opsConfig.dispatchRadius]);
 
-  const handleApprove = async (workerId) => {
-    if (!confirm("Are you sure you want to approve this worker profile?")) return;
+  const handleApprove = async (workerId, skipConfirm = false) => {
+    if (!skipConfirm && !confirm("Are you sure you want to approve this worker profile?")) return;
     try {
-      const adminId = session?.user?.id;
-      if (!adminId) {
-        throw new Error("No active admin session found.");
-      }
-      
+      const adminId = session?.user?.id || 'admin-local';
       const token = session?.access_token || '';
-      const res = await fetch(`http://localhost:8000/v1/workers/${workerId}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-Admin-Id': adminId
-        }
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Failed to approve worker profile via backend');
+
+      // 1. Direct Supabase update ensures instant live sync to Mobile Worker & User portals
+      const { error: dbError } = await supabase
+        .from('workers')
+        .update({
+          status: 'approved',
+          approval_status: 'approved',
+          id_verified: true,
+          is_available: true,
+          is_online: true,
+          approved_at: new Date().toISOString(),
+          approved_by: adminId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', workerId);
+
+      if (dbError) {
+        console.warn("Direct DB approval note:", dbError);
       }
-      
-      alert("Worker registration approved successfully!");
+
+      // 2. Also call backend endpoint to trigger push notifications and audit logs
+      try {
+        await fetch(`http://localhost:8000/v1/admin/workers/${workerId}/approve`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'X-Admin-Id': adminId
+          }
+        });
+      } catch (backendErr) {
+        console.warn("Backend approval notification note:", backendErr);
+      }
+
+      // 3. Insert in-app notification so worker receives it in real-time
+      try {
+        await supabase.from('notifications').insert({
+          user_id: workerId,
+          title: "Account Approved! 🎉",
+          body: "You're approved! You're now live on Jugaad and can receive jobs.",
+          type: "WORKER_APPROVED",
+          created_at: new Date().toISOString(),
+        });
+      } catch (_) {}
+
       fetchPendingWorkers();
+      fetchAllWorkers();
     } catch (err) {
       console.error("Error approving profile:", err);
       alert("Approval action failed: " + err.message);
     }
   };
 
-  const handleReject = async (workerId) => {
-    if (!confirm("Are you sure you want to reject this registration?")) return;
+  const handleReject = async (workerId, reason = null) => {
+    const rejectionReason = reason || prompt("Enter reason for rejection:") || "Application criteria or documents not met.";
     try {
-      const adminId = session?.user?.id;
-      if (!adminId) {
-        throw new Error("No active admin session found.");
-      }
-      
+      const adminId = session?.user?.id || 'admin-local';
       const token = session?.access_token || '';
-      const res = await fetch(`http://localhost:8000/v1/workers/${workerId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-Admin-Id': adminId
-        }
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Failed to reject worker profile via backend');
+
+      // 1. Direct Supabase update
+      await supabase
+        .from('workers')
+        .update({
+          status: 'rejected',
+          approval_status: 'rejected',
+          id_verified: false,
+          is_available: false,
+          is_online: false,
+          rejection_reason: rejectionReason,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', workerId);
+
+      // 2. Also call backend endpoint
+      try {
+        await fetch(`http://localhost:8000/v1/admin/workers/${workerId}/reject`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'X-Admin-Id': adminId
+          },
+          body: JSON.stringify({ reason: rejectionReason })
+        });
+      } catch (backendErr) {
+        console.warn("Backend rejection notification note:", backendErr);
       }
-      
-      alert("Worker registration rejected.");
+
+      // 3. Insert notification for worker
+      try {
+        await supabase.from('notifications').insert({
+          user_id: workerId,
+          title: "Verification Update",
+          body: `Your worker application was rejected: ${rejectionReason}`,
+          type: "WORKER_REJECTED",
+          created_at: new Date().toISOString(),
+        });
+      } catch (_) {}
+
       fetchPendingWorkers();
+      fetchAllWorkers();
     } catch (err) {
       console.error("Error rejecting profile:", err);
       alert("Rejection action failed: " + err.message);
+    }
+  };
+
+  const handleToggleWorkerStatus = async (worker) => {
+    const isCurrentlyBanned = worker.is_banned || worker.status === 'suspended';
+    const actionLabel = isCurrentlyBanned ? 'reactivate' : 'suspend';
+    if (!confirm(`Are you sure you want to ${actionLabel} ${worker.name || 'this provider'}?`)) return;
+
+    try {
+      const newStatus = isCurrentlyBanned ? 'approved' : 'suspended';
+      const newBanned = !isCurrentlyBanned;
+      
+      await supabase
+        .from('workers')
+        .update({
+          is_banned: newBanned,
+          status: newStatus,
+          is_available: !newBanned,
+          is_online: !newBanned,
+          strike_count: isCurrentlyBanned ? 0 : (worker.strike_count || 0),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', worker.id);
+
+      // Notify the worker portal in real-time
+      try {
+        await supabase.from('notifications').insert({
+          user_id: worker.id,
+          title: isCurrentlyBanned ? "Account Reactivated! ✅" : "⚠️ Account Suspended by Admin",
+          body: isCurrentlyBanned 
+            ? "Your Jugaad partner account has been restored by Admin Ops. You can go online now." 
+            : "Your partner account has been suspended by Admin Operations. Please contact support.",
+          type: isCurrentlyBanned ? "WORKER_ACTIVATED" : "WORKER_SUSPENDED",
+          created_at: new Date().toISOString()
+        });
+      } catch (_) {}
+
+      alert(`Worker ${worker.name || worker.id} ${actionLabel}d successfully.`);
+      fetchAllWorkers();
+    } catch (err) {
+      console.error("Error toggling worker status:", err);
+      alert("Failed to update worker status: " + err.message);
+    }
+  };
+
+  const handleCancelJob = async (job) => {
+    if (!confirm(`Are you sure you want to administratively cancel Job #${(job.id || '').slice(0, 6)}?`)) return;
+    try {
+      await supabase
+        .from('jobs')
+        .update({
+          status: 'cancelled',
+          payment_status: job.payment_status === 'paid' ? 'refunded' : 'cancelled',
+          notes: 'Cancelled by Admin Ops Console'
+        })
+        .eq('id', job.id);
+
+      await supabase
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('job_id', job.id);
+
+      // Release the worker if assigned
+      if (job.worker_id) {
+        await supabase
+          .from('workers')
+          .update({
+            is_available: true,
+            is_online: true,
+            current_job_id: null
+          })
+          .eq('id', job.worker_id);
+
+        try {
+          await supabase.from('notifications').insert({
+            user_id: job.worker_id,
+            title: "Booking Cancelled by Admin",
+            body: `Job #${(job.id || '').slice(0, 6)} has been cancelled by Admin Operations. You are now available for new jobs.`,
+            type: "JOB_CANCELLED_BY_ADMIN",
+            created_at: new Date().toISOString()
+          });
+        } catch (_) {}
+      }
+
+      const customerUid = job.employer_id || job.user_id;
+      if (customerUid) {
+        try {
+          await supabase.from('notifications').insert({
+            user_id: customerUid,
+            title: "Job Cancelled & Refunded",
+            body: `Job #${(job.id || '').slice(0, 6)} was cancelled by Admin. Any prepaid fees have been credited.`,
+            type: "JOB_CANCELLED_BY_ADMIN",
+            created_at: new Date().toISOString()
+          });
+        } catch (_) {}
+      }
+
+      alert("Job cancelled and worker released.");
+      fetchAllJobs();
+    } catch (err) {
+      console.error("Error cancelling job:", err);
+      alert("Failed to cancel job: " + err.message);
     }
   };
 
@@ -1475,6 +1634,7 @@ export default function JugaadOpsDashboard() {
                           <th className="py-3.5 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Amount</th>
                           <th className="py-3.5 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
                           <th className="py-3.5 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Date</th>
+                          <th className="py-3.5 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1491,7 +1651,7 @@ export default function JugaadOpsDashboard() {
                           if (filtered.length === 0) {
                             return (
                               <tr>
-                                <td colSpan="6" className="py-12 text-center text-sm text-zinc-400 bg-white">
+                                <td colSpan="7" className="py-12 text-center text-sm text-zinc-400 bg-white">
                                   No records found matching current search parameters.
                                 </td>
                               </tr>
@@ -1524,6 +1684,18 @@ export default function JugaadOpsDashboard() {
                               </td>
                               <td className="py-4 px-5 text-xs text-zinc-400">
                                 {job.created_at ? new Date(job.created_at).toLocaleDateString() : 'N/A'}
+                              </td>
+                              <td className="py-4 px-5 text-right whitespace-nowrap">
+                                {job.status !== 'completed' && job.status !== 'cancelled' ? (
+                                  <button
+                                    onClick={() => handleCancelJob(job)}
+                                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                                  >
+                                    Cancel Job
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-zinc-400 font-mono">Closed</span>
+                                )}
                               </td>
                             </tr>
                           ));
@@ -1596,6 +1768,7 @@ export default function JugaadOpsDashboard() {
                           <th className="py-3.5 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider font-sans">Rating</th>
                           <th className="py-3.5 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Total Jobs</th>
                           <th className="py-3.5 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
+                          <th className="py-3.5 px-5 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1618,7 +1791,7 @@ export default function JugaadOpsDashboard() {
                           if (filtered.length === 0) {
                             return (
                               <tr>
-                                <td colSpan="6" className="py-12 text-center text-sm text-zinc-400 bg-white">
+                                <td colSpan="7" className="py-12 text-center text-sm text-zinc-400 bg-white">
                                   No providers found matching search filters.
                                 </td>
                               </tr>
@@ -1627,6 +1800,7 @@ export default function JugaadOpsDashboard() {
 
                           return filtered.map((w) => {
                             const category = w.specialities?.[0] || w.skills?.[0] || 'General';
+                            const isSuspended = w.is_banned || w.status === 'suspended';
                             return (
                               <tr key={w.id} className="border-b border-zinc-100 hover:bg-zinc-50/50 transition-colors last:border-0">
                                 <td className="py-4 px-5 text-sm font-medium text-zinc-800">
@@ -1647,13 +1821,42 @@ export default function JugaadOpsDashboard() {
                                   {w.total_jobs || w.totalJobsCompleted || 0}
                                 </td>
                                 <td className="py-4 px-5">
-                                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full border font-medium ${
-                                    w.id_verified 
-                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-100/80' 
-                                      : 'bg-amber-50 text-amber-700 border-amber-100/80'
-                                  }`}>
-                                    {w.id_verified ? 'Verified' : 'Unverified'}
-                                  </span>
+                                  <div className="flex flex-col space-y-1">
+                                    <span className={`text-[11px] px-2.5 py-0.5 rounded-full border font-medium inline-block w-max ${
+                                      isSuspended
+                                        ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                        : w.id_verified 
+                                          ? 'bg-emerald-50 text-emerald-700 border-emerald-100/80' 
+                                          : 'bg-amber-50 text-amber-700 border-amber-100/80'
+                                    }`}>
+                                      {isSuspended ? 'Suspended' : w.id_verified ? 'Verified' : 'Unverified'}
+                                    </span>
+                                    {w.strike_count > 0 && (
+                                      <span className="text-[10px] text-rose-600 font-semibold">
+                                        {w.strike_count}/3 Strikes
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-4 px-5 text-right space-x-2 whitespace-nowrap">
+                                  {!w.id_verified && (
+                                    <button
+                                      onClick={() => handleApprove(w.id, true)}
+                                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                                    >
+                                      Verify
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => handleToggleWorkerStatus(w)}
+                                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                                      isSuspended
+                                        ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                                        : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                                    }`}
+                                  >
+                                    {isSuspended ? 'Reactivate' : 'Suspend'}
+                                  </button>
                                 </td>
                               </tr>
                             );
@@ -1840,16 +2043,37 @@ export default function JugaadOpsDashboard() {
           )}
 
           {/* ================= TAB: RADAR MAP ================= */}
-          {activeTab === 'Radar' && <RadarMapModal />}
+          {activeTab === 'Radar' && (
+            <RadarMapModal 
+              liveWorkers={allWorkers} 
+              liveJobs={allJobs} 
+            />
+          )}
 
           {/* ================= TAB: DISPUTES ================= */}
-          {activeTab === 'Disputes' && <DisputesManager />}
+          {activeTab === 'Disputes' && (
+            <DisputesManager 
+              liveJobs={allJobs} 
+              session={session} 
+            />
+          )}
 
           {/* ================= TAB: SURGE HUB ================= */}
-          {activeTab === 'Surge' && <SurgeGeofencingHub />}
+          {activeTab === 'Surge' && (
+            <SurgeGeofencingHub 
+              session={session} 
+              onConfigUpdated={fetchPlatformConfig} 
+            />
+          )}
 
           {/* ================= TAB: KYC SUITE ================= */}
-          {activeTab === 'KYC' && <EnhancedKycAudit />}
+          {activeTab === 'KYC' && (
+            <EnhancedKycAudit 
+              pendingWorkers={pendingWorkers} 
+              onApprove={handleApprove} 
+              onReject={handleReject} 
+            />
+          )}
 
         </main>
       </div>
