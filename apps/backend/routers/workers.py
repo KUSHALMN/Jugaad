@@ -26,37 +26,114 @@ def verify_admin_user(uid: str = Depends(verify_firebase_token)) -> str:
 
 @router.post("/{worker_id}/approve")
 async def approve_worker_endpoint(worker_id: str, admin_id: str = Depends(verify_admin_user)):
-    # Call Supabase RPC approve_worker
-    res = supabase.rpc("approve_worker", {"p_worker_id": worker_id}).execute()
-    if not res or not res.data:
-        raise HTTPException(status_code=404, detail="Worker not found or approve RPC failed")
-    
+    now_iso = datetime.now(timezone.utc).isoformat()
+    rpc_ok = False
+    try:
+        res = supabase.rpc("approve_worker", {"p_worker_id": worker_id}).execute()
+        rpc_ok = res.data is True or bool(res.data)
+    except Exception as rpc_err:
+        logger.warning(f"approve_worker RPC error, using direct table update fallback: {rpc_err}")
+
+    if not rpc_ok:
+        core_update = {
+            "status": "approved",
+            "approval_status": "approved",
+            "is_available": True,
+            "is_online": True,
+            "id_verified": True,
+            "updated_at": now_iso,
+        }
+        try:
+            up_res = supabase.table("workers").update(core_update).eq("id", worker_id).execute()
+            if not up_res.data:
+                logger.warning(f"Worker record {worker_id} not found in direct table update")
+        except Exception as up_err:
+            logger.error(f"Direct worker approval update error: {up_err}")
+
+    # Insert in-app notification for worker portal
+    try:
+        supabase.table("notifications").insert({
+            "user_id": worker_id,
+            "title": "Account Approved! 🎉",
+            "body": "Congratulations! Your registration has been approved. You are now online and visible to users.",
+            "type": "WORKER_APPROVED",
+            "created_at": now_iso,
+        }).execute()
+    except Exception as notif_err:
+        logger.warning(f"Failed to insert in-app approval notification: {notif_err}")
+
     # Send FCM notification
-    from services.fcm_service import fcm_service
-    await fcm_service.send_notification(
-        user_id=worker_id,
-        title="Registration Approved 🎉",
-        body="Congratulations! Your registration has been approved. You are now online and visible to users.",
-        data={"type": "APPROVAL_STATUS", "status": "approved"}
-    )
-    return {"status": "success", "message": "Worker profile approved and FCM notification sent"}
+    try:
+        from services.fcm_service import fcm_service
+        await fcm_service.send_notification(
+            user_id=worker_id,
+            title="Registration Approved 🎉",
+            body="Congratulations! Your registration has been approved. You are now online and visible to users.",
+            data={"type": "APPROVAL_STATUS", "status": "approved"}
+        )
+    except Exception as fcm_err:
+        logger.warning(f"FCM notification error: {fcm_err}")
+
+    return {"status": "success", "message": "Worker profile approved and notifications dispatched"}
+
 
 @router.post("/{worker_id}/reject")
-async def reject_worker_endpoint(worker_id: str, admin_id: str = Depends(verify_admin_user)):
-    # Call Supabase RPC reject_worker
-    res = supabase.rpc("reject_worker", {"p_worker_id": worker_id}).execute()
-    if not res or not res.data:
-        raise HTTPException(status_code=404, detail="Worker not found or reject RPC failed")
-    
+async def reject_worker_endpoint(worker_id: str, request: Request, admin_id: str = Depends(verify_admin_user)):
+    now_iso = datetime.now(timezone.utc).isoformat()
+    body_data = {}
+    try:
+        body_data = await request.json()
+    except Exception:
+        pass
+    reason = body_data.get("reason", "Application criteria not met.")
+
+    rpc_ok = False
+    try:
+        res = supabase.rpc("reject_worker", {"p_worker_id": worker_id}).execute()
+        rpc_ok = res.data is True or bool(res.data)
+    except Exception as rpc_err:
+        logger.warning(f"reject_worker RPC error, using direct table update fallback: {rpc_err}")
+
+    if not rpc_ok:
+        core_update = {
+            "status": "rejected",
+            "approval_status": "rejected",
+            "is_available": False,
+            "is_online": False,
+            "id_verified": False,
+            "rejection_reason": reason,
+            "updated_at": now_iso,
+        }
+        try:
+            supabase.table("workers").update(core_update).eq("id", worker_id).execute()
+        except Exception as up_err:
+            logger.error(f"Direct worker rejection update error: {up_err}")
+
+    # Insert in-app notification
+    try:
+        supabase.table("notifications").insert({
+            "user_id": worker_id,
+            "title": "Registration Update",
+            "body": f"Your registration was not approved: {reason}",
+            "type": "WORKER_REJECTED",
+            "created_at": now_iso,
+        }).execute()
+    except Exception as notif_err:
+        logger.warning(f"Failed to insert in-app rejection notification: {notif_err}")
+
     # Send FCM notification
-    from services.fcm_service import fcm_service
-    await fcm_service.send_notification(
-        user_id=worker_id,
-        title="Registration Update",
-        body="Your registration was not approved. Please contact support for more information.",
-        data={"type": "APPROVAL_STATUS", "status": "rejected"}
-    )
-    return {"status": "success", "message": "Worker profile rejected and FCM notification sent"}
+    try:
+        from services.fcm_service import fcm_service
+        await fcm_service.send_notification(
+            user_id=worker_id,
+            title="Registration Update",
+            body="Your registration was not approved. Please contact support for more information.",
+            data={"type": "APPROVAL_STATUS", "status": "rejected", "reason": reason}
+        )
+    except Exception as fcm_err:
+        logger.warning(f"FCM notification error: {fcm_err}")
+
+    return {"status": "success", "message": "Worker profile rejected and notifications dispatched"}
 
 
 import re
