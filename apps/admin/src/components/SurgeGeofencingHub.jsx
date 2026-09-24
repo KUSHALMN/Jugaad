@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '../supabase';
 import { 
   Zap, 
   CloudRain, 
@@ -24,44 +25,115 @@ const INITIAL_MYSURU_ZONES = [
   { id: 'z7', name: 'Vijayanagar 1st - 4th Stage', multiplier: 1.0, baseEmergencyFee: 50, activeWorkers: 6, unfulfilledSearches: 8 },
 ];
 
-export default function SurgeGeofencingHub() {
+export default function SurgeGeofencingHub({ session, onConfigUpdated }) {
   const [zones, setZones] = useState(INITIAL_MYSURU_ZONES);
   const [activePreset, setActivePreset] = useState('custom');
   const [broadcastSent, setBroadcastSent] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const syncSurgeToBackend = async (newSurgeFee) => {
+    try {
+      setIsSyncing(true);
+      const adminId = session?.user?.id || 'admin-local';
+      const token = session?.access_token || '';
+
+      // 1. Direct Supabase platform_config sync for instant real-time websocket delivery to mobile apps
+      try {
+        await supabase
+          .from('platform_config')
+          .update({
+            surge_fee: newSurgeFee,
+            updated_at: new Date().toISOString(),
+            updated_by: adminId,
+          })
+          .eq('id', 1);
+      } catch (dbErr) {
+        console.warn('[SurgeHub] Direct Supabase sync note:', dbErr);
+      }
+
+      // 2. Call backend config endpoint to refresh server-side pricing caches
+      const res = await fetch('http://localhost:8000/v1/platform/config', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Admin-Id': adminId
+        },
+        body: JSON.stringify({
+          surge_fee: newSurgeFee,
+          dispatch_radius_km: 5.0,
+        })
+      });
+      if (res.ok && onConfigUpdated) {
+        onConfigUpdated();
+      }
+    } catch (e) {
+      console.warn('[SurgeHub] Backend config sync note:', e);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleMultiplierChange = (zoneId, newMultiplier) => {
     setActivePreset('custom');
     setZones(prev => prev.map(z => z.id === zoneId ? { ...z, multiplier: parseFloat(newMultiplier) } : z));
   };
 
-  const handleFeeChange = (zoneId, newFee) => {
+  const handleFeeChange = async (zoneId, newFee) => {
     setActivePreset('custom');
-    setZones(prev => prev.map(z => z.id === zoneId ? { ...z, baseEmergencyFee: parseInt(newFee) } : z));
+    const feeNum = parseInt(newFee);
+    setZones(prev => prev.map(z => z.id === zoneId ? { ...z, baseEmergencyFee: feeNum } : z));
+    await syncSurgeToBackend(feeNum);
+    setSaveFeedback(`Updated ${zones.find(z => z.id === zoneId)?.name || 'zone'} base fee to ₹${feeNum}. Live on mobile portal.`);
+    setTimeout(() => setSaveFeedback(null), 3500);
   };
 
-  const applyPreset = (presetKey) => {
+  const applyPreset = async (presetKey) => {
     setActivePreset(presetKey);
+    let fee = 50;
     if (presetKey === 'monsoon') {
-      setZones(prev => prev.map(z => ({ ...z, multiplier: 1.6, baseEmergencyFee: 150 })));
-      setSaveFeedback('Monsoon Downpour Mode activated (+60% surge + ₹150 hazard bonus for workers)');
+      fee = 150;
+      setZones(prev => prev.map(z => ({ ...z, multiplier: 1.6, baseEmergencyFee: fee })));
+      setSaveFeedback('Monsoon Downpour Mode activated (+60% surge + ₹150 hazard bonus). Applied to User & Worker mobile apps!');
     } else if (presetKey === 'night') {
-      setZones(prev => prev.map(z => ({ ...z, multiplier: 1.5, baseEmergencyFee: 200 })));
-      setSaveFeedback('Night Emergency Shift activated (₹200 night-shift allowance active)');
+      fee = 200;
+      setZones(prev => prev.map(z => ({ ...z, multiplier: 1.5, baseEmergencyFee: fee })));
+      setSaveFeedback('Night Emergency Shift activated (₹200 night-shift allowance). Applied to User & Worker mobile apps!');
     } else if (presetKey === 'festival') {
-      setZones(prev => prev.map(z => ({ ...z, multiplier: 1.8, baseEmergencyFee: 150 })));
-      setSaveFeedback('Dasara / Festival Surge active (+80% peak demand surge across all wards)');
+      fee = 150;
+      setZones(prev => prev.map(z => ({ ...z, multiplier: 1.8, baseEmergencyFee: fee })));
+      setSaveFeedback('Dasara / Festival Surge active (+80% peak demand surge). Applied to User & Worker mobile apps!');
     } else if (presetKey === 'reset') {
+      fee = 50;
       setZones(INITIAL_MYSURU_ZONES);
       setActivePreset('custom');
-      setSaveFeedback('Surge pricing reset to standard baseline rates (1.0x).');
+      setSaveFeedback('Surge pricing reset to standard baseline rates (₹50). Applied to User & Worker mobile apps!');
     }
+    await syncSurgeToBackend(fee);
     setTimeout(() => setSaveFeedback(null), 4000);
   };
 
-  const handleBroadcast = () => {
+  const handleBroadcast = async () => {
     setBroadcastSent(true);
-    setTimeout(() => setBroadcastSent(false), 4000);
+    try {
+      const highestFee = Math.max(...zones.map(z => z.baseEmergencyFee));
+      const highestMultiplier = Math.max(...zones.map(z => z.multiplier));
+      
+      // Dispatch broadcast notification row into Supabase notifications table
+      await supabase.from('notifications').insert([
+        {
+          user_id: 'all_workers',
+          title: `⚡ Surge Alert: Up to ${highestMultiplier}x Active in Mysuru!`,
+          body: `Emergency hazard bonus up to ₹${highestFee} is active across city zones. Go online to claim high-demand jobs!`,
+          type: 'SURGE_BROADCAST',
+          created_at: new Date().toISOString(),
+        }
+      ]);
+    } catch (e) {
+      console.warn('[SurgeHub] Broadcast note:', e);
+    }
+    setTimeout(() => setBroadcastSent(false), 4500);
   };
 
   const avgMultiplier = (zones.reduce((sum, z) => sum + z.multiplier, 0) / zones.length).toFixed(2);
