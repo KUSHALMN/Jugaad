@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { 
   Zap, 
@@ -31,8 +31,17 @@ export default function SurgeGeofencingHub({ session, onConfigUpdated }) {
   const [broadcastSent, setBroadcastSent] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const syncTimeoutRef = useRef(null);
+  const feedbackTimeoutRef = useRef(null);
 
-  const syncSurgeToBackend = async (newSurgeFee) => {
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    };
+  }, []);
+
+  const syncSurgeToBackend = useCallback(async (newSurgeFee) => {
     try {
       setIsSyncing(true);
       const adminId = session?.user?.id || 'admin-local';
@@ -73,20 +82,31 @@ export default function SurgeGeofencingHub({ session, onConfigUpdated }) {
     } finally {
       setIsSyncing(false);
     }
-  };
+  }, [session, onConfigUpdated]);
+
+  const debouncedSyncSurge = useCallback((newSurgeFee) => {
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+    syncTimeoutRef.current = setTimeout(() => {
+      syncSurgeToBackend(newSurgeFee);
+    }, 350);
+  }, [syncSurgeToBackend]);
 
   const handleMultiplierChange = (zoneId, newMultiplier) => {
     setActivePreset('custom');
     setZones(prev => prev.map(z => z.id === zoneId ? { ...z, multiplier: parseFloat(newMultiplier) } : z));
   };
 
-  const handleFeeChange = async (zoneId, newFee) => {
+  const handleFeeChange = (zoneId, newFee) => {
     setActivePreset('custom');
-    const feeNum = parseInt(newFee);
+    const feeNum = parseInt(newFee) || 50;
     setZones(prev => prev.map(z => z.id === zoneId ? { ...z, baseEmergencyFee: feeNum } : z));
-    await syncSurgeToBackend(feeNum);
-    setSaveFeedback(`Updated ${zones.find(z => z.id === zoneId)?.name || 'zone'} base fee to ₹${feeNum}. Live on mobile portal.`);
-    setTimeout(() => setSaveFeedback(null), 3500);
+    debouncedSyncSurge(feeNum);
+    const zoneName = zones.find(z => z.id === zoneId)?.name || 'zone';
+    setSaveFeedback(`Updated ${zoneName} base fee to ₹${feeNum}. Live on mobile portal.`);
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    feedbackTimeoutRef.current = setTimeout(() => setSaveFeedback(null), 3500);
   };
 
   const applyPreset = async (presetKey) => {
@@ -110,8 +130,10 @@ export default function SurgeGeofencingHub({ session, onConfigUpdated }) {
       setActivePreset('custom');
       setSaveFeedback('Surge pricing reset to standard baseline rates (₹50). Applied to User & Worker mobile apps!');
     }
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     await syncSurgeToBackend(fee);
-    setTimeout(() => setSaveFeedback(null), 4000);
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    feedbackTimeoutRef.current = setTimeout(() => setSaveFeedback(null), 4000);
   };
 
   const handleBroadcast = async () => {
@@ -136,7 +158,9 @@ export default function SurgeGeofencingHub({ session, onConfigUpdated }) {
     setTimeout(() => setBroadcastSent(false), 4500);
   };
 
-  const avgMultiplier = (zones.reduce((sum, z) => sum + z.multiplier, 0) / zones.length).toFixed(2);
+  const avgMultiplier = useMemo(() => {
+    return (zones.reduce((sum, z) => sum + z.multiplier, 0) / zones.length).toFixed(2);
+  }, [zones]);
 
   return (
     <div className="space-y-6 animate-fade-in">
