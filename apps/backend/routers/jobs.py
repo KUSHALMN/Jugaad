@@ -559,26 +559,39 @@ def get_worker_job_history(uid: str = Depends(verify_firebase_token)):
         .execute())
 
     jobs_list = res.data or []
+    if not jobs_list:
+        return {"jobs": []}
+
+    # Batch fetch employers to eliminate N+1 queries
+    employer_ids = list({j["employer_id"] for j in jobs_list if j.get("employer_id")})
+    employer_map = {}
+    if employer_ids:
+        try:
+            emp_res = supabase.table("users").select("id, name").in_("id", employer_ids).execute()
+            for emp in (emp_res.data or []):
+                if emp.get("id"):
+                    employer_map[emp["id"]] = emp.get("name") or "Customer"
+        except Exception as emp_err:
+            logger.warning(f"Batch fetching employers failed: {emp_err}")
+
+    # Batch fetch reviews to eliminate N+1 queries
+    job_ids = [j["id"] for j in jobs_list if j.get("id")]
+    review_map = {}
+    if job_ids:
+        try:
+            rev_res = supabase.table("reviews").select("job_id, rating, comment").in_("job_id", job_ids).execute()
+            for r in (rev_res.data or []):
+                if r.get("job_id"):
+                    review_map[r["job_id"]] = r
+        except Exception as rev_err:
+            logger.warning(f"Batch fetching reviews failed: {rev_err}")
+
     formatted = []
     for job in jobs_list:
-        employer_name = "Customer"
-        if job.get("employer_id"):
-            try:
-                emp_res = supabase.table("users").select("name").eq("id", job["employer_id"]).maybe_single().execute()
-                if emp_res and emp_res.data and emp_res.data.get("name"):
-                    employer_name = emp_res.data["name"]
-            except Exception:
-                pass
-        
-        rating_received = None
-        comment_received = None
-        try:
-            rev_res = supabase.table("reviews").select("rating, comment").eq("job_id", job["id"]).maybe_single().execute()
-            if rev_res and rev_res.data:
-                rating_received = rev_res.data.get("rating")
-                comment_received = rev_res.data.get("comment")
-        except Exception:
-            pass
+        employer_name = employer_map.get(job.get("employer_id")) or "Customer"
+        rev_info = review_map.get(job.get("id"))
+        rating_received = rev_info.get("rating") if rev_info else None
+        comment_received = rev_info.get("comment") if rev_info else None
 
         formatted.append({
             "id": job["id"],

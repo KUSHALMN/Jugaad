@@ -177,15 +177,20 @@ def get_worker_public_profile(worker_id: str):
     recent_reviews = []
     try:
         rev_res = supabase.table("reviews").select("rating, comment, created_at, reviewer_id").eq("reviewee_id", worker_id).order("created_at", desc=True).limit(3).execute()
-        for rev in (rev_res.data or []):
-            reviewer_name = "Customer"
-            if rev.get("reviewer_id"):
-                try:
-                    u_res = supabase.table("users").select("name").eq("id", rev["reviewer_id"]).maybe_single().execute()
-                    if u_res and u_res.data and u_res.data.get("name"):
-                        reviewer_name = u_res.data["name"]
-                except Exception:
-                    pass
+        rev_data = rev_res.data or []
+        reviewer_ids = list({rev["reviewer_id"] for rev in rev_data if rev.get("reviewer_id")})
+        reviewer_map = {}
+        if reviewer_ids:
+            try:
+                u_res = supabase.table("users").select("id, name").in_("id", reviewer_ids).execute()
+                for u in (u_res.data or []):
+                    if u.get("id"):
+                        reviewer_map[u["id"]] = u.get("name") or "Customer"
+            except Exception as u_err:
+                logger.warning(f"Batch reviewer lookup failed: {u_err}")
+
+        for rev in rev_data:
+            reviewer_name = reviewer_map.get(rev.get("reviewer_id")) or "Customer"
             recent_reviews.append({
                 "reviewer_name": reviewer_name,
                 "rating": rev.get("rating"),
