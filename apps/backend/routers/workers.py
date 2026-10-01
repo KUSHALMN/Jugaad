@@ -744,6 +744,31 @@ def _parse_wkb_point(wkb_hex: str):
         return None, None
 
 
+# L1 In-memory cache for search responses (fallback when Redis unavailable or cold)
+_L1_SEARCH_CACHE = {}  # key -> (timestamp, response_dict)
+_L1_SEARCH_CACHE_TTL = 30.0  # 30 seconds
+_L1_WORKERS_TABLE_CACHE = {"data": None, "timestamp": 0.0, "ttl": 15.0}
+
+def _get_l1_search_cache(key: str):
+    now = time.time()
+    item = _L1_SEARCH_CACHE.get(key)
+    if item and (now - item[0]) < _L1_SEARCH_CACHE_TTL:
+        return item[1]
+    return None
+
+def _set_l1_search_cache(key: str, data: dict):
+    if len(_L1_SEARCH_CACHE) > 500:
+        _L1_SEARCH_CACHE.clear()
+    _L1_SEARCH_CACHE[key] = (time.time(), data)
+
+WORKER_SEARCH_FIELDS = (
+    "id, name, phone, work_category, category, skills, specialities, area, division, "
+    "status, approval_status, is_verified, isVerified, is_active, is_available, "
+    "rating, total_jobs, completed_jobs, totalJobsCompleted, hourly_rate, rate_per_hour, "
+    "profile_photo, id_document_url, lat, lng, location"
+)
+
+
 @router.get("/search")
 def search_workers(
     category: Optional[str] = None,
@@ -793,17 +818,27 @@ def search_workers(
     area_hint = area or division
     user_city, user_division, is_upcoming = resolve_city_and_division(lat, lng, area_hint=area_hint)
 
-    # ── 1. Redis Response Cache check (30s TTL) ──
+    # ── 1. Fast Cache check: L1 in-memory cache first, then Redis (30s TTL) ──
     cache_cat = "all" if is_all_categories else req_category
     div_slug = user_division.lower().replace(" ", "_")
     cache_key = f"cache:worker_search_priority:{cache_cat}:{round(lat, 3)}:{round(lng, 3)}:{div_slug}"
+
+    # L1 In-Memory Cache Check (<0.1ms)
+    l1_cached = _get_l1_search_cache(cache_key)
+    if l1_cached:
+        logger.info(f"Returning L1 in-memory cached search results for key {cache_key}")
+        return l1_cached
+
+    # Redis Cache Check
     r = redis_client.get_client()
     if r:
         try:
             cached = r.get(cache_key)
             if cached:
                 logger.info(f"Returning cached search results for key {cache_key}")
-                return json.loads(cached)
+                parsed = json.loads(cached)
+                _set_l1_search_cache(cache_key, parsed)
+                return parsed
         except Exception as cache_err:
             logger.error(f"Redis cache retrieve error: {cache_err}")
 
@@ -885,6 +920,7 @@ def search_workers(
                             "count": len(formatted_workers),
                             "workers": formatted_workers
                         }
+                        _set_l1_search_cache(cache_key, response_data)
                         if r:
                             try:
                                 r.set(cache_key, json.dumps(response_data), ex=30)
@@ -896,12 +932,18 @@ def search_workers(
                 break
 
     # ── 3. Database Direct Query Engine (Universal Multi-Location Matcher) ──
-    try:
-        db_res = supabase.table("workers").select("*").execute()
-        all_rows = db_res.data or []
-    except Exception as db_err:
-        logger.error(f"Failed to query workers table: {db_err}")
-        all_rows = []
+    now_ts = time.time()
+    if _L1_WORKERS_TABLE_CACHE["data"] is not None and (now_ts - _L1_WORKERS_TABLE_CACHE["timestamp"]) < _L1_WORKERS_TABLE_CACHE["ttl"]:
+        all_rows = _L1_WORKERS_TABLE_CACHE["data"]
+    else:
+        try:
+            db_res = supabase.table("workers").select(WORKER_SEARCH_FIELDS).execute()
+            all_rows = db_res.data or []
+            _L1_WORKERS_TABLE_CACHE["data"] = all_rows
+            _L1_WORKERS_TABLE_CACHE["timestamp"] = now_ts
+        except Exception as db_err:
+            logger.error(f"Failed to query workers table: {db_err}")
+            all_rows = _L1_WORKERS_TABLE_CACHE["data"] or []
 
     matching_workers = []
     # Build list of related keywords for the category
@@ -1105,6 +1147,7 @@ def search_workers(
             "count": len(formatted_fallback),
             "workers": formatted_fallback,
         }
+        _set_l1_search_cache(cache_key, response_data)
         if r:
             try:
                 r.set(cache_key, json.dumps(response_data), ex=30)
@@ -1129,6 +1172,7 @@ def search_workers(
         "count": 0,
         "workers": [],
     }
+    _set_l1_search_cache(cache_key, response_data)
     if r:
         try:
             r.set(cache_key, json.dumps(response_data), ex=30)
