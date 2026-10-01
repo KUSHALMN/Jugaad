@@ -27,8 +27,8 @@ void callbackDispatcher() {
           return Future.value(false);
         }
 
-        double lat = 12.9716;
-        double lng = 77.5946;
+        double lat = 12.3051;
+        double lng = 76.6551;
 
         try {
           final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -37,19 +37,26 @@ void callbackDispatcher() {
           if (serviceEnabled &&
               permission != LocationPermission.denied &&
               permission != LocationPermission.deniedForever) {
-            final position = await Geolocator.getCurrentPosition(
-              locationSettings: const LocationSettings(
-                accuracy: LocationAccuracy.high,
-                timeLimit: Duration(seconds: 10),
-              ),
-            );
-            lat = position.latitude;
-            lng = position.longitude;
+            final lastKnown = await Geolocator.getLastKnownPosition();
+            if (lastKnown != null &&
+                DateTime.now().difference(lastKnown.timestamp) < const Duration(seconds: 60)) {
+              lat = lastKnown.latitude;
+              lng = lastKnown.longitude;
+            } else {
+              final position = await Geolocator.getCurrentPosition(
+                locationSettings: const LocationSettings(
+                  accuracy: LocationAccuracy.medium,
+                  timeLimit: Duration(seconds: 4),
+                ),
+              );
+              lat = position.latitude;
+              lng = position.longitude;
+            }
           } else {
-            print('[HEARTBEAT] Location unavailable. Using Bangalore Center fallback.');
+            print('[HEARTBEAT] Location unavailable. Using Mysuru Center fallback.');
           }
         } catch (e) {
-          print('[HEARTBEAT] Error fetching GPS position: $e. Using Bangalore Center fallback.');
+          print('[HEARTBEAT] Note fetching GPS position: $e. Using Mysuru Center fallback.');
         }
         final token = await FirebaseAuth.instance.currentUser?.getIdToken();
         if (token == null) {

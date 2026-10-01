@@ -15,6 +15,8 @@ class LocationService {
   bool _isTracking = false;
   Position? _lastPosition;
   Position? _currentPosition;
+  DateTime? _lastDbSyncTime;
+  static const Duration _minDbSyncInterval = Duration(seconds: 10);
 
   bool get isTracking => _isTracking;
   Position? get lastPosition => _lastPosition;
@@ -37,11 +39,17 @@ class LocationService {
 
   // ─── Get Current Location ─────────────────────────────────
   Future<Position?> getCurrentLocation() async {
+    // Quick check: if we have a fresh position within 15 seconds, return immediately
+    if (_currentPosition != null &&
+        DateTime.now().difference(_currentPosition!.timestamp) < const Duration(seconds: 15)) {
+      return _currentPosition;
+    }
+
     try {
       // Step 1: Check if location service is on
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('❌ Location service disabled — fallback to Bangalore');
+        print('❌ Location service disabled — fallback to Mysuru');
         final pos = _getFallbackPosition();
         _currentPosition = pos;
         _lastPosition = pos;
@@ -53,7 +61,7 @@ class LocationService {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          print('❌ Location permission denied — fallback to Bangalore');
+          print('❌ Location permission denied — fallback to Mysuru');
           final pos = _getFallbackPosition();
           _currentPosition = pos;
           _lastPosition = pos;
@@ -62,29 +70,44 @@ class LocationService {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        print('❌ Location permission permanently denied — fallback to Bangalore');
+        print('❌ Location permission permanently denied — fallback to Mysuru');
         final pos = _getFallbackPosition();
         _currentPosition = pos;
         _lastPosition = pos;
         return pos;
       }
 
-      // Step 3: Get position
-      print('📍 Getting current location...');
+      // Step 3: Fast resolution using lastKnownPosition if fresh (<45s)
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null &&
+          DateTime.now().difference(lastKnown.timestamp) < const Duration(seconds: 45)) {
+        _currentPosition = lastKnown;
+        _lastPosition = lastKnown;
+        return lastKnown;
+      }
+
+      // Step 4: Get position with balanced accuracy and 5s timeout
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 5),
         ),
       );
 
       _currentPosition = position;
       _lastPosition = position;
-      print('✅ Location: ${position.latitude}, ${position.longitude}');
       return position;
 
     } catch (e) {
-      print('❌ Location error: $e — fallback to Bangalore');
+      print('❌ Location acquisition note: $e — using fallback or last known');
+      try {
+        final last = await Geolocator.getLastKnownPosition();
+        if (last != null) {
+          _currentPosition = last;
+          _lastPosition = last;
+          return last;
+        }
+      } catch (_) {}
       final pos = _getFallbackPosition();
       _currentPosition = pos;
       _lastPosition = pos;
@@ -93,8 +116,6 @@ class LocationService {
   }
 
   // ─── Save Worker Location to Supabase ─────────────────────
-  // Fix C5: Removed dead `worker_profiles` fallback — that table doesn't exist.
-  // All location writes go directly to the `workers` table, consistent with the rest of the codebase.
   Future<void> updateWorkerLocation(String workerId) async {
     final position = await getCurrentLocation();
     if (position == null) return;
@@ -121,14 +142,14 @@ class LocationService {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        debugPrint('[LOCATION] Permission denied. Fallback to Bangalore.');
+        debugPrint('[LOCATION] Permission denied. Fallback to Mysuru.');
         _isTracking = true;
         _onPositionUpdate(_getFallbackPosition());
         return;
       }
     }
     if (permission == LocationPermission.deniedForever) {
-      debugPrint('[LOCATION] Permission permanently denied. Fallback to Bangalore.');
+      debugPrint('[LOCATION] Permission permanently denied. Fallback to Mysuru.');
       _isTracking = true;
       _onPositionUpdate(_getFallbackPosition());
       return;
@@ -145,21 +166,23 @@ class LocationService {
     ).listen(
       _onPositionUpdate,
       onError: (e) {
-        debugPrint('[LOCATION] Position stream error: $e. Fallback to Bangalore.');
+        debugPrint('[LOCATION] Position stream error: $e. Fallback to Mysuru.');
         _onPositionUpdate(_getFallbackPosition());
       },
     );
 
     // Immediately get current position too
     try {
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
+      final pos = await Geolocator.getLastKnownPosition() ??
+          await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.medium,
+              timeLimit: Duration(seconds: 4),
+            ),
+          );
       _onPositionUpdate(pos);
     } catch (e) {
-      debugPrint('[LOCATION] Error getting initial position: $e. Fallback to Bangalore.');
+      debugPrint('[LOCATION] Error getting initial position: $e. Fallback to Mysuru.');
       _onPositionUpdate(_getFallbackPosition());
     }
   }
@@ -180,15 +203,21 @@ class LocationService {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
+    // Rate-limit database updates to prevent hammering Supabase and draining battery
+    final now = DateTime.now();
+    if (_lastDbSyncTime != null && now.difference(_lastDbSyncTime!) < _minDbSyncInterval) {
+      return;
+    }
+    _lastDbSyncTime = now;
+
     debugPrint(
-      '[LOCATION] Update: ${position.latitude}, ${position.longitude}',
+      '[LOCATION] Throttled DB Sync: ${position.latitude}, ${position.longitude}',
     );
 
     try {
-      // Update Supabase workers table with PostGIS point
       await SupabaseConfig.client.from('workers').update({
         'location': 'POINT(${position.longitude} ${position.latitude})',
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
+        'updated_at': now.toUtc().toIso8601String(),
       }).eq('id', uid);
     } catch (e) {
       debugPrint('[LOCATION] Error updating Supabase: $e');
