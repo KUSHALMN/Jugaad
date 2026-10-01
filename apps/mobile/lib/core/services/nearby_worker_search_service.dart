@@ -76,6 +76,14 @@ class NearbyWorkerSearchService {
   static const double defaultRadiusKm = 5.0;
   static const int defaultLimit = 10;
 
+  // ─── Performance Caches ─────────────────────────────────────────
+  (double, double)? _cachedCoords;
+  DateTime? _cachedCoordsTime;
+  static const Duration _coordsCacheTtl = Duration(seconds: 30);
+
+  final Map<String, (DateTime, NearbyWorkerSearchResult)> _searchCache = {};
+  static const Duration _searchCacheTtl = Duration(seconds: 15);
+
   /// Search for nearby workers by calling the FastAPI backend.
   ///
   /// [lat], [lng] — User's GPS coordinates.
@@ -85,8 +93,6 @@ class NearbyWorkerSearchService {
   /// [limit] — Results per page (clamped to [1, 50] server-side).
   ///
   /// Returns a [NearbyWorkerSearchResult] with typed [NearbyWorkerModel] objects.
-  ///
-  /// Throws [Exception] on network or server errors.
   Future<NearbyWorkerSearchResult> searchNearbyWorkers({
     required double lat,
     required double lng,
@@ -95,6 +101,13 @@ class NearbyWorkerSearchService {
     int page = 0,
     int limit = defaultLimit,
   }) async {
+    final cacheKey = '${lat.toStringAsFixed(3)}_${lng.toStringAsFixed(3)}_${serviceType ?? "all"}_${radiusKm}_$page';
+    final cached = _searchCache[cacheKey];
+    if (cached != null && DateTime.now().difference(cached.$1) < _searchCacheTtl) {
+      debugPrint('[SEARCH] Returning memoized search results for $cacheKey');
+      return cached.$2;
+    }
+
     debugPrint(
       '[SEARCH] Searching nearby workers: '
       'lat=$lat, lng=$lng, radius=${radiusKm}km, '
@@ -133,6 +146,11 @@ class NearbyWorkerSearchService {
         expandedRadius: data['expanded_radius'] as bool? ?? false,
       );
 
+      if (_searchCache.length > 50) {
+        _searchCache.clear();
+      }
+      _searchCache[cacheKey] = (DateTime.now(), result);
+
       debugPrint(
         '[SEARCH] Found ${result.total} workers '
         '(page ${result.page}, radius ${result.radiusKm}km, '
@@ -149,7 +167,7 @@ class NearbyWorkerSearchService {
   /// Convenience method: search using the device's current GPS coordinates.
   ///
   /// 1. Requests location permission if not already granted
-  /// 2. Acquires the current position (7s timeout)
+  /// 2. Acquires the current position (with fast cached fallback)
   /// 3. Falls back to Mysuru center if GPS is unavailable
   /// 4. Calls [searchNearbyWorkers] with the resolved coordinates
   Future<NearbyWorkerSearchResult> searchFromCurrentLocation({
@@ -196,10 +214,17 @@ class NearbyWorkerSearchService {
     }
   }
 
-  /// Resolve the user's current GPS position.
+  /// Resolve the user's current GPS position with smart caching.
   /// Returns (lat, lng) tuple.
-  /// Falls back to Mysuru center coordinates if GPS is unavailable.
+  /// Checks memory cache, then last known position, then acquires a fast fix.
   Future<(double, double)> _resolveCurrentPosition() async {
+    // 1. Fast in-memory cache check (<30 seconds old)
+    if (_cachedCoords != null && _cachedCoordsTime != null) {
+      if (DateTime.now().difference(_cachedCoordsTime!) < _coordsCacheTtl) {
+        return _cachedCoords!;
+      }
+    }
+
     try {
       // Check if location services are enabled
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -222,18 +247,41 @@ class NearbyWorkerSearchService {
         return (_fallbackLat, _fallbackLng);
       }
 
-      // Acquire current position with timeout
+      // 2. Check if a recent last known position is available (instant 0ms resolution)
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null &&
+          DateTime.now().difference(lastKnown.timestamp) < const Duration(seconds: 45)) {
+        final coords = (lastKnown.latitude, lastKnown.longitude);
+        _cachedCoords = coords;
+        _cachedCoordsTime = DateTime.now();
+        debugPrint('[LOCATION] Used recent last-known position: (${lastKnown.latitude}, ${lastKnown.longitude})');
+        return coords;
+      }
+
+      // 3. Fast GPS fix with 4s timeout (medium accuracy locks much faster than high)
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 7),
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 4),
         ),
       );
 
-      debugPrint('[LOCATION] GPS position: (${position.latitude}, ${position.longitude})');
-      return (position.latitude, position.longitude);
+      final coords = (position.latitude, position.longitude);
+      _cachedCoords = coords;
+      _cachedCoordsTime = DateTime.now();
+      debugPrint('[LOCATION] GPS position acquired: (${position.latitude}, ${position.longitude})');
+      return coords;
     } catch (e) {
-      debugPrint('[LOCATION] Error resolving position: $e. Using Mysuru fallback.');
+      debugPrint('[LOCATION] Error or timeout acquiring position: $e. Checking last known...');
+      try {
+        final fallbackLast = await Geolocator.getLastKnownPosition();
+        if (fallbackLast != null) {
+          final coords = (fallbackLast.latitude, fallbackLast.longitude);
+          _cachedCoords = coords;
+          _cachedCoordsTime = DateTime.now();
+          return coords;
+        }
+      } catch (_) {}
       return (_fallbackLat, _fallbackLng);
     }
   }
