@@ -30,14 +30,33 @@ import DisputesManager from './components/DisputesManager';
 import SurgeGeofencingHub from './components/SurgeGeofencingHub';
 import EnhancedKycAudit from './components/EnhancedKycAudit';
 
+// Global memory cache for secure image blob URLs to prevent redundant Supabase Storage network downloads
+const _SECURE_IMAGE_CACHE = new Map();
+
 // === SECURE IMAGE LOADER COMPONENT (ADMIN-ONLY RLS BYPASS CAPABLE) ===
 const SecureImage = ({ srcUrl, className, alt, onClick }) => {
-  const [objectUrl, setObjectUrl] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [objectUrl, setObjectUrl] = useState(() => _SECURE_IMAGE_CACHE.get(srcUrl) || null);
+  const [loading, setLoading] = useState(() => !_SECURE_IMAGE_CACHE.has(srcUrl));
   const [error, setError] = useState(false);
+  const currentUrlRef = React.useRef(null);
 
   useEffect(() => {
     let active = true;
+
+    if (!srcUrl) {
+      setLoading(false);
+      setError(true);
+      return;
+    }
+
+    if (_SECURE_IMAGE_CACHE.has(srcUrl)) {
+      const cached = _SECURE_IMAGE_CACHE.get(srcUrl);
+      currentUrlRef.current = cached;
+      setObjectUrl(cached);
+      setLoading(false);
+      return;
+    }
+
     const fetchImage = async () => {
       try {
         setLoading(true);
@@ -47,26 +66,34 @@ const SecureImage = ({ srcUrl, className, alt, onClick }) => {
         const bucketName = 'worker-verification';
         const searchStr = `/${bucketName}/`;
         const idx = srcUrl.indexOf(searchStr);
+        let blobData;
+
         if (idx === -1) {
-          // If URL doesn't contain bucket name, try loading directly or treat as path
           if (srcUrl.startsWith('http')) {
             throw new Error("Could not parse file path from URL");
           }
-          const { data, error } = await supabase.storage.from(bucketName).download(srcUrl);
-          if (error) throw error;
-          if (active) {
-            const localUrl = URL.createObjectURL(data);
-            setObjectUrl(localUrl);
-          }
-          return;
+          const { data, error: dlErr } = await supabase.storage.from(bucketName).download(srcUrl);
+          if (dlErr) throw dlErr;
+          blobData = data;
+        } else {
+          const filePath = decodeURIComponent(srcUrl.substring(idx + searchStr.length));
+          const { data, error: dlErr } = await supabase.storage.from(bucketName).download(filePath);
+          if (dlErr) throw dlErr;
+          blobData = data;
         }
 
-        const filePath = decodeURIComponent(srcUrl.substring(idx + searchStr.length));
-        const { data, error } = await supabase.storage.from(bucketName).download(filePath);
-        if (error) throw error;
-
-        if (active) {
-          const localUrl = URL.createObjectURL(data);
+        if (active && blobData) {
+          const localUrl = URL.createObjectURL(blobData);
+          currentUrlRef.current = localUrl;
+          if (_SECURE_IMAGE_CACHE.size > 150) {
+            // Prune oldest half to bound memory
+            const entriesToEvict = Array.from(_SECURE_IMAGE_CACHE.entries()).slice(0, 50);
+            for (const [k, v] of entriesToEvict) {
+              URL.revokeObjectURL(v);
+              _SECURE_IMAGE_CACHE.delete(k);
+            }
+          }
+          _SECURE_IMAGE_CACHE.set(srcUrl, localUrl);
           setObjectUrl(localUrl);
         }
       } catch (err) {
@@ -77,18 +104,10 @@ const SecureImage = ({ srcUrl, className, alt, onClick }) => {
       }
     };
 
-    if (srcUrl) {
-      fetchImage();
-    } else {
-      setLoading(false);
-      setError(true);
-    }
+    fetchImage();
 
     return () => {
       active = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
     };
   }, [srcUrl]);
 
