@@ -85,6 +85,7 @@ _FALLBACK_SERVICES = [
 # In-memory caches for fast sub-millisecond responses
 _SERVICES_CACHE = {"data": None, "timestamp": 0.0, "ttl": 60.0}
 _CONFIG_CACHE = {"data": None, "timestamp": 0.0, "ttl": 30.0}
+_STATS_CACHE = {"data": None, "timestamp": 0.0, "ttl": 15.0}
 
 @app.get("/v1/services")
 @app.get("/api/v1/services")
@@ -193,7 +194,11 @@ def update_platform_config(body: dict, admin_id: str = Depends(_verify_admin_for
 @app.get("/v1/admin/dashboard/stats")
 @app.get("/api/v1/admin/dashboard/stats")
 def get_dashboard_stats():
-    """Unauthenticated/local fallback endpoint for Admin Dashboard metrics."""
+    """Unauthenticated/local fallback endpoint for Admin Dashboard metrics with 15s TTL caching."""
+    now = time.time()
+    if _STATS_CACHE["data"] is not None and (now - _STATS_CACHE["timestamp"]) < _STATS_CACHE["ttl"]:
+        return _STATS_CACHE["data"]
+
     try:
         users_res = supabase.table("users").select("id", count="exact").execute()
         users_count = users_res.count or 0
@@ -207,8 +212,8 @@ def get_dashboard_stats():
         workers_count = 0
 
     try:
-        pending_res = supabase.table("workers").select("*").eq("status", "pending").execute()
-        pending_count = len(pending_res.data or [])
+        pending_res = supabase.table("workers").select("id", count="exact").or_("status.eq.pending,status.eq.pending_approval,approval_status.eq.pending,approval_status.eq.pending_approval").execute()
+        pending_count = pending_res.count if pending_res.count is not None else len(pending_res.data or [])
     except Exception:
         pending_count = 0
 
@@ -218,10 +223,10 @@ def get_dashboard_stats():
     avg_response_time = 1.8
     avg_arrival_time = 14.5
     completion_rate = 96.2
-    emergency_revenue = 3850
+    emergency_revenue = 3850.0
 
     try:
-        jobs_res = supabase.table("jobs").select("status, created_at, accepted_at, completed_at, amount, surcharge_amount").eq("job_type", "emergency").execute()
+        jobs_res = supabase.table("jobs").select("status, created_at, accepted_at, completed_at, amount, surcharge_amount").eq("job_type", "emergency").limit(200).execute()
         emergency_jobs = jobs_res.data or []
         if emergency_jobs:
             emergency_requests = len(emergency_jobs)
@@ -269,7 +274,7 @@ def get_dashboard_stats():
     except Exception as e:
         logging.warning(f"Error fetching dashboard stats: {e}")
 
-    return {
+    stats_result = {
         "usersCount": users_count,
         "workersCount": workers_count,
         "pendingWorkers": pending_count,
@@ -280,6 +285,11 @@ def get_dashboard_stats():
         "emergencyAvgArrivalTime": round(avg_arrival_time, 1),
         "emergencyRevenue": round(emergency_revenue, 2),
     }
+
+    _STATS_CACHE["data"] = stats_result
+    _STATS_CACHE["timestamp"] = now
+
+    return stats_result
 
 
 @app.post("/v1/upload")
