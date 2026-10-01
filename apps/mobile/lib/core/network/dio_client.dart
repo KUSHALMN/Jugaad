@@ -28,6 +28,11 @@ class DioClient {
     return _dio;
   }
 
+  /// Invalidate client-side in-memory HTTP caches
+  static void invalidateCache() {
+    _CacheInterceptor.invalidateCache();
+  }
+
   /// Call once at app startup (in main.dart).
   static void initialize() {
     if (_initialized) return;
@@ -43,10 +48,11 @@ class DioClient {
       },
     ));
 
-    // Order matters: logging → auth → retry → error
+    // Order matters: logging → cache → auth → retry → error
     if (EnvironmentConfig.isDebug) {
       _dio.interceptors.add(_LoggingInterceptor());
     }
+    _dio.interceptors.add(_CacheInterceptor());
     _dio.interceptors.add(_AuthInterceptor());
     _dio.interceptors.add(_RetryInterceptor(_dio));
     _dio.interceptors.add(_ErrorInterceptor());
@@ -57,6 +63,59 @@ class DioClient {
 
   /// Base URL getter for external use (e.g. heartbeat service).
   static String get baseUrl => EnvironmentConfig.baseUrl;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 0. CACHE INTERCEPTOR — fast in-memory response cache for static GETs
+// ═══════════════════════════════════════════════════════════════════
+
+class _CacheInterceptor extends Interceptor {
+  static final Map<String, (DateTime, Response)> _cache = {};
+  static const Set<String> _cacheablePaths = {
+    '/v1/services',
+    '/api/v1/services',
+    '/v1/platform/config',
+    '/api/v1/platform/config',
+  };
+  static const Duration _defaultTtl = Duration(seconds: 45);
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (options.method.toUpperCase() == 'GET' && _cacheablePaths.contains(options.path)) {
+      final key = '${options.method}:${options.path}:${options.queryParameters}';
+      final cached = _cache[key];
+      if (cached != null && DateTime.now().difference(cached.$1) < _defaultTtl) {
+        debugPrint('[DIO/CACHE] Cache HIT for ${options.path}');
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            data: cached.$2.data,
+            statusCode: 200,
+            statusMessage: 'OK (Memory Cache)',
+          ),
+        );
+      }
+    }
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    if (response.requestOptions.method.toUpperCase() == 'GET' &&
+        _cacheablePaths.contains(response.requestOptions.path) &&
+        response.statusCode == 200) {
+      final key = '${response.requestOptions.method}:${response.requestOptions.path}:${response.requestOptions.queryParameters}';
+      if (_cache.length > 50) {
+        _cache.clear();
+      }
+      _cache[key] = (DateTime.now(), response);
+    }
+    handler.next(response);
+  }
+
+  static void invalidateCache() {
+    _cache.clear();
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
