@@ -22,6 +22,8 @@ class CachedImage extends StatelessWidget {
   final Widget? placeholder;
   final Widget? errorWidget;
   final bool isCircle;
+  final int? memCacheWidth;
+  final int? memCacheHeight;
 
   const CachedImage({
     super.key,
@@ -33,15 +35,29 @@ class CachedImage extends StatelessWidget {
     this.placeholder,
     this.errorWidget,
     this.isCircle = false,
+    this.memCacheWidth,
+    this.memCacheHeight,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Memory optimization: clamp decode dimensions to actual physical pixel display size
+    // to prevent full-resolution multi-megabyte bitmap allocations in GPU memory.
+    final dpr = MediaQuery.maybeOf(context)?.devicePixelRatio ?? 2.0;
+    final int? targetMemWidth = memCacheWidth ??
+        (width != null ? (width! * dpr).clamp(32.0, 1200.0).round() : null);
+    final int? targetMemHeight = memCacheHeight ??
+        (height != null ? (height! * dpr).clamp(32.0, 1200.0).round() : null);
+
     final image = CachedNetworkImage(
       imageUrl: imageUrl,
       width: width,
       height: height,
       fit: fit,
+      memCacheWidth: targetMemWidth,
+      memCacheHeight: targetMemHeight,
+      maxWidthDiskCache: 800,
+      maxHeightDiskCache: 800,
       placeholder: (context, url) =>
           placeholder ??
           _ShimmerPlaceholder(
@@ -75,14 +91,27 @@ class CachedImage extends StatelessWidget {
 /// A cached [ImageProvider] wrapper for use in places like
 /// [CircleAvatar.backgroundImage] or [DecorationImage].
 ///
-/// Usage:
-/// ```dart
-/// CircleAvatar(
-///   backgroundImage: cachedImageProvider('https://...'),
-/// )
-/// ```
-ImageProvider cachedImageProvider(String url) {
-  return CachedNetworkImageProvider(url);
+/// Automatically uses [ResizeImage] if target dimensions are provided to keep
+/// memory footprints minimal during avatar and thumbnail rendering.
+ImageProvider cachedImageProvider(
+  String url, {
+  int? maxWidth = 400,
+  int? maxHeight = 400,
+}) {
+  final provider = CachedNetworkImageProvider(
+    url,
+    maxWidth: maxWidth,
+    maxHeight: maxHeight,
+  );
+  if (maxWidth != null || maxHeight != null) {
+    return ResizeImage(
+      provider,
+      width: maxWidth,
+      height: maxHeight,
+      allowUpscaling: false,
+    );
+  }
+  return provider;
 }
 
 // ─── Internal shimmer placeholder ──────────────────────────────
