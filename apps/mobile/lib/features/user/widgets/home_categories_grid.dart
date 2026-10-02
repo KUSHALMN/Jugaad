@@ -112,225 +112,278 @@ class HomeCategoriesGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Headline: "Home services at your doorstep"
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Home services at your doorstep',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0F172A),
-                        letterSpacing: -0.6,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Verified Bangalore & Mysuru technicians • 15–30 min arrival',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  context.push('/user/book');
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'View All',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF1D4ED8),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Color(0xFF1D4ED8),
-                      size: 13,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
+    return LayoutBuilder(
+      builder: (context, rootConstraints) {
+        final double screenWidth = rootConstraints.maxWidth;
+        final bool isSmallMobile = screenWidth < 360;
+        final bool isTablet = screenWidth >= 600 && screenWidth < 900;
+        final bool isDesktop = screenWidth >= 900;
 
-        // Spacious Container Card for Categories
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.1),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x060F172A),
-                  blurRadius: 20,
-                  offset: Offset(0, 6),
-                ),
-              ],
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // If wide desktop (>= 740px), show all 7 categories in a single balanced row!
-                // Otherwise (tablet/mobile), use 4 columns with spacious squircle proportions.
-                final bool isDesktop = constraints.maxWidth >= 740;
-                final int columns = isDesktop ? 7 : 4;
-                final double spacing = isDesktop ? 12 : 10;
-                final double itemWidth = (constraints.maxWidth - ((columns - 1) * spacing)) / columns;
+        final double horizontalMargin = isDesktop
+            ? 24.0
+            : (isSmallMobile ? 12.0 : 16.0);
 
-                return Wrap(
-                  spacing: spacing,
-                  runSpacing: 18,
-                  alignment: isDesktop ? WrapAlignment.spaceBetween : WrapAlignment.center,
-                  children: categories.map((cat) {
-                    return SizedBox(
-                      width: itemWidth,
-                      child: _CategoryTile(
-                        category: cat,
-                        isDesktop: isDesktop,
-                        onTap: () {
-                          HapticFeedback.mediumImpact();
-                          ref.read(postJobProvider.notifier).reset();
-                          ref.read(postJobProvider.notifier).setSkill(cat.serviceSkill);
-                          if (cat.isEmergency) {
-                            ref.read(postJobProvider.notifier).setEmergency(true);
-                            ref.read(postJobProvider.notifier).setUrgency('now');
-                            context.push('/user/post-job/step2');
-                          } else {
-                            context.push('/user/worker-search?service=${Uri.encodeComponent(cat.serviceSkill)}');
-                          }
-                        },
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Bangalore & Mysuru Proof Bar: 4.85 ★ Service Rating | 250K+ Happy Homes
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Row(
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 19),
-                    const SizedBox(width: 5),
-                    Text(
-                      '4.85',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0F172A),
+                // Headline: "Home services at your doorstep"
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalMargin),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Home services at your doorstep',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: isDesktop ? 22 : (isSmallMobile ? 17 : 19.5),
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0F172A),
+                                letterSpacing: -0.6,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              'Verified Bangalore & Mysuru technicians • 15–30 min arrival',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: isDesktop ? 13 : (isSmallMobile ? 11 : 12),
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF64748B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Service Rating*',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        color: const Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          context.push('/user/book');
+                        },
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isSmallMobile ? 10 : 14,
+                            vertical: isSmallMobile ? 6 : 8,
+                          ),
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'View All',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFF1D4ED8),
+                                fontSize: isSmallMobile ? 11.5 : 12.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Color(0xFF1D4ED8),
+                              size: 13,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const Spacer(),
-                Container(
-                  width: 1,
-                  height: 16,
-                  color: const Color(0xFFCBD5E1),
+                SizedBox(height: isSmallMobile ? 12 : 16),
+
+                // Responsive Container Card for Categories
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalMargin),
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isDesktop ? 22 : (isSmallMobile ? 12 : 16),
+                      vertical: isDesktop ? 20 : (isSmallMobile ? 14 : 18),
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(isDesktop ? 24 : 20),
+                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.1),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x060F172A),
+                          blurRadius: 20,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, cardConstraints) {
+                        final double availableWidth = cardConstraints.maxWidth;
+                        // On wide screens (>= 680), show all 7 categories in a balanced single row!
+                        // On mobile, use 4 columns with centered second row.
+                        final bool showSingleRow = availableWidth >= 680;
+                        final int columns = showSingleRow ? 7 : 4;
+                        final double spacing = showSingleRow
+                            ? 12.0
+                            : (isSmallMobile ? 8.0 : 10.0);
+                        final double runSpacing = showSingleRow ? 0.0 : (isSmallMobile ? 14.0 : 18.0);
+                        final double itemWidth = (availableWidth - ((columns - 1) * spacing)) / columns;
+
+                        // Responsive height & font size proportional to itemWidth
+                        final double cardHeight = showSingleRow
+                            ? (itemWidth * 0.82).clamp(84.0, 105.0)
+                            : (itemWidth * 0.96).clamp(64.0, 86.0);
+
+                        final double titleFontSize = showSingleRow
+                            ? (isDesktop ? 12.5 : 11.5)
+                            : (isSmallMobile ? 10.2 : 11.5);
+
+                        return Wrap(
+                          spacing: spacing,
+                          runSpacing: runSpacing,
+                          alignment: showSingleRow ? WrapAlignment.spaceBetween : WrapAlignment.center,
+                          children: categories.map((cat) {
+                            return SizedBox(
+                              width: itemWidth,
+                              child: _CategoryTile(
+                                category: cat,
+                                cardHeight: cardHeight,
+                                titleFontSize: titleFontSize,
+                                isDesktop: isDesktop || isTablet,
+                                onTap: () {
+                                  HapticFeedback.mediumImpact();
+                                  ref.read(postJobProvider.notifier).reset();
+                                  ref.read(postJobProvider.notifier).setSkill(cat.serviceSkill);
+                                  if (cat.isEmergency) {
+                                    ref.read(postJobProvider.notifier).setEmergency(true);
+                                    ref.read(postJobProvider.notifier).setUrgency('now');
+                                    context.push('/user/post-job/step2');
+                                  } else {
+                                    context.push('/user/worker-search?service=${Uri.encodeComponent(cat.serviceSkill)}');
+                                  }
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ),
                 ),
-                const Spacer(),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.people_alt_rounded, color: Color(0xFF2563EB), size: 17),
-                    const SizedBox(width: 6),
-                    Text(
-                      '250K+',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0F172A),
+
+                SizedBox(height: isSmallMobile ? 12 : 16),
+
+                // Proof Bar: 4.85 ★ Service Rating | 250K+ Happy Homes
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalMargin),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmallMobile ? 12 : 16,
+                      vertical: isSmallMobile ? 9 : 11,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 18),
+                              const SizedBox(width: 4),
+                              Text(
+                                '4.85',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Service Rating*',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  color: const Color(0xFF64748B),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 24),
+                          Container(
+                            width: 1,
+                            height: 14,
+                            color: const Color(0xFFCBD5E1),
+                          ),
+                          const SizedBox(width: 24),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.people_alt_rounded, color: Color(0xFF2563EB), size: 16),
+                              const SizedBox(width: 5),
+                              Text(
+                                '250K+',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Happy Homes*',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  color: const Color(0xFF64748B),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Happy Homes*',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        color: const Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
 class _CategoryTile extends StatefulWidget {
   final CategoryGridItem category;
+  final double cardHeight;
+  final double titleFontSize;
   final bool isDesktop;
   final VoidCallback onTap;
 
   const _CategoryTile({
     required this.category,
+    required this.cardHeight,
+    required this.titleFontSize,
     required this.isDesktop,
     required this.onTap,
   });
@@ -346,7 +399,8 @@ class _CategoryTileState extends State<_CategoryTile> {
   @override
   Widget build(BuildContext context) {
     final cat = widget.category;
-    final double cardHeight = widget.isDesktop ? 96.0 : 76.0;
+    final cardHeight = widget.cardHeight;
+    final isCompact = cardHeight < 76;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -371,7 +425,7 @@ class _CategoryTileState extends State<_CategoryTile> {
                 height: cardHeight,
                 decoration: BoxDecoration(
                   color: cat.bgColor,
-                  borderRadius: BorderRadius.circular(widget.isDesktop ? 18 : 14),
+                  borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
                   border: Border.all(
                     color: _isHovered
                         ? cat.iconColor.withValues(alpha: 0.6)
@@ -392,7 +446,7 @@ class _CategoryTileState extends State<_CategoryTile> {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Apple asset image with subtle soft fade
+                    // Asset image
                     Image.asset(
                       cat.imageUrl,
                       fit: BoxFit.cover,
@@ -401,7 +455,7 @@ class _CategoryTileState extends State<_CategoryTile> {
                           child: Icon(
                             cat.icon,
                             color: cat.iconColor,
-                            size: widget.isDesktop ? 32 : 26,
+                            size: isCompact ? 22 : (widget.isDesktop ? 30 : 25),
                           ),
                         );
                       },
@@ -422,18 +476,18 @@ class _CategoryTileState extends State<_CategoryTile> {
                     // Inset Badge on top left
                     if (cat.badge != null)
                       Positioned(
-                        top: 6,
-                        left: 6,
+                        top: isCompact ? 4 : 6,
+                        left: isCompact ? 4 : 6,
                         child: Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: widget.isDesktop ? 7 : 5,
-                            vertical: widget.isDesktop ? 2.5 : 2,
+                            horizontal: isCompact ? 4 : (widget.isDesktop ? 7 : 5),
+                            vertical: isCompact ? 1.5 : (widget.isDesktop ? 2.5 : 2),
                           ),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [cat.iconColor, cat.iconColor.withValues(alpha: 0.90)],
                             ),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(5),
                             border: Border.all(color: Colors.white, width: 1.0),
                             boxShadow: [
                               BoxShadow(
@@ -446,7 +500,7 @@ class _CategoryTileState extends State<_CategoryTile> {
                           child: Text(
                             cat.badge!,
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: widget.isDesktop ? 8.5 : 7.5,
+                              fontSize: isCompact ? 7.0 : (widget.isDesktop ? 8.5 : 7.5),
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                               letterSpacing: 0.2,
@@ -456,10 +510,10 @@ class _CategoryTileState extends State<_CategoryTile> {
                       ),
                     // Bottom right icon badge
                     Positioned(
-                      bottom: 6,
-                      right: 6,
+                      bottom: isCompact ? 4 : 6,
+                      right: isCompact ? 4 : 6,
                       child: Container(
-                        padding: EdgeInsets.all(widget.isDesktop ? 5 : 3.5),
+                        padding: EdgeInsets.all(isCompact ? 2.5 : (widget.isDesktop ? 5 : 3.5)),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -472,7 +526,7 @@ class _CategoryTileState extends State<_CategoryTile> {
                         ),
                         child: Icon(
                           cat.icon,
-                          size: widget.isDesktop ? 13 : 11,
+                          size: isCompact ? 9.5 : (widget.isDesktop ? 13 : 11),
                           color: cat.iconColor,
                         ),
                       ),
@@ -480,12 +534,12 @@ class _CategoryTileState extends State<_CategoryTile> {
                   ],
                 ),
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 6),
               Text(
                 cat.title,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: widget.isDesktop ? 12.5 : 11,
+                  fontSize: widget.titleFontSize,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF0F172A),
                   letterSpacing: -0.2,
@@ -501,4 +555,5 @@ class _CategoryTileState extends State<_CategoryTile> {
     );
   }
 }
+
 
