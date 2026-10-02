@@ -49,65 +49,143 @@ class DashboardHeader extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x06000000),
-                            blurRadius: 6,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.location_on_rounded,
-                            color: Color(0xFF2563EB),
-                            size: 13,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            "Mysuru",
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11.5,
-                              color: const Color(0xFF334155),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 3,
-                            height: 3,
+                    // Urban Company style Location Selector Chip
+                    InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          builder: (ctx) => Container(
                             decoration: const BoxDecoration(
-                              color: Color(0xFF94A3B8),
-                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                            ),
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Center(
+                                  child: Container(
+                                    width: 36,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE2E8F0),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Choose Service City',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Live on-demand coverage available across Karnataka',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ListTile(
+                                  leading: const CircleAvatar(
+                                    backgroundColor: Color(0xFFEFF6FF),
+                                    child: Icon(Icons.location_city_rounded, color: Color(0xFF2563EB)),
+                                  ),
+                                  title: Text('Bengaluru', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+                                  subtitle: Text('Indiranagar, Koramangala, Whitefield & HSR', style: GoogleFonts.plusJakartaSans(fontSize: 11)),
+                                  trailing: const Icon(Icons.check_circle_rounded, color: Color(0xFF2563EB)),
+                                  onTap: () => Navigator.pop(ctx),
+                                ),
+                                ListTile(
+                                  leading: const CircleAvatar(
+                                    backgroundColor: Color(0xFFF0FDF4),
+                                    child: Icon(Icons.temple_hindu_rounded, color: Color(0xFF16A34A)),
+                                  ),
+                                  title: Text('Mysuru', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+                                  subtitle: Text('Gokulam, Kuvempunagar, Jayalakshmipuram', style: GoogleFonts.plusJakartaSans(fontSize: 11)),
+                                  trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+                                  onTap: () => Navigator.pop(ctx),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF22C55E),
-                              shape: BoxShape.circle,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x06000000),
+                              blurRadius: 6,
+                              offset: Offset(0, 2),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            "Online",
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
-                              color: const Color(0xFF16A34A),
-                              fontWeight: FontWeight.w600,
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.location_on_rounded,
+                              color: Color(0xFF2563EB),
+                              size: 14,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              "Bengaluru",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11.5,
+                                color: const Color(0xFF0F172A),
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Color(0xFF64748B),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              width: 3,
+                              height: 3,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFCBD5E1),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF22C55E),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "Online",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10.5,
+                                color: const Color(0xFF16A34A),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

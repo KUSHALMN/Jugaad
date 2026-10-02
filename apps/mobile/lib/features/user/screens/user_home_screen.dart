@@ -21,6 +21,9 @@ import '../widgets/recent_jobs_list.dart';
 import '../widgets/sync_alert_banner.dart';
 import 'post_job/post_job_state.dart';
 import '../../../core/services/platform_config_service.dart';
+import '../widgets/urban_categories_grid.dart';
+import '../widgets/urban_promo_carousel.dart';
+import '../widgets/urban_trust_matrix.dart';
 
 // --- RIVERPOD PROVIDERS ---
 
@@ -698,271 +701,29 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
-                  // --- EMERGENCY HERO CARD (Ultra-Luxury Minimalist Light Aesthetic)
+                  // --- SEARCH BAR (Urban Company Top Placement - High-Visibility Hero Search)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 14.0),
-                      child: Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(28.0),
-                          border: Border.all(
-                            color: const Color(0xFFE2E8F0),
-                            width: 1.0,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x0A0F172A),
-                              blurRadius: 30,
-                              offset: Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Top accent badge header inside card
-                            Container(
-                              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFFF1F2),
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          width: 7,
-                                          height: 7,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFFE11D48),
-                                            shape: BoxShape.circle,
-                                          ),
-                                        )
-                                        .animate(onPlay: (c) => c.repeat(reverse: true))
-                                        .scaleXY(begin: 0.7, end: 1.3, duration: 800.ms),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Instant Dispatch Active',
-                                          style: GoogleFonts.plusJakartaSans(
-                                            color: const Color(0xFFE11D48),
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: 0.2,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.check_circle_rounded,
-                                        size: 14,
-                                        color: Color(0xFF16A34A),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'Verified Pros Nearby',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: const Color(0xFF15803D),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Emergency Home Services',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF0F172A),
-                                      letterSpacing: -0.6,
-                                      height: 1.2,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Expert electrician, plumber or mechanic at your doorstep in under 30 minutes.',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: const Color(0xFF64748B),
-                                      height: 1.35,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  // Primary Luxury Action Button
-                                  ScaleOnTap(
-                                    onTap: () {
-                                      HapticFeedback.heavyImpact();
-                                      ref.read(postJobProvider.notifier).reset();
-                                      ref.read(postJobProvider.notifier).setEmergency(true);
-                                      context.push('/user/post-job/step1');
-                                    },
-                                    child: Container(
-                                      width: double.infinity,
-                                      height: 54,
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [Color(0xFFE11D48), Color(0xFFBE123C)],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                        boxShadow: const [
-                                          BoxShadow(
-                                            color: Color(0x35E11D48),
-                                            blurRadius: 18,
-                                            offset: Offset(0, 7),
-                                          ),
-                                        ],
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(5),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withValues(alpha: 0.2),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(
-                                              Icons.bolt_rounded,
-                                              color: Colors.white,
-                                              size: 16,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Text(
-                                            'Request Instant Help Now',
-                                            style: GoogleFonts.plusJakartaSans(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 15,
-                                              letterSpacing: 0.2,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          const Icon(
-                                            Icons.arrow_forward_rounded,
-                                            color: Colors.white70,
-                                            size: 17,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  // Sleek 3-card stats
-                                  Row(
-                                    children: [
-                                      _StatPill(
-                                        icon: Icons.timer_outlined,
-                                        iconColor: const Color(0xFFE11D48),
-                                        label: '30 min',
-                                        sublabel: 'Avg arrival',
-                                      ),
-                                      const SizedBox(width: 8),
-                                      _StatPill(
-                                        icon: Icons.people_outline_rounded,
-                                        iconColor: const Color(0xFF2563EB),
-                                        label: '500+',
-                                        sublabel: 'Workers',
-                                      ),
-                                      const SizedBox(width: 8),
-                                      _StatPill(
-                                        icon: Icons.star_rounded,
-                                        iconColor: const Color(0xFFF59E0B),
-                                        label: '4.8 ★',
-                                        sublabel: 'Top rated',
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // --- TRUST INDICATORS STRIP (Clean borderless pills)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20.0, 2.0, 20.0, 16.0),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        child: Row(
-                          children: [
-                            _TrustChip(
-                              icon: Icons.verified_user_rounded,
-                              color: const Color(0xFF16A34A),
-                              label: 'Verified Workers',
-                            ),
-                            const SizedBox(width: 8),
-                            _TrustChip(
-                              icon: Icons.bolt_rounded,
-                              color: const Color(0xFFE11D48),
-                              label: '30-Min Arrival',
-                            ),
-                            const SizedBox(width: 8),
-                            _TrustChip(
-                              icon: Icons.near_me_rounded,
-                              color: const Color(0xFF2563EB),
-                              label: 'Live GPS',
-                            ),
-                            const SizedBox(width: 8),
-                            _TrustChip(
-                              icon: Icons.security_rounded,
-                              color: const Color(0xFFEA580C),
-                              label: 'Insured Work',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // --- SEARCH BAR (Floating luxury pill)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      padding: const EdgeInsets.fromLTRB(20.0, 4.0, 20.0, 16.0),
                       child: GestureDetector(
-                        onTap: () => context.push('/user/worker-search'),
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          context.push('/user/worker-search');
+                        },
                         child: Container(
-                          height: 54.0,
+                          height: 52.0,
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(18.0),
+                            borderRadius: BorderRadius.circular(16.0),
                             border: Border.all(
                               color: const Color(0xFFE2E8F0),
-                              width: 1.0,
+                              width: 1.2,
                             ),
                             boxShadow: const [
                               BoxShadow(
                                 color: Color(0x080F172A),
-                                blurRadius: 18,
+                                blurRadius: 16,
                                 offset: Offset(0, 4),
                               ),
                             ],
@@ -970,8 +731,8 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                           child: Row(
                             children: [
                               Container(
-                                width: 34,
-                                height: 34,
+                                width: 32,
+                                height: 32,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFEFF6FF),
                                   borderRadius: BorderRadius.circular(10),
@@ -979,14 +740,14 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                                 alignment: Alignment.center,
                                 child: const Icon(
                                   Icons.search_rounded,
-                                  color: Color(0xFF2563EB),
-                                  size: 19,
+                                  color: Color(0xFF1D4ED8),
+                                  size: 18,
                                 ),
                               ),
                               const SizedBox(width: 12.0),
                               Expanded(
                                 child: Text(
-                                  "Search electrician, plumber, carpenter...",
+                                  "Search electrician, AC repair, plumber...",
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 13.5,
                                     color: const Color(0xFF64748B),
@@ -996,6 +757,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                               ),
                               GestureDetector(
                                 onTap: () {
+                                  HapticFeedback.lightImpact();
                                   showDialog(
                                     context: context,
                                     barrierColor: Colors.black.withValues(alpha: 0.2),
@@ -1003,8 +765,8 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                                   );
                                 },
                                 child: Container(
-                                  width: 34,
-                                  height: 34,
+                                  width: 32,
+                                  height: 32,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFF7ED),
                                     borderRadius: BorderRadius.circular(10),
@@ -1013,7 +775,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                                   child: const Icon(
                                     Icons.mic_rounded,
                                     color: Color(0xFFEA580C),
-                                    size: 18,
+                                    size: 17,
                                   ),
                                 ),
                               ),
@@ -1024,9 +786,25 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
+                  // --- URBAN COMPANY CATEGORIES GRID (8 Essential Services)
+                  const SliverToBoxAdapter(
+                    child: RepaintBoundary(
+                      child: UrbanCategoriesGrid(),
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(child: SizedBox(height: 20.0)),
+
+                  // --- URBAN PROMO CAROUSEL (Banners: Jugaad Assured, Instant Dispatch, ₹100 Off)
+                  const SliverToBoxAdapter(
+                    child: RepaintBoundary(
+                      child: UrbanPromoCarousel(),
+                    ),
+                  ),
+
                   const SliverToBoxAdapter(child: SizedBox(height: 24.0)),
 
-                  // --- CATEGORY GRID TITLE
+                  // --- MOST BOOKED SERVICES TITLE
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -1039,13 +817,13 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                                 width: 8,
                                 height: 8,
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFFE11D48),
+                                  color: Color(0xFF1D4ED8),
                                   shape: BoxShape.circle,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Explore Services',
+                                'Most Booked Services',
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
@@ -1073,9 +851,9 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                             child: Row(
                               children: [
                                 Text(
-                                  "All Categories",
+                                  "View All",
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF2563EB),
+                                    color: const Color(0xFF1D4ED8),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -1083,7 +861,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                                 const SizedBox(width: 4),
                                 const Icon(
                                   Icons.arrow_forward_rounded,
-                                  color: Color(0xFF2563EB),
+                                  color: Color(0xFF1D4ED8),
                                   size: 13,
                                 ),
                               ],
@@ -1096,7 +874,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
 
                   const SliverToBoxAdapter(child: SizedBox(height: 14.0)),
 
-                  // --- CATEGORY GRID
+                  // --- MOST BOOKED SERVICES CARDS
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
                     sliver: SliverToBoxAdapter(
@@ -1109,9 +887,18 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
+                  const SliverToBoxAdapter(child: SizedBox(height: 24.0)),
+
+                  // --- URBAN TRUST MATRIX (The Jugaad Guarantee)
+                  const SliverToBoxAdapter(
+                    child: RepaintBoundary(
+                      child: UrbanTrustMatrix(),
+                    ),
+                  ),
+
                   const SliverToBoxAdapter(child: SizedBox(height: 20.0)),
 
-                  // --- QUICK REBOOK SECTION (NEW)
+                  // --- QUICK REBOOK SECTION (Supabase Live Stream)
                   SliverToBoxAdapter(
                     child: RepaintBoundary(
                       child: recentAsync.when(
@@ -1130,7 +917,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                         'Recent Bookings',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: const Color(0xFF0F172A),
                         ),
                       ),
@@ -1146,7 +933,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                       ),
                     ),
                   ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 48)),
                 ],
               ),
 
