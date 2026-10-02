@@ -37,11 +37,30 @@ class WorkerShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
-      bottomNavigationBar: JugaadBottomNav(
-        mode: PortalMode.worker,
-        currentIndex: _calculateSelectedIndex(context),
-        onTap: (int idx) => _onItemTapped(idx, context),
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: SizedBox.expand(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1140),
+            child: child,
+          ),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        color: Colors.white,
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          heightFactor: 1.0,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1140),
+            child: JugaadBottomNav(
+              mode: PortalMode.worker,
+              currentIndex: _calculateSelectedIndex(context),
+              onTap: (int idx) => _onItemTapped(idx, context),
+            ),
+          ),
+        ),
       ),
     );
   }

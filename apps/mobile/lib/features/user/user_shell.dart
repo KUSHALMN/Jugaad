@@ -54,13 +54,18 @@ class UserShell extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1140),
-          child: JugaadBottomNav(
-            mode: PortalMode.user,
-            currentIndex: _calculateSelectedIndex(context),
-            onTap: (int idx) => _onItemTapped(idx, context),
+      bottomNavigationBar: Container(
+        color: Colors.white,
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          heightFactor: 1.0,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1140),
+            child: JugaadBottomNav(
+              mode: PortalMode.user,
+              currentIndex: _calculateSelectedIndex(context),
+              onTap: (int idx) => _onItemTapped(idx, context),
+            ),
           ),
         ),
       ),
