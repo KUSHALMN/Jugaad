@@ -19,7 +19,6 @@ import '../widgets/services_grid.dart';
 import '../widgets/quick_rebook.dart';
 import '../widgets/recent_jobs_list.dart';
 import '../widgets/sync_alert_banner.dart';
-import 'post_job/post_job_state.dart';
 import '../../../core/services/platform_config_service.dart';
 import '../widgets/urban_categories_grid.dart';
 import '../widgets/urban_promo_carousel.dart';
@@ -985,129 +984,6 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Compact trust indicator pill chip for the home screen
-class _TrustChip extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String label;
-
-  const _TrustChip({
-    required this.icon,
-    required this.color,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x05000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Icon(icon, size: 11, color: color),
-          ),
-          const SizedBox(width: 7),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF334155),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Compact stat pill for inside the light CTA card
-class _StatPill extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-  final String sublabel;
-
-  const _StatPill({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-    required this.sublabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: const Color(0xFFE2E8F0),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 14, color: iconColor),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    label,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF0F172A),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 3),
-            Text(
-              sublabel,
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFF64748B),
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
         ),
       ),
     );
