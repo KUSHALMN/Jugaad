@@ -157,11 +157,14 @@ class ServicesGrid extends ConsumerWidget {
       childAspectRatio = 1.65;
     } else if (screenWidth >= 540) {
       crossAxisCount = 2;
-      childAspectRatio = 1.6;
-    } else {
-      // Standard mobile phone screen (e.g. 360px - 430px)
+      childAspectRatio = 1.45;
+    } else if (screenWidth >= 380) {
       crossAxisCount = 2;
-      childAspectRatio = 0.98;
+      childAspectRatio = 0.80;
+    } else {
+      // Small screen phone or narrow viewport
+      crossAxisCount = 2;
+      childAspectRatio = 0.74;
     }
 
     return GridView.builder(
@@ -265,8 +268,8 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
               boxShadow: [
                 BoxShadow(
                   color: _isHovered
-                      ? cfg.accentColor.withValues(alpha: 0.12)
-                      : const Color(0x060F172A),
+                    ? cfg.accentColor.withValues(alpha: 0.12)
+                    : const Color(0x060F172A),
                   blurRadius: _isHovered ? 16 : 8,
                   offset: const Offset(0, 3),
                 ),
@@ -275,18 +278,18 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 11.0, vertical: 10.0),
+                padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // 1. Top Bar: Icon + Live Pill Badge
+                    // 1. Top Bar: Icon + Live Pill Badge (Overflow-proof)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
-                          width: 36,
-                          height: 36,
+                          width: 34,
+                          height: 34,
                           decoration: BoxDecoration(
                             color: cfg.bgTint,
                             borderRadius: BorderRadius.circular(10),
@@ -299,37 +302,46 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                           child: Icon(
                             cfg.iconData,
                             color: cfg.accentColor,
-                            size: 19,
+                            size: 18,
                           ),
                         ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: cfg.accentColor.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 5,
-                                height: 5,
-                                decoration: BoxDecoration(
-                                  color: cfg.accentColor,
-                                  shape: BoxShape.circle,
-                                ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: cfg.accentColor.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                displayBadgeText,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: cfg.accentColor,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 5,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: cfg.accentColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      displayBadgeText,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: cfg.accentColor,
+                                        fontSize: 9.0,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ],
@@ -343,7 +355,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                           cfg.title,
                           style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.w800,
-                            fontSize: 13,
+                            fontSize: 12.5,
                             color: const Color(0xFF0F172A),
                             letterSpacing: -0.3,
                             height: 1.15,
@@ -356,7 +368,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                           children: [
                             const Icon(
                               Icons.access_time_filled_rounded,
-                              size: 11,
+                              size: 10.5,
                               color: Color(0xFF94A3B8),
                             ),
                             const SizedBox(width: 3),
@@ -365,7 +377,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                                 cfg.subtitle,
                                 style: GoogleFonts.plusJakartaSans(
                                   color: const Color(0xFF64748B),
-                                  fontSize: 10.5,
+                                  fontSize: 10.0,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 maxLines: 1,
@@ -382,12 +394,12 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.star_rounded, size: 13, color: Color(0xFFF59E0B)),
+                              const Icon(Icons.star_rounded, size: 12.5, color: Color(0xFFF59E0B)),
                               const SizedBox(width: 2),
                               Text(
                                 cfg.rating,
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 10.5,
+                                  fontSize: 10.0,
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFF0F172A),
                                 ),
@@ -396,7 +408,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                               Text(
                                 '(${cfg.jobsCount})',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 9.5,
+                                  fontSize: 9.0,
                                   fontWeight: FontWeight.w500,
                                   color: const Color(0xFF94A3B8),
                                 ),
@@ -411,12 +423,12 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              const Icon(Icons.verified_rounded, size: 11, color: Color(0xFF16A34A)),
+                              const Icon(Icons.verified_rounded, size: 10.5, color: Color(0xFF16A34A)),
                               const SizedBox(width: 2),
                               Text(
                                 'Verified',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 9.5,
+                                  fontSize: 9.0,
                                   fontWeight: FontWeight.w600,
                                   color: const Color(0xFF16A34A),
                                 ),
@@ -429,7 +441,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
 
                     // 3. Urban Company Value Perk Chip
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2.0),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(6),
@@ -440,12 +452,16 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                         children: [
                           Icon(Icons.shield_outlined, size: 10, color: const Color(0xFF64748B)),
                           const SizedBox(width: 3),
-                          Text(
-                            cfg.perk,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF475569),
+                          Flexible(
+                            child: Text(
+                              cfg.perk,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 9.0,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF475569),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -457,43 +473,47 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  'From ',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w500,
-                                    color: const Color(0xFF94A3B8),
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'From ',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF94A3B8),
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  cfg.strikePrice,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 9,
-                                    decoration: TextDecoration.lineThrough,
-                                    color: const Color(0xFFCBD5E1),
+                                  Text(
+                                    cfg.strikePrice,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 8.5,
+                                      decoration: TextDecoration.lineThrough,
+                                      color: const Color(0xFFCBD5E1),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              cfg.startingPrice,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF0F172A),
-                                letterSpacing: -0.2,
+                                ],
                               ),
-                            ),
-                          ],
+                              Text(
+                                cfg.startingPrice,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF0F172A),
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.0),
                           decoration: BoxDecoration(
                             color: cfg.accentColor,
                             borderRadius: BorderRadius.circular(8),
@@ -511,7 +531,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                               Text(
                                 'Book',
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 10.5,
+                                  fontSize: 10.0,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                 ),
@@ -519,7 +539,7 @@ class _EmergencyServiceCardState extends State<_EmergencyServiceCard> {
                               const SizedBox(width: 2),
                               const Icon(
                                 Icons.arrow_forward_rounded,
-                                size: 10.5,
+                                size: 10.0,
                                 color: Colors.white,
                               ),
                             ],
