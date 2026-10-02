@@ -63,19 +63,19 @@ async def validation_exception_handler(request, exc):
 JOB_TIMEOUT_SECONDS = int(os.getenv("JOB_TIMEOUT_SECONDS", "120"))
 
 
+_ALLOWED_SERVICE_IDS = {
+    "electrician", "plumber", "phone_repair", "laptop_repair",
+    "ac_service", "carpenter", "stove_repair"
+}
+
 _FALLBACK_SERVICES = [
     {"id": "electrician", "title": "Electrician", "category": "Home", "icon": "electrical_services_rounded", "image_url": "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400", "price_min": 150, "price_max": 350, "rating": 4.8, "sort_order": 1, "is_active": True},
     {"id": "plumber", "title": "Plumber", "category": "Home", "icon": "plumbing_rounded", "image_url": "https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=400", "price_min": 150, "price_max": 350, "rating": 4.7, "sort_order": 2, "is_active": True},
-    {"id": "laptop_repair", "title": "Laptop repair", "category": "Tech", "icon": "laptop_mac_rounded", "image_url": "https://images.unsplash.com/photo-1588702547954-4800f964702a?w=400", "price_min": 200, "price_max": 500, "rating": 4.9, "sort_order": 3, "is_active": True},
-    {"id": "phone_repair", "title": "Phone repair", "category": "Tech", "icon": "phone_android_rounded", "image_url": "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400", "price_min": 150, "price_max": 400, "rating": 4.8, "sort_order": 4, "is_active": True},
-    {"id": "carpenter", "title": "Carpenter", "category": "Home", "icon": "carpenter_rounded", "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400", "price_min": 180, "price_max": 400, "rating": 4.6, "sort_order": 5, "is_active": True},
-    {"id": "painter", "title": "Painter", "category": "Home", "icon": "format_paint_rounded", "image_url": "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400", "price_min": 250, "price_max": 600, "rating": 4.8, "sort_order": 6, "is_active": True},
-    {"id": "ac_service", "title": "AC service", "category": "Home", "icon": "ac_unit_rounded", "image_url": "https://images.unsplash.com/photo-1621905252507-b354bc25edac?w=400", "price_min": 200, "price_max": 500, "rating": 4.7, "sort_order": 7, "is_active": True},
-    {"id": "cleaning", "title": "Cleaning", "category": "Home", "icon": "cleaning_services_rounded", "image_url": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400", "price_min": 150, "price_max": 350, "rating": 4.8, "sort_order": 8, "is_active": True},
-    {"id": "car_wash", "title": "Car Wash", "category": "Vehicle", "icon": "local_car_wash_rounded", "image_url": "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=400", "price_min": 200, "price_max": 400, "rating": 4.7, "sort_order": 9, "is_active": True},
-    {"id": "bike_mechanic", "title": "Bike mechanic", "category": "Vehicle", "icon": "two_wheeler_rounded", "image_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=400", "price_min": 150, "price_max": 350, "rating": 4.6, "sort_order": 10, "is_active": True},
-    {"id": "hair_salon", "title": "Hair Salon", "category": "Beauty", "icon": "content_cut_rounded", "image_url": "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400", "price_min": 150, "price_max": 300, "rating": 4.8, "sort_order": 11, "is_active": True},
-    {"id": "spa_massage", "title": "Spa & Massage", "category": "Beauty", "icon": "spa_rounded", "image_url": "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400", "price_min": 300, "price_max": 800, "rating": 4.9, "sort_order": 12, "is_active": True},
+    {"id": "phone_repair", "title": "Phone repair", "category": "Tech", "icon": "phone_android_rounded", "image_url": "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400", "price_min": 150, "price_max": 400, "rating": 4.8, "sort_order": 3, "is_active": True},
+    {"id": "laptop_repair", "title": "Laptop repair", "category": "Tech", "icon": "laptop_mac_rounded", "image_url": "https://images.unsplash.com/photo-1588702547954-4800f964702a?w=400", "price_min": 200, "price_max": 500, "rating": 4.9, "sort_order": 4, "is_active": True},
+    {"id": "ac_service", "title": "AC service", "category": "Home", "icon": "ac_unit_rounded", "image_url": "https://images.unsplash.com/photo-1621905252507-b354bc25edac?w=400", "price_min": 200, "price_max": 500, "rating": 4.7, "sort_order": 5, "is_active": True},
+    {"id": "carpenter", "title": "Carpenter", "category": "Home", "icon": "carpenter_rounded", "image_url": "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400", "price_min": 180, "price_max": 400, "rating": 4.6, "sort_order": 6, "is_active": True},
+    {"id": "stove_repair", "title": "Stove repair", "category": "Home", "icon": "local_fire_department_rounded", "image_url": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=400", "price_min": 150, "price_max": 350, "rating": 4.8, "sort_order": 7, "is_active": True},
 ]
 
 
@@ -90,7 +90,9 @@ def list_services():
             .order("sort_order")
             .execute()
         )
-        return {"services": result.data or _FALLBACK_SERVICES}
+        raw_services = result.data or _FALLBACK_SERVICES
+        services = [s for s in raw_services if s.get("id") in _ALLOWED_SERVICE_IDS]
+        return {"services": services or _FALLBACK_SERVICES}
     except Exception as e:
         # If the services table doesn't exist yet (PGRST205), return fallback catalog
         error_str = str(e)

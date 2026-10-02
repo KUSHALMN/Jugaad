@@ -18,7 +18,8 @@ class ServicesGridScreen extends ConsumerStatefulWidget {
 
 class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
   String _selectedCategory = 'All';
-  final List<String> _categories = ['All', 'Home', 'Tech', 'Vehicle', 'Beauty'];
+  // ONLY categories relevant to the 7 home screen services
+  final List<String> _categories = ['All', 'Home', 'Tech'];
 
   Color _getCategoryColor(String category, String title) {
     final lowerTitle = title.toLowerCase();
@@ -28,14 +29,14 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
       return const Color(0xFF2563EB); // Blue
     } else if (lowerTitle.contains('ac') || lowerTitle.contains('cool')) {
       return const Color(0xFF0284C7); // Sky Blue
-    } else if (lowerTitle.contains('key') || lowerTitle.contains('lock')) {
-      return const Color(0xFF16A34A); // Green
-    } else if (category == 'Tech' || lowerTitle.contains('laptop') || lowerTitle.contains('phone')) {
-      return const Color(0xFF9333EA); // Purple
-    } else if (category == 'Beauty' || lowerTitle.contains('salon') || lowerTitle.contains('spa')) {
-      return const Color(0xFFE11D48); // Rose
-    } else if (category == 'Vehicle' || lowerTitle.contains('car') || lowerTitle.contains('bike')) {
+    } else if (lowerTitle.contains('carpenter')) {
       return const Color(0xFFD97706); // Amber
+    } else if (lowerTitle.contains('stove') || lowerTitle.contains('gas') || lowerTitle.contains('fire')) {
+      return const Color(0xFFE11D48); // Rose
+    } else if (lowerTitle.contains('phone')) {
+      return const Color(0xFF0D9488); // Teal
+    } else if (lowerTitle.contains('laptop')) {
+      return const Color(0xFF6366F1); // Indigo
     }
     return AppColors.primary;
   }
@@ -78,20 +79,20 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             // Filter Pills
             Container(
               height: 44,
-              margin: const EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(bottom: 12),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 2.0),
+                padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 2.0),
                 itemCount: _categories.length,
                 itemBuilder: (context, index) {
                   final category = _categories[index];
                   final isSelected = _selectedCategory == category;
                   return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
+                    padding: const EdgeInsets.only(right: 10.0),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -104,7 +105,7 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
                         borderRadius: BorderRadius.circular(14),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
                           decoration: BoxDecoration(
                             color: isSelected ? const Color(0xFF2563EB) : Colors.white,
                             borderRadius: BorderRadius.circular(14),
@@ -132,7 +133,7 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
                             child: Text(
                               category,
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12.5,
+                                fontSize: 13,
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                                 color: isSelected ? Colors.white : const Color(0xFF475569),
                               ),
@@ -151,9 +152,23 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
               child: Builder(
                 builder: (context) {
                   final servicesList = servicesAsync.value ?? kAllServices;
+                  // Strictly allow ONLY the 7 home screen categories
+                  const allowedIds = {
+                    'electrician',
+                    'plumber',
+                    'phone_repair',
+                    'laptop_repair',
+                    'ac_service',
+                    'carpenter',
+                    'stove_repair',
+                  };
+                  final coreServices = servicesList
+                      .where((s) => allowedIds.contains(s.id.toLowerCase()))
+                      .toList();
+                  final baseList = coreServices.isNotEmpty ? coreServices : kAllServices;
                   final filteredServices = _selectedCategory == 'All'
-                      ? servicesList
-                      : servicesList.where((s) => s.category == _selectedCategory).toList();
+                      ? baseList
+                      : baseList.where((s) => s.category == _selectedCategory).toList();
                   return _buildGrid(filteredServices);
                 },
               ),
@@ -169,8 +184,8 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
       return Center(
         child: Text(
           'No services found in this category',
-          style: GoogleFonts.inter(
-            color: AppColors.textSecondary,
+          style: GoogleFonts.plusJakartaSans(
+            color: const Color(0xFF64748B),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -183,34 +198,40 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
     final double childAspectRatio;
 
     if (screenWidth >= 1024) {
-      crossAxisCount = 4;
-      childAspectRatio = 1.45;
-    } else if (screenWidth >= 600) {
+      // 3 columns on wide screens give generous, roomy SaaS cards
       crossAxisCount = 3;
-      childAspectRatio = 1.35;
-    } else {
-      // Mobile: compact 2-column SaaS card with zero empty white gap
+      childAspectRatio = 1.55;
+    } else if (screenWidth >= 650) {
       crossAxisCount = 2;
-      childAspectRatio = 1.15;
+      childAspectRatio = 1.45;
+    } else {
+      // Mobile: compact 2-column with nice breathing room
+      crossAxisCount = 2;
+      childAspectRatio = 1.18;
     }
 
-    return GridView.builder(
-      key: ValueKey(_selectedCategory),
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        mainAxisSpacing: 12.0,
-        crossAxisSpacing: 12.0,
-        childAspectRatio: childAspectRatio,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1080),
+        child: GridView.builder(
+          key: ValueKey(_selectedCategory),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 14.0,
+            crossAxisSpacing: 14.0,
+            childAspectRatio: childAspectRatio,
+          ),
+          itemCount: services.length,
+          itemBuilder: (context, index) {
+            final service = services[index];
+            return RepaintBoundary(
+              child: _buildModernServiceCard(service, index),
+            );
+          },
+        ),
       ),
-      itemCount: services.length,
-      itemBuilder: (context, index) {
-        final service = services[index];
-        return RepaintBoundary(
-          child: _buildModernServiceCard(service, index),
-        );
-      },
     );
   }
 

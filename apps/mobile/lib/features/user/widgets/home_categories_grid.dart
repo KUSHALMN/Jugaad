@@ -136,11 +136,11 @@ class HomeCategoriesGrid extends ConsumerWidget {
                         height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       'Verified Bangalore & Mysuru technicians • 15–30 min arrival',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w500,
                         color: const Color(0xFF64748B),
                       ),
@@ -154,7 +154,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
                   context.push('/user/book');
                 },
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -170,7 +170,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
                       'View All',
                       style: GoogleFonts.plusJakartaSans(
                         color: const Color(0xFF1D4ED8),
-                        fontSize: 12,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -186,38 +186,45 @@ class HomeCategoriesGrid extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
-        // Clean Container Card for Categories
+        // Spacious Container Card for Categories
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(color: const Color(0xFFE2E8F0), width: 1.1),
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x060F172A),
-                  blurRadius: 18,
+                  blurRadius: 20,
                   offset: Offset(0, 6),
                 ),
               ],
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final double itemWidth = (constraints.maxWidth - (3 * 8)) / 4;
+                // If wide desktop (>= 740px), show all 7 categories in a single balanced row!
+                // Otherwise (tablet/mobile), use 4 columns with spacious squircle proportions.
+                final bool isDesktop = constraints.maxWidth >= 740;
+                final int columns = isDesktop ? 7 : 4;
+                final double spacing = isDesktop ? 12 : 10;
+                final double itemWidth = (constraints.maxWidth - ((columns - 1) * spacing)) / columns;
+
                 return Wrap(
-                  spacing: 8,
-                  runSpacing: 14,
-                  alignment: WrapAlignment.start,
+                  spacing: spacing,
+                  runSpacing: 18,
+                  alignment: isDesktop ? WrapAlignment.spaceBetween : WrapAlignment.center,
                   children: categories.map((cat) {
                     return SizedBox(
                       width: itemWidth,
                       child: _CategoryTile(
                         category: cat,
+                        isDesktop: isDesktop,
                         onTap: () {
                           HapticFeedback.mediumImpact();
                           ref.read(postJobProvider.notifier).reset();
@@ -239,16 +246,16 @@ class HomeCategoriesGrid extends ConsumerWidget {
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
         // Bangalore & Mysuru Proof Bar: 4.85 ★ Service Rating | 250K+ Happy Homes
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Row(
@@ -256,12 +263,12 @@ class HomeCategoriesGrid extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 18),
-                    const SizedBox(width: 4),
+                    const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 19),
+                    const SizedBox(width: 5),
                     Text(
                       '4.85',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF0F172A),
                       ),
@@ -270,7 +277,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
                     Text(
                       'Service Rating*',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
+                        fontSize: 11.5,
                         color: const Color(0xFF64748B),
                         fontWeight: FontWeight.w500,
                       ),
@@ -280,19 +287,19 @@ class HomeCategoriesGrid extends ConsumerWidget {
                 const Spacer(),
                 Container(
                   width: 1,
-                  height: 14,
+                  height: 16,
                   color: const Color(0xFFCBD5E1),
                 ),
                 const Spacer(),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.people_alt_rounded, color: Color(0xFF2563EB), size: 16),
-                    const SizedBox(width: 5),
+                    const Icon(Icons.people_alt_rounded, color: Color(0xFF2563EB), size: 17),
+                    const SizedBox(width: 6),
                     Text(
                       '250K+',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF0F172A),
                       ),
@@ -301,7 +308,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
                     Text(
                       'Happy Homes*',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
+                        fontSize: 11.5,
                         color: const Color(0xFF64748B),
                         fontWeight: FontWeight.w500,
                       ),
@@ -319,10 +326,12 @@ class HomeCategoriesGrid extends ConsumerWidget {
 
 class _CategoryTile extends StatefulWidget {
   final CategoryGridItem category;
+  final bool isDesktop;
   final VoidCallback onTap;
 
   const _CategoryTile({
     required this.category,
+    required this.isDesktop,
     required this.onTap,
   });
 
@@ -332,146 +341,164 @@ class _CategoryTile extends StatefulWidget {
 
 class _CategoryTileState extends State<_CategoryTile> {
   bool _isPressed = false;
+  bool _isHovered = false;
 
   @override
   Widget build(BuildContext context) {
     final cat = widget.category;
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedScale(
-        scale: _isPressed ? 0.94 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOutCubic,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: double.infinity,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    color: cat.bgColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: cat.iconColor.withValues(alpha: 0.2),
-                      width: 1.0,
-                    ),
+    final double cardHeight = widget.isDesktop ? 96.0 : 76.0;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) {
+          setState(() => _isPressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _isPressed = false),
+        child: AnimatedScale(
+          scale: _isPressed ? 0.94 : (_isHovered ? 1.03 : 1.0),
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: double.infinity,
+                height: cardHeight,
+                decoration: BoxDecoration(
+                  color: cat.bgColor,
+                  borderRadius: BorderRadius.circular(widget.isDesktop ? 18 : 14),
+                  border: Border.all(
+                    color: _isHovered
+                        ? cat.iconColor.withValues(alpha: 0.6)
+                        : cat.iconColor.withValues(alpha: 0.20),
+                    width: 1.2,
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Local Apple asset image with soft fade
-                      Image.asset(
-                        cat.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Center(
-                            child: Icon(
-                              cat.icon,
-                              color: cat.iconColor,
-                              size: 26,
-                            ),
-                          );
-                        },
-                      ),
-                      // Soft gradient overlay so badge and category are clear
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.05),
-                              Colors.black.withValues(alpha: 0.25),
-                            ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: _isHovered
+                          ? cat.iconColor.withValues(alpha: 0.22)
+                          : cat.iconColor.withValues(alpha: 0.08),
+                      blurRadius: _isHovered ? 14 : 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Apple asset image with subtle soft fade
+                    Image.asset(
+                      cat.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Icon(
+                            cat.icon,
+                            color: cat.iconColor,
+                            size: widget.isDesktop ? 32 : 26,
                           ),
+                        );
+                      },
+                    ),
+                    // Soft gradient overlay
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.04),
+                            Colors.black.withValues(alpha: 0.28),
+                          ],
                         ),
                       ),
-                      // Bottom small icon badge
+                    ),
+                    // Inset Badge on top left
+                    if (cat.badge != null)
                       Positioned(
-                        bottom: 4,
-                        right: 4,
+                        top: 6,
+                        left: 6,
                         child: Container(
-                          padding: const EdgeInsets.all(3),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: widget.isDesktop ? 7 : 5,
+                            vertical: widget.isDesktop ? 2.5 : 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [cat.iconColor, cat.iconColor.withValues(alpha: 0.90)],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.white, width: 1.0),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.15),
+                                color: cat.iconColor.withValues(alpha: 0.35),
                                 blurRadius: 4,
+                                offset: const Offset(0, 1),
                               ),
                             ],
                           ),
-                          child: Icon(
-                            cat.icon,
-                            size: 11,
-                            color: cat.iconColor,
+                          child: Text(
+                            cat.badge!,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: widget.isDesktop ? 8.5 : 7.5,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.2,
+                            ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                if (cat.badge != null)
-                  Positioned(
-                    top: -5,
-                    left: 2,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [cat.iconColor, cat.iconColor.withValues(alpha: 0.85)],
-                        ),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.white, width: 1.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: cat.iconColor.withValues(alpha: 0.35),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        cat.badge!,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w800,
+                    // Bottom right icon badge
+                    Positioned(
+                      bottom: 6,
+                      right: 6,
+                      child: Container(
+                        padding: EdgeInsets.all(widget.isDesktop ? 5 : 3.5),
+                        decoration: BoxDecoration(
                           color: Colors.white,
-                          letterSpacing: 0.2,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.16),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          cat.icon,
+                          size: widget.isDesktop ? 13 : 11,
+                          color: cat.iconColor,
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            Text(
-              cat.title,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1E293B),
-                letterSpacing: -0.2,
-                height: 1.15,
+                  ],
+                ),
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              const SizedBox(height: 7),
+              Text(
+                cat.title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: widget.isDesktop ? 12.5 : 11,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                  letterSpacing: -0.2,
+                  height: 1.15,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
