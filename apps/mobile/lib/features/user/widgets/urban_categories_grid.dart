@@ -39,7 +39,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       id: 'electrician',
       title: 'Electrician',
       badge: '15 Min',
-      imageUrl: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=400&q=80',
+      imageUrl: 'assets/images/banner_tools_apple.jpg',
       icon: Icons.electrical_services_rounded,
       iconColor: Color(0xFFEA580C),
       bgColor: Color(0xFFFFF7ED),
@@ -50,7 +50,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       id: 'plumber',
       title: 'Plumber',
       badge: 'Popular',
-      imageUrl: 'https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?auto=format&fit=crop&w=400&q=80',
+      imageUrl: 'assets/images/banner_tools_apple.jpg',
       icon: Icons.plumbing_rounded,
       iconColor: Color(0xFF2563EB),
       bgColor: Color(0xFFEFF6FF),
@@ -61,7 +61,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       id: 'phone_repair',
       title: 'Phone Repair',
       badge: 'Doorstep',
-      imageUrl: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=400&q=80',
+      imageUrl: 'assets/images/banner_tech_apple.jpg',
       icon: Icons.phone_android_rounded,
       iconColor: Color(0xFF0D9488),
       bgColor: Color(0xFFCCFBF1),
@@ -71,7 +71,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       id: 'laptop_repair',
       title: 'Laptop Repair',
       badge: 'Top Rated',
-      imageUrl: 'https://images.unsplash.com/photo-1588702547954-4800f964702a?auto=format&fit=crop&w=400&q=80',
+      imageUrl: 'assets/images/banner_tech_apple.jpg',
       icon: Icons.laptop_mac_rounded,
       iconColor: Color(0xFF6366F1),
       bgColor: Color(0xFFEEF2FF),
@@ -81,7 +81,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       id: 'ac_service',
       title: 'AC Service',
       badge: 'Trending',
-      imageUrl: 'https://images.unsplash.com/photo-1621905252507-b354bc25edac?auto=format&fit=crop&w=400&q=80',
+      imageUrl: 'assets/images/banner_ac_apple.jpg',
       icon: Icons.ac_unit_rounded,
       iconColor: Color(0xFF0284C7),
       bgColor: Color(0xFFE0F2FE),
@@ -91,7 +91,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       id: 'carpenter',
       title: 'Carpenter',
       badge: 'Custom',
-      imageUrl: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=400&q=80',
+      imageUrl: 'assets/images/banner_tools_apple.jpg',
       icon: Icons.carpenter_rounded,
       iconColor: Color(0xFFD97706),
       bgColor: Color(0xFFFEF3C7),
@@ -101,7 +101,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       id: 'stove_repair',
       title: 'Stove Repair',
       badge: 'Instant',
-      imageUrl: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=400&q=80',
+      imageUrl: 'assets/images/banner_stove_apple.jpg',
       icon: Icons.local_fire_department_rounded,
       iconColor: Color(0xFFE11D48),
       bgColor: Color(0xFFFFF1F2),
@@ -370,7 +370,7 @@ class _UrbanCategoryTileState extends State<_UrbanCategoryTile> {
                     fit: StackFit.expand,
                     children: [
                       // Stock image with soft fade
-                      Image.network(
+                      Image.asset(
                         cat.imageUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
@@ -379,16 +379,6 @@ class _UrbanCategoryTileState extends State<_UrbanCategoryTile> {
                               cat.icon,
                               color: cat.iconColor,
                               size: 26,
-                            ),
-                          );
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: Icon(
-                              cat.icon,
-                              color: cat.iconColor.withValues(alpha: 0.5),
-                              size: 24,
                             ),
                           );
                         },
