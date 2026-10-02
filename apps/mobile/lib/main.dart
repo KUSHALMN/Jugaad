@@ -172,18 +172,24 @@ class JugaadApp extends StatefulWidget {
 }
 
 class _JugaadAppState extends State<JugaadApp> {
-  late final GoRouter _router;
+  GoRouter? _router;
 
   @override
-  void initState() {
-    super.initState();
-    final modeProvider = pkg_provider.Provider.of<PortalModeProvider>(context, listen: false);
-    final container = ProviderScope.containerOf(context);
-    _router = AppRouter.getRouter(modeProvider, container);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_router == null) {
+      final modeProvider = pkg_provider.Provider.of<PortalModeProvider>(context, listen: false);
+      final container = ProviderScope.containerOf(context, listen: false);
+      _router = AppRouter.getRouter(modeProvider, container);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_router == null) {
+      return const SizedBox.shrink();
+    }
+
     return pkg_provider.Consumer<PortalModeProvider>(
       builder: (context, portalModeProvider, child) {
         final mode = portalModeProvider.mode;
@@ -192,7 +198,7 @@ class _JugaadAppState extends State<JugaadApp> {
           title: 'Jugaad App',
           theme: mode.theme,
           debugShowCheckedModeBanner: false,
-          routerConfig: _router,
+          routerConfig: _router!,
           builder: (context, child) {
             return OfflineBannerOverlay(child: child!);
           },
