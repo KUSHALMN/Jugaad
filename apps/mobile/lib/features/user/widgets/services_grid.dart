@@ -7,7 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/config/services_list.dart';
 import '../screens/post_job/post_job_state.dart';
 
-class UrbanServiceCardItem {
+class ServiceCardItem {
   final String id;
   final String title;
   final String categoryName;
@@ -22,7 +22,7 @@ class UrbanServiceCardItem {
   final String strikePrice;
   final String perk;
 
-  const UrbanServiceCardItem({
+  const ServiceCardItem({
     required this.id,
     required this.title,
     required this.categoryName,
@@ -58,8 +58,8 @@ class _ServicesGridState extends ConsumerState<ServicesGrid> {
 
   /// The EXACT 7 services specified:
   /// Plumber, Electrician, Phone Repair, Laptop Repair, AC Service, Carpenter, Stove Repair
-  static const List<UrbanServiceCardItem> curatedServices = [
-    UrbanServiceCardItem(
+  static const List<ServiceCardItem> curatedServices = [
+    ServiceCardItem(
       id: 'ac_service',
       title: 'AC Jet Cleaning & Gas Check',
       categoryName: 'AC Service',
@@ -74,7 +74,7 @@ class _ServicesGridState extends ConsumerState<ServicesGrid> {
       strikePrice: '₹599',
       perk: '30-day warranty',
     ),
-    UrbanServiceCardItem(
+    ServiceCardItem(
       id: 'phone_repair',
       title: 'Phone Screen & Battery Fix',
       categoryName: 'Phone Repair',
@@ -89,7 +89,7 @@ class _ServicesGridState extends ConsumerState<ServicesGrid> {
       strikePrice: '₹799',
       perk: '6-mo warranty',
     ),
-    UrbanServiceCardItem(
+    ServiceCardItem(
       id: 'electrician',
       title: 'Electrician Inspection & Wiring',
       categoryName: 'Electrician',
@@ -104,7 +104,7 @@ class _ServicesGridState extends ConsumerState<ServicesGrid> {
       strikePrice: '₹149',
       perk: 'Zero inspection fee',
     ),
-    UrbanServiceCardItem(
+    ServiceCardItem(
       id: 'plumber',
       title: 'Plumber Tap Leak & Drain Fix',
       categoryName: 'Plumber',
@@ -119,7 +119,7 @@ class _ServicesGridState extends ConsumerState<ServicesGrid> {
       strikePrice: '₹199',
       perk: 'Leak seal guarantee',
     ),
-    UrbanServiceCardItem(
+    ServiceCardItem(
       id: 'laptop_repair',
       title: 'Laptop Diagnostic & SSD Boost',
       categoryName: 'Laptop Repair',
@@ -134,7 +134,7 @@ class _ServicesGridState extends ConsumerState<ServicesGrid> {
       strikePrice: '₹699',
       perk: 'No fix no fee',
     ),
-    UrbanServiceCardItem(
+    ServiceCardItem(
       id: 'stove_repair',
       title: 'Gas Stove & Hob Burner Repair',
       categoryName: 'Stove Repair',
@@ -149,7 +149,7 @@ class _ServicesGridState extends ConsumerState<ServicesGrid> {
       strikePrice: '₹299',
       perk: 'Gas leak safety test',
     ),
-    UrbanServiceCardItem(
+    ServiceCardItem(
       id: 'carpenter',
       title: 'Carpenter Lock & Woodwork Fix',
       categoryName: 'Carpenter',
@@ -199,7 +199,7 @@ class _ServicesGridState extends ConsumerState<ServicesGrid> {
 
     return Stack(
       children: [
-        // Urban Company Bangalore Horizontal Scroll Showcase (No awkward white space, no uneven gaps)
+        // Horizontal Scroll Showcase (No awkward white space, no uneven gaps)
         SizedBox(
           height: 258,
           child: ListView.separated(
@@ -213,7 +213,7 @@ class _ServicesGridState extends ConsumerState<ServicesGrid> {
 
               return SizedBox(
                 width: isWide ? 260 : 230,
-                child: _UrbanServiceCard(
+                child: _ServiceCard(
                   item: item,
                   onTap: () {
                     HapticFeedback.mediumImpact();
@@ -285,22 +285,22 @@ class _ServicesGridState extends ConsumerState<ServicesGrid> {
   }
 }
 
-class _UrbanServiceCard extends StatefulWidget {
-  final UrbanServiceCardItem item;
+class _ServiceCard extends StatefulWidget {
+  final ServiceCardItem item;
   final VoidCallback onTap;
   final VoidCallback onBookTap;
 
-  const _UrbanServiceCard({
+  const _ServiceCard({
     required this.item,
     required this.onTap,
     required this.onBookTap,
   });
 
   @override
-  State<_UrbanServiceCard> createState() => _UrbanServiceCardState();
+  State<_ServiceCard> createState() => _ServiceCardState();
 }
 
-class _UrbanServiceCardState extends State<_UrbanServiceCard> {
+class _ServiceCardState extends State<_ServiceCard> {
   bool _isPressed = false;
 
   @override
@@ -453,7 +453,7 @@ class _UrbanServiceCardState extends State<_UrbanServiceCard> {
                         ],
                       ),
 
-                      // Price Row with tactile Urban Company style "Book" pill
+                      // Price Row with tactile "Book" pill
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.center,

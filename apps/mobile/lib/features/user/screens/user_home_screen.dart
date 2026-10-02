@@ -20,9 +20,9 @@ import '../widgets/quick_rebook.dart';
 import '../widgets/recent_jobs_list.dart';
 import '../widgets/sync_alert_banner.dart';
 import '../../../core/services/platform_config_service.dart';
-import '../widgets/urban_categories_grid.dart';
-import '../widgets/urban_promo_carousel.dart';
-import '../widgets/urban_trust_matrix.dart';
+import '../widgets/home_categories_grid.dart';
+import '../widgets/spotlight_carousel.dart';
+import '../widgets/jugaad_trust_matrix.dart';
 
 // --- RIVERPOD PROVIDERS ---
 
@@ -700,7 +700,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
-                  // --- SEARCH BAR (Urban Company Top Placement - High-Visibility Hero Search)
+                  // --- SEARCH BAR (Top Placement - High-Visibility Hero Search)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20.0, 4.0, 20.0, 16.0),
@@ -785,19 +785,19 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
-                  // --- URBAN COMPANY CATEGORIES GRID (8 Essential Services)
+                  // --- CATEGORIES GRID (7 Essential Services)
                   const SliverToBoxAdapter(
                     child: RepaintBoundary(
-                      child: UrbanCategoriesGrid(),
+                      child: HomeCategoriesGrid(),
                     ),
                   ),
 
                   const SliverToBoxAdapter(child: SizedBox(height: 20.0)),
 
-                  // --- URBAN PROMO CAROUSEL (Banners: Jugaad Assured, Instant Dispatch, ₹100 Off)
+                  // --- SPOTLIGHT CAROUSEL (Apple Minimalist Banners)
                   const SliverToBoxAdapter(
                     child: RepaintBoundary(
-                      child: UrbanPromoCarousel(),
+                      child: SpotlightCarousel(),
                     ),
                   ),
 
@@ -888,10 +888,10 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
 
                   const SliverToBoxAdapter(child: SizedBox(height: 24.0)),
 
-                  // --- URBAN TRUST MATRIX (The Jugaad Guarantee)
+                  // --- JUGAAD TRUST MATRIX
                   const SliverToBoxAdapter(
                     child: RepaintBoundary(
-                      child: UrbanTrustMatrix(),
+                      child: JugaadTrustMatrix(),
                     ),
                   ),
 

@@ -5,7 +5,7 @@ import '../../core/theme/portal_mode.dart';
 import '../../core/widgets/jugaad_bottom_nav.dart';
 
 /// User portal shell wrapper providing the bottom navigation bar and
-/// responsive web max-width container (Urban Company / SaaS caliber).
+/// responsive web max-width container (SaaS caliber).
 class UserShell extends StatelessWidget {
   final Widget child;
 

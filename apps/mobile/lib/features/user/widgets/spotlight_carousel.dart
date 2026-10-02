@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../screens/post_job/post_job_state.dart';
 
-class UrbanPromoItem {
+class SpotlightPromoItem {
   final String tag;
   final Color tagBg;
   final Color tagTextColor;
@@ -19,7 +19,7 @@ class UrbanPromoItem {
   final Color buttonTextColor;
   final VoidCallback onTap;
 
-  const UrbanPromoItem({
+  const SpotlightPromoItem({
     required this.tag,
     required this.tagBg,
     required this.tagTextColor,
@@ -34,14 +34,14 @@ class UrbanPromoItem {
   });
 }
 
-class UrbanPromoCarousel extends ConsumerStatefulWidget {
-  const UrbanPromoCarousel({super.key});
+class SpotlightCarousel extends ConsumerStatefulWidget {
+  const SpotlightCarousel({super.key});
 
   @override
-  ConsumerState<UrbanPromoCarousel> createState() => _UrbanPromoCarouselState();
+  ConsumerState<SpotlightCarousel> createState() => _SpotlightCarouselState();
 }
 
-class _UrbanPromoCarouselState extends ConsumerState<UrbanPromoCarousel> {
+class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
   late final PageController _pageController;
   int _currentPage = 0;
   Timer? _timer;
@@ -94,9 +94,9 @@ class _UrbanPromoCarouselState extends ConsumerState<UrbanPromoCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    final List<UrbanPromoItem> promoItems = [
+    final List<SpotlightPromoItem> promoItems = [
       // 1. AC Service Spotlight (Apple Minimalist Aether Design)
-      UrbanPromoItem(
+      SpotlightPromoItem(
         tag: 'Summer Special',
         tagBg: const Color(0xFF0284C7),
         tagTextColor: Colors.white,
@@ -114,7 +114,7 @@ class _UrbanPromoCarouselState extends ConsumerState<UrbanPromoCarousel> {
       ),
 
       // 2. Doorstep Phone & Laptop Lab Spotlight (Apple Titanium Workbench)
-      UrbanPromoItem(
+      SpotlightPromoItem(
         tag: 'Doorstep Tech Lab',
         tagBg: const Color(0xFF6366F1),
         tagTextColor: Colors.white,
@@ -132,7 +132,7 @@ class _UrbanPromoCarouselState extends ConsumerState<UrbanPromoCarousel> {
       ),
 
       // 3. Instant Electrician & Plumber Express (Symmetric Pro Tools)
-      UrbanPromoItem(
+      SpotlightPromoItem(
         tag: '⚡ 15-Min Arrival',
         tagBg: const Color(0xFFDC2626),
         tagTextColor: Colors.white,
@@ -152,7 +152,7 @@ class _UrbanPromoCarouselState extends ConsumerState<UrbanPromoCarousel> {
       ),
 
       // 4. Gas Stove & Burner Overhaul (Sleek Induction & Blue Flame)
-      UrbanPromoItem(
+      SpotlightPromoItem(
         tag: 'Safety Guaranteed',
         tagBg: const Color(0xFFD97706),
         tagTextColor: Colors.white,
@@ -270,7 +270,7 @@ class _UrbanPromoCarouselState extends ConsumerState<UrbanPromoCarousel> {
     );
   }
 
-  Widget _buildAppleSpotlightCard(UrbanPromoItem item, bool isWide) {
+  Widget _buildAppleSpotlightCard(SpotlightPromoItem item, bool isWide) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,

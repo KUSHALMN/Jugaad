@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class UrbanTrustMatrix extends StatelessWidget {
-  const UrbanTrustMatrix({super.key});
+class JugaadTrustMatrix extends StatelessWidget {
+  const JugaadTrustMatrix({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +53,7 @@ class UrbanTrustMatrix extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Urban Company caliber quality standards',
+                      'Unmatched doorstep service standards',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
@@ -99,21 +99,21 @@ class UrbanTrustMatrix extends StatelessWidget {
               children: [
                 Expanded(
                   child: _buildTrustItem(
-                    icon: Icons.currency_rupee_rounded,
+                    icon: Icons.price_check_rounded,
                     iconColor: const Color(0xFF2563EB),
                     bgColor: const Color(0xFFEFF6FF),
                     title: 'Upfront Pricing',
-                    description: 'Fixed transparent rate card, zero surprises',
+                    description: 'Standardized rate card, zero hidden costs',
                   ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: _buildTrustItem(
-                    icon: Icons.workspace_premium_rounded,
+                    icon: Icons.verified_user_rounded,
                     iconColor: const Color(0xFF9333EA),
-                    bgColor: const Color(0xFFF3E8FF),
+                    bgColor: const Color(0xFFFAF5FF),
                     title: '30-Day Warranty',
-                    description: 'Free re-work and damage cover included',
+                    description: 'Free re-work if not 100% satisfied',
                   ),
                 ),
               ],
@@ -131,7 +131,7 @@ class UrbanTrustMatrix extends StatelessWidget {
     required String title,
     required String description,
   }) {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
@@ -140,26 +140,35 @@ class UrbanTrustMatrix extends StatelessWidget {
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: iconColor.withValues(alpha: 0.15)),
           ),
           alignment: Alignment.center,
           child: Icon(icon, color: iconColor, size: 18),
         ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          description,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 10.5,
-            color: const Color(0xFF64748B),
-            height: 1.3,
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                  color: const Color(0xFF0F172A),
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10.5,
+                  color: const Color(0xFF64748B),
+                  height: 1.25,
+                ),
+              ),
+            ],
           ),
         ),
       ],

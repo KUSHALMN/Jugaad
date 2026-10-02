@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../screens/post_job/post_job_state.dart';
 
-class UrbanCategoryItem {
+class CategoryGridItem {
   final String id;
   final String title;
   final String? badge;
@@ -16,7 +16,7 @@ class UrbanCategoryItem {
   final String serviceSkill;
   final bool isEmergency;
 
-  const UrbanCategoryItem({
+  const CategoryGridItem({
     required this.id,
     required this.title,
     this.badge,
@@ -29,13 +29,13 @@ class UrbanCategoryItem {
   });
 }
 
-class UrbanCategoriesGrid extends ConsumerWidget {
-  const UrbanCategoriesGrid({super.key});
+class HomeCategoriesGrid extends ConsumerWidget {
+  const HomeCategoriesGrid({super.key});
 
   /// The EXACT 7 services specified:
   /// Plumber, Electrician, Phone Repair, Laptop Repair, AC Service, Carpenter, Stove Repair
-  static const List<UrbanCategoryItem> categories = [
-    UrbanCategoryItem(
+  static const List<CategoryGridItem> categories = [
+    CategoryGridItem(
       id: 'electrician',
       title: 'Electrician',
       badge: '15 Min',
@@ -46,7 +46,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       serviceSkill: 'Electrician',
       isEmergency: true,
     ),
-    UrbanCategoryItem(
+    CategoryGridItem(
       id: 'plumber',
       title: 'Plumber',
       badge: 'Popular',
@@ -57,7 +57,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       serviceSkill: 'Plumber',
       isEmergency: true,
     ),
-    UrbanCategoryItem(
+    CategoryGridItem(
       id: 'phone_repair',
       title: 'Phone Repair',
       badge: 'Doorstep',
@@ -67,7 +67,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       bgColor: Color(0xFFCCFBF1),
       serviceSkill: 'Phone Repair',
     ),
-    UrbanCategoryItem(
+    CategoryGridItem(
       id: 'laptop_repair',
       title: 'Laptop Repair',
       badge: 'Top Rated',
@@ -77,7 +77,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       bgColor: Color(0xFFEEF2FF),
       serviceSkill: 'Laptop Repair',
     ),
-    UrbanCategoryItem(
+    CategoryGridItem(
       id: 'ac_service',
       title: 'AC Service',
       badge: 'Trending',
@@ -87,7 +87,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       bgColor: Color(0xFFE0F2FE),
       serviceSkill: 'AC Service',
     ),
-    UrbanCategoryItem(
+    CategoryGridItem(
       id: 'carpenter',
       title: 'Carpenter',
       badge: 'Custom',
@@ -97,7 +97,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
       bgColor: Color(0xFFFEF3C7),
       serviceSkill: 'Carpenter',
     ),
-    UrbanCategoryItem(
+    CategoryGridItem(
       id: 'stove_repair',
       title: 'Stove Repair',
       badge: 'Instant',
@@ -115,7 +115,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Urban Company Bangalore Signature Headline: "Home services at your doorstep"
+        // Headline: "Home services at your doorstep"
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Row(
@@ -188,7 +188,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
         ),
         const SizedBox(height: 14),
 
-        // Urban Company Clean Container Card for Categories
+        // Clean Container Card for Categories
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Container(
@@ -216,7 +216,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
                   children: categories.map((cat) {
                     return SizedBox(
                       width: itemWidth,
-                      child: _UrbanCategoryTile(
+                      child: _CategoryTile(
                         category: cat,
                         onTap: () {
                           HapticFeedback.mediumImpact();
@@ -241,7 +241,7 @@ class UrbanCategoriesGrid extends ConsumerWidget {
 
         const SizedBox(height: 12),
 
-        // Urban Company Bangalore Proof Bar: 4.85 ★ Service Rating | 250K+ Happy Homes
+        // Bangalore & Mysuru Proof Bar: 4.85 ★ Service Rating | 250K+ Happy Homes
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Container(
@@ -317,20 +317,20 @@ class UrbanCategoriesGrid extends ConsumerWidget {
   }
 }
 
-class _UrbanCategoryTile extends StatefulWidget {
-  final UrbanCategoryItem category;
+class _CategoryTile extends StatefulWidget {
+  final CategoryGridItem category;
   final VoidCallback onTap;
 
-  const _UrbanCategoryTile({
+  const _CategoryTile({
     required this.category,
     required this.onTap,
   });
 
   @override
-  State<_UrbanCategoryTile> createState() => _UrbanCategoryTileState();
+  State<_CategoryTile> createState() => _CategoryTileState();
 }
 
-class _UrbanCategoryTileState extends State<_UrbanCategoryTile> {
+class _CategoryTileState extends State<_CategoryTile> {
   bool _isPressed = false;
 
   @override
@@ -369,7 +369,7 @@ class _UrbanCategoryTileState extends State<_UrbanCategoryTile> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // Stock image with soft fade
+                      // Local Apple asset image with soft fade
                       Image.asset(
                         cat.imageUrl,
                         fit: BoxFit.cover,

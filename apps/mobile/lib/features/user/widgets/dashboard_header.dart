@@ -49,7 +49,7 @@ class DashboardHeader extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Urban Company style Location Selector Chip
+                    // Location Selector Chip
                     InkWell(
                       borderRadius: BorderRadius.circular(20),
                       onTap: () {
