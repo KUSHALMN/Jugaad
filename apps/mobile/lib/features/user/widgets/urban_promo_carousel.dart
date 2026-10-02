@@ -6,6 +6,34 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../screens/post_job/post_job_state.dart';
 
+class UrbanPromoItem {
+  final String tag;
+  final Color tagBg;
+  final Color tagTextColor;
+  final String title;
+  final String subtitle;
+  final String priceText;
+  final String imageUrl;
+  final String buttonText;
+  final Color buttonBg;
+  final Color buttonTextColor;
+  final VoidCallback onTap;
+
+  const UrbanPromoItem({
+    required this.tag,
+    required this.tagBg,
+    required this.tagTextColor,
+    required this.title,
+    required this.subtitle,
+    required this.priceText,
+    required this.imageUrl,
+    required this.buttonText,
+    this.buttonBg = const Color(0xFF0F172A),
+    this.buttonTextColor = Colors.white,
+    required this.onTap,
+  });
+}
+
 class UrbanPromoCarousel extends ConsumerStatefulWidget {
   const UrbanPromoCarousel({super.key});
 
@@ -14,7 +42,7 @@ class UrbanPromoCarousel extends ConsumerStatefulWidget {
 }
 
 class _UrbanPromoCarouselState extends ConsumerState<UrbanPromoCarousel> {
-  final PageController _pageController = PageController();
+  final PageController _pageController = PageController(viewportFraction: 0.92);
   int _currentPage = 0;
   Timer? _timer;
 
@@ -24,10 +52,10 @@ class _UrbanPromoCarouselState extends ConsumerState<UrbanPromoCarousel> {
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
       if (_pageController.hasClients) {
-        final nextPage = (_currentPage + 1) % 3;
+        final nextPage = (_currentPage + 1) % 4;
         _pageController.animateToPage(
           nextPage,
-          duration: const Duration(milliseconds: 600),
+          duration: const Duration(milliseconds: 650),
           curve: Curves.easeInOutCubic,
         );
       }
@@ -43,238 +71,293 @@ class _UrbanPromoCarouselState extends ConsumerState<UrbanPromoCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    final List<UrbanPromoItem> promoItems = [
+      // 1. AC Service Spotlight
+      UrbanPromoItem(
+        tag: 'Summer Special',
+        tagBg: const Color(0xFF0284C7),
+        tagTextColor: Colors.white,
+        title: 'AC Jet Cleaning & Gas Refill',
+        subtitle: '2X deeper cooling & anti-rust foam wash at home',
+        priceText: 'Starting ₹399',
+        imageUrl: 'https://images.unsplash.com/photo-1621905252507-b354bc25edac?auto=format&fit=crop&w=800&q=80',
+        buttonText: 'Book now',
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          ref.read(postJobProvider.notifier).reset();
+          ref.read(postJobProvider.notifier).setSkill('AC Service');
+          context.push('/user/worker-search?service=AC%20Service');
+        },
+      ),
+
+      // 2. Doorstep Phone & Laptop Lab Spotlight
+      UrbanPromoItem(
+        tag: 'Doorstep Tech Lab',
+        tagBg: const Color(0xFF6366F1),
+        tagTextColor: Colors.white,
+        title: 'Phone & Laptop Quick Repairs',
+        subtitle: 'Cracked screen or dead battery fixed right at your desk',
+        priceText: 'Starting ₹499',
+        imageUrl: 'https://images.unsplash.com/photo-1597740985671-2a8a3b80532e?auto=format&fit=crop&w=800&q=80',
+        buttonText: 'Book now',
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          ref.read(postJobProvider.notifier).reset();
+          ref.read(postJobProvider.notifier).setSkill('Phone Repair');
+          context.push('/user/worker-search?service=Phone%20Repair');
+        },
+      ),
+
+      // 3. Instant Electrician & Plumber Express Dispatch
+      UrbanPromoItem(
+        tag: '⚡ 15-Min Arrival',
+        tagBg: const Color(0xFFDC2626),
+        tagTextColor: Colors.white,
+        title: 'Electrician & Plumber at Doorstep',
+        subtitle: 'Rapid arrival in Bengaluru & Mysuru with 30-day warranty',
+        priceText: 'Starting ₹99',
+        imageUrl: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=800&q=80',
+        buttonText: 'Instant Help',
+        buttonBg: const Color(0xFFDC2626),
+        onTap: () {
+          HapticFeedback.heavyImpact();
+          ref.read(postJobProvider.notifier).reset();
+          ref.read(postJobProvider.notifier).setEmergency(true);
+          ref.read(postJobProvider.notifier).setUrgency('now');
+          context.push('/user/post-job/step1');
+        },
+      ),
+
+      // 4. Gas Stove & Burner Overhaul
+      UrbanPromoItem(
+        tag: 'Safety Guaranteed',
+        tagBg: const Color(0xFFD97706),
+        tagTextColor: Colors.white,
+        title: 'Gas Stove & Hob Deep Overhaul',
+        subtitle: 'Restore blue flame, unclog burners & gas leak check',
+        priceText: 'Starting ₹199',
+        imageUrl: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80',
+        buttonText: 'Book now',
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          ref.read(postJobProvider.notifier).reset();
+          ref.read(postJobProvider.notifier).setSkill('Stove Repair');
+          context.push('/user/worker-search?service=Stove%20Repair');
+        },
+      ),
+    ];
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 156,
-          child: PageView(
-            controller: _pageController,
-            onPageChanged: (idx) => setState(() => _currentPage = idx),
+        // Urban Company "In the spotlight" Section Title
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // BANNER 1: Urban Company Assured Black & Gold Luxury
-              _buildPromoCard(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+              Text(
+                'In the spotlight',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
+                  letterSpacing: -0.4,
                 ),
-                tagText: 'JUGAAD ASSURED ★',
-                tagBg: const Color(0xFFD97706),
-                title: 'Professional Home Services at Doorstep',
-                subtitle: '100% Background-checked • 30-Day Warranty • Insurance Cover',
-                buttonText: 'Book Assured Pro',
-                onButtonTap: () {
-                  HapticFeedback.mediumImpact();
-                  context.push('/user/book');
-                },
-                accentIcon: Icons.verified_user_rounded,
-                accentColor: const Color(0xFFF59E0B),
               ),
-
-              // BANNER 2: 15-Min Instant Dispatch Crimson
-              _buildPromoCard(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF991B1B), Color(0xFFE11D48)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                tagText: 'INSTANT 15-MIN DISPATCH ⚡',
-                tagBg: const Color(0xFFFFF1F2),
-                tagTextColor: const Color(0xFFE11D48),
-                title: 'Emergency Breakdown? We Arrive Fast',
-                subtitle: 'Electrician, Plumber or Locks within 30 minutes in Bangalore & Mysuru',
-                buttonText: 'Request Instant Help',
-                onButtonTap: () {
-                  HapticFeedback.heavyImpact();
-                  ref.read(postJobProvider.notifier).reset();
-                  ref.read(postJobProvider.notifier).setEmergency(true);
-                  context.push('/user/post-job/step1');
-                },
-                accentIcon: Icons.bolt_rounded,
-                accentColor: const Color(0xFFFDE047),
-              ),
-
-              // BANNER 3: Welcome Offer Deep Indigo
-              _buildPromoCard(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                tagText: 'SPECIAL WELCOME OFFER 🏷️',
-                tagBg: const Color(0xFFEFF6FF),
-                tagTextColor: const Color(0xFF2563EB),
-                title: 'Flat ₹100 OFF On First Service',
-                subtitle: 'Use code JUGAAD100 at checkout on any skilled home repair',
-                buttonText: 'Claim Discount',
-                onButtonTap: () {
-                  HapticFeedback.lightImpact();
-                  context.push('/user/worker-search');
-                },
-                accentIcon: Icons.local_offer_rounded,
-                accentColor: const Color(0xFF60A5FA),
+              // Dot indicators
+              Row(
+                children: List.generate(promoItems.length, (idx) {
+                  final bool isActive = idx == _currentPage;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                    width: isActive ? 16 : 6,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isActive ? const Color(0xFF0F172A) : const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 10),
-        // Indicator Dots
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(3, (index) {
-            final isActive = _currentPage == index;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: isActive ? 20 : 6,
-              height: 5,
-              decoration: BoxDecoration(
-                color: isActive ? const Color(0xFF0F172A) : const Color(0xFFCBD5E1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-            );
-          }),
+
+        const SizedBox(height: 12),
+
+        // Carousel Slider Cards with Stock Web Photography
+        SizedBox(
+          height: 165,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (idx) => setState(() => _currentPage = idx),
+            itemCount: promoItems.length,
+            itemBuilder: (context, idx) {
+              final item = promoItems[idx];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                child: _buildSpotlightCard(item),
+              );
+            },
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildPromoCard({
-    required Gradient gradient,
-    required String tagText,
-    required Color tagBg,
-    Color tagTextColor = Colors.white,
-    required String title,
-    required String subtitle,
-    required String buttonText,
-    required VoidCallback onButtonTap,
-    required IconData accentIcon,
-    required Color accentColor,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x140F172A),
-              blurRadius: 16,
-              offset: Offset(0, 6),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            // Background ambient glow / icon watermark
-            Positioned(
-              right: -14,
-              bottom: -16,
-              child: Icon(
-                accentIcon,
-                size: 130,
-                color: Colors.white.withValues(alpha: 0.07),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Top Pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                    decoration: BoxDecoration(
-                      color: tagBg,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      tagText,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: tagTextColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                      ),
+  Widget _buildSpotlightCard(UrbanPromoItem item) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x080F172A),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          // Right-aligned stock photo
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 170,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.network(
+                  item.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: const Color(0xFFF1F5F9),
+                    child: const Icon(Icons.home_repair_service_rounded, color: Color(0xFF94A3B8), size: 36),
+                  ),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(color: const Color(0xFFF1F5F9));
+                  },
+                ),
+                // Gradient fade to card background
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.white,
+                        Color(0x22FFFFFF),
+                        Colors.transparent,
+                      ],
                     ),
                   ),
+                ),
+              ],
+            ),
+          ),
 
-                  // Middle Copy
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
-                          height: 1.2,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          height: 1.3,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-
-                  // Bottom Action Button
-                  GestureDetector(
-                    onTap: onButtonTap,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          // Left side content
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 160, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 6,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
+                        color: item.tagBg,
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            buttonText,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF0F172A),
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 13,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ],
+                      child: Text(
+                        item.tag,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          color: item.tagTextColor,
+                          letterSpacing: 0.2,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(height: 6),
+                    Text(
+                      item.title,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A),
+                        letterSpacing: -0.3,
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      item.subtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: const Color(0xFF64748B),
+                        height: 1.25,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      item.priceText,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: item.onTap,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: item.buttonBg,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: item.buttonBg.withValues(alpha: 0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          item.buttonText,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: item.buttonTextColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
