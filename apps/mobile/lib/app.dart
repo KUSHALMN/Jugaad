@@ -110,14 +110,8 @@ class AppRouter {
   }
 
   static GoRouter getRouter(PortalModeProvider modeProvider, ProviderContainer container) {
-    // FIX: Always create a fresh router. The previous implementation cached
-    // _router as a static singleton that survived hot restarts and re-runs.
-    // This meant the GoRouter's refreshListenable and redirect closure
-    // would hold references to stale PortalModeProvider and ProviderContainer
-    // instances from a previous session, causing the redirect to malfunction
-    // and render a white screen.
     if (_router != null) {
-      _router!.dispose();
+      return _router!;
     }
     _router = GoRouter(
       navigatorKey: rootNavigatorKey,

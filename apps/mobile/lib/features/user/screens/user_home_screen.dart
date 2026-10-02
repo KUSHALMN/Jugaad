@@ -571,6 +571,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
             return false;
           },
           child: Stack(
+            fit: StackFit.expand,
             children: [
               CustomScrollView(
                 physics: const BouncingScrollPhysics(

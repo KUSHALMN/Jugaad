@@ -161,7 +161,7 @@ class ServicesGrid extends ConsumerWidget {
     } else {
       // Standard mobile phone screen (e.g. 360px - 430px)
       crossAxisCount = 2;
-      childAspectRatio = 1.14;
+      childAspectRatio = 0.98;
     }
 
     return GridView.builder(

@@ -5,10 +5,12 @@ import 'app_translations.dart';
 
 const String _kLanguagePrefKey = 'jugaad_selected_language_code';
 
-/// Riverpod StateNotifier to manage and persist user language across app restarts.
-class LocaleNotifier extends StateNotifier<AppLanguage> {
-  LocaleNotifier() : super(AppLanguage.english) {
+/// Riverpod Notifier to manage and persist user language across app restarts.
+class LocaleNotifier extends Notifier<AppLanguage> {
+  @override
+  AppLanguage build() {
     _loadFromStorage();
+    return AppLanguage.english;
   }
 
   Future<void> _loadFromStorage() async {
@@ -31,9 +33,7 @@ class LocaleNotifier extends StateNotifier<AppLanguage> {
 }
 
 /// Global provider for application language state.
-final localeProvider = StateNotifierProvider<LocaleNotifier, AppLanguage>((ref) {
-  return LocaleNotifier();
-});
+final localeProvider = NotifierProvider<LocaleNotifier, AppLanguage>(LocaleNotifier.new);
 
 /// Reactive translation lookup provider.
 final translationProvider = Provider.family<String, String>((ref, key) {

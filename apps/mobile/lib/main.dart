@@ -19,6 +19,7 @@ import 'app.dart';
 import 'features/shared/widgets/offline_banner.dart';
 import 'core/services/fcm_token_manager.dart';
 import 'core/services/location_service.dart';
+import 'package:go_router/go_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -163,15 +164,26 @@ void main() async {
   );
 }
 
-class JugaadApp extends StatelessWidget {
+class JugaadApp extends StatefulWidget {
   const JugaadApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<JugaadApp> createState() => _JugaadAppState();
+}
+
+class _JugaadAppState extends State<JugaadApp> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
     final modeProvider = pkg_provider.Provider.of<PortalModeProvider>(context, listen: false);
     final container = ProviderScope.containerOf(context);
-    final router = AppRouter.getRouter(modeProvider, container);
+    _router = AppRouter.getRouter(modeProvider, container);
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return pkg_provider.Consumer<PortalModeProvider>(
       builder: (context, portalModeProvider, child) {
         final mode = portalModeProvider.mode;
@@ -180,7 +192,7 @@ class JugaadApp extends StatelessWidget {
           title: 'Jugaad App',
           theme: mode.theme,
           debugShowCheckedModeBanner: false,
-          routerConfig: router,
+          routerConfig: _router,
           builder: (context, child) {
             return OfflineBannerOverlay(child: child!);
           },
