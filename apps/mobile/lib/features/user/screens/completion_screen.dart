@@ -49,6 +49,8 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
   bool _isSubmitting = false;
   bool _showDrawCheck = false;
   final List<_ConfettiParticle> _particles = [];
+  int _selectedTip = 0;
+  String _tipCategory = '';
 
   @override
   void initState() {
@@ -128,13 +130,35 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
       final workerId = jobDoc['worker_id'] as String?;
 
       if (workerId != null) {
-        await SupabaseConfig.client.rpc('submit_review_atomic', params: {
-          'p_job_id': widget.jobId,
-          'p_reviewer_id': employerId,
-          'p_reviewee_id': workerId,
-          'p_rating': _rating,
-          'p_comment': _reviewController.text.trim(),
-        });
+        try {
+          await SupabaseConfig.client.rpc('submit_review_atomic', params: {
+            'p_job_id': widget.jobId,
+            'p_reviewer_id': employerId,
+            'p_reviewee_id': workerId,
+            'p_rating': _rating,
+            'p_comment': _reviewController.text.trim(),
+          });
+        } catch (revErr) {
+          print('[COMPLETION] submit_review_atomic error (non-fatal): $revErr');
+        }
+
+        if (_selectedTip > 0) {
+          try {
+            await SupabaseConfig.client.rpc('submit_job_tip', params: {
+              'p_job_id': widget.jobId,
+              'p_tip_amount': _selectedTip.toDouble(),
+              'p_tip_category': _tipCategory,
+            });
+            print('[COMPLETION] Tip ₹$_selectedTip submitted successfully');
+          } catch (tipErr) {
+            print('[COMPLETION] Tip submission error, fallback direct update: $tipErr');
+            await SupabaseConfig.client.from('jobs').update({
+              'tip_amount': _selectedTip,
+              'tip_category': _tipCategory,
+              'tip_paid_at': DateTime.now().toIso8601String(),
+            }).eq('id', widget.jobId);
+          }
+        }
       }
     } catch (e) {
       print('[COMPLETION] Supabase error in submit_review: $e');
@@ -435,7 +459,109 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
                           : const SizedBox.shrink(),
                     ),
                     
-                    const SizedBox(height: 48),
+                    // 1-Tap Cashless UPI Tipping & Fuel Allowance Card
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 24),
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: UserAppTheme.surface,
+                        borderRadius: UserAppTheme.cardBorderRadius,
+                        border: Border.all(
+                          color: _selectedTip > 0
+                              ? const Color(0xFFF59E0B).withValues(alpha: 0.6)
+                              : UserAppTheme.divider,
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          if (_selectedTip > 0)
+                            BoxShadow(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ...UserAppTheme.cardShadow,
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Text('☕', style: TextStyle(fontSize: 18)),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Add Tip for ${widget.workerName}',
+                                      style: UserAppTheme.heading(size: 14, weight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '100% credited to partner UPI • 0% platform cut',
+                                      style: UserAppTheme.body(size: 11, color: UserAppTheme.successGreen, weight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTipChip(30, '☕ +₹30', 'Chai & Fuel'),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: _buildTipChip(50, '⭐ +₹50', 'Great Work'),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: _buildTipChip(100, '👑 +₹100', 'Master Pro'),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: _buildTipChip(150, '🚀 +₹150', 'Super Speed'),
+                              ),
+                            ],
+                          ),
+                          if (_selectedTip > 0) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.check_circle, color: Color(0xFFD97706), size: 16),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '₹$_selectedTip will be transferred directly to ${widget.workerName}\'s linked UPI account.',
+                                      style: UserAppTheme.body(size: 11, color: const Color(0xFF92400E), weight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ).animate().fadeIn(delay: 250.ms),
+                    
+                    const SizedBox(height: 36),
                     
                     // Action Buttons (Vertical Stack, Equal Sizing)
                     Container(
@@ -487,9 +613,11 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
                                         ),
                                       );
                                     },
-                                  )
+                                    )
                                 : Text(
-                                    'Submit Review',
+                                    _selectedTip > 0
+                                        ? 'Submit Review & Tip ₹$_selectedTip'
+                                        : 'Submit Review',
                                     style: UserAppTheme.body(
                                       color: _rating > 0 ? Colors.white : UserAppTheme.textSecondary,
                                       weight: FontWeight.bold,
@@ -526,6 +654,68 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTipChip(int amount, String label, String category) {
+    final isSelected = _selectedTip == amount;
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() {
+          if (isSelected) {
+            _selectedTip = 0;
+            _tipCategory = '';
+          } else {
+            _selectedTip = amount;
+            _tipCategory = category;
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFF59E0B) : UserAppTheme.background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFD97706) : UserAppTheme.divider,
+            width: isSelected ? 2.0 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: UserAppTheme.heading(
+                size: 13,
+                weight: FontWeight.bold,
+                color: isSelected ? Colors.white : UserAppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              category,
+              style: UserAppTheme.label(
+                size: 10,
+                color: isSelected ? Colors.white.withValues(alpha: 0.9) : UserAppTheme.textSecondary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

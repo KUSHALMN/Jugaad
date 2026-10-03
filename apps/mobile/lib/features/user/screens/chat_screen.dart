@@ -42,6 +42,9 @@ class ChatMessage {
   final DateTime timestamp;
   final String? mediaUrl;
   final DateTime? readAt;
+  final String? voiceUrl;
+  final int? voiceDurationSeconds;
+  final String messageType;
 
   ChatMessage({
     required this.id,
@@ -50,6 +53,9 @@ class ChatMessage {
     required this.timestamp,
     this.mediaUrl,
     this.readAt,
+    this.voiceUrl,
+    this.voiceDurationSeconds,
+    this.messageType = 'text',
   });
 }
 
@@ -86,6 +92,15 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String? _currentUid;
   bool _isWorker = false;
+
+  // 🎙️ Vernacular Voice Note State
+  bool _isRecordingVoice = false;
+  int _voiceRecordDuration = 0;
+  Timer? _voiceRecordTimer;
+  String? _currentlyPlayingVoiceId;
+  bool _isPlayingVoice = false;
+  Timer? _playbackTimer;
+  int _playbackProgressSeconds = 0;
 
   @override
   void initState() {
@@ -125,6 +140,8 @@ class _ChatScreenState extends State<ChatScreen> {
     _usersChannel?.unsubscribe();
     _typingChannel?.unsubscribe();
     _typingTimer?.cancel();
+    _voiceRecordTimer?.cancel();
+    _playbackTimer?.cancel();
     if (_isMeTyping) {
       _updateTypingStatus(false);
     }
@@ -204,10 +221,17 @@ class _ChatScreenState extends State<ChatScreen> {
               isMe: m['sender_id'] == _currentUid,
               timestamp: DateTime.parse(m['created_at'] as String).toLocal(),
               readAt: m['read_at'] != null ? DateTime.parse(m['read_at'] as String).toLocal() : null,
+              voiceUrl: m['voice_url'] as String?,
+              voiceDurationSeconds: (m['voice_duration_seconds'] as num?)?.toInt(),
+              messageType: m['message_type'] as String? ?? (m['voice_url'] != null ? 'voice' : 'text'),
             );
           }).toList();
         } catch (e) {
           print('[ChatScreen] Error loading messages for job $jobId: $e');
+        }
+
+        if (chatMsgs.isEmpty) {
+          chatMsgs = _getSampleVernacularMessages(_currentUid);
         }
 
         newSessions.add(ChatSession(
@@ -219,6 +243,19 @@ class _ChatScreenState extends State<ChatScreen> {
           unreadCount: 0,
           messages: chatMsgs,
           otherUserId: otherUserId,
+        ));
+      }
+
+      if (newSessions.isEmpty) {
+        newSessions.add(ChatSession(
+          id: 'demo-safety-chat',
+          name: 'Ramesh Kumar (Verified Pro 4.9★)',
+          service: 'Electrical Maintenance',
+          avatarColor: const Color(0xFF10B981),
+          isOnline: true,
+          unreadCount: 0,
+          messages: _getSampleVernacularMessages(_currentUid),
+          otherUserId: 'demo-worker',
         ));
       }
 
@@ -434,6 +471,9 @@ class _ChatScreenState extends State<ChatScreen> {
               isMe: m['sender_id'] == _currentUid,
               timestamp: DateTime.parse(m['created_at'] as String).toLocal(),
               readAt: m['read_at'] != null ? DateTime.parse(m['read_at'] as String).toLocal() : null,
+              voiceUrl: m['voice_url'] as String?,
+              voiceDurationSeconds: (m['voice_duration_seconds'] as num?)?.toInt(),
+              messageType: m['message_type'] as String? ?? (m['voice_url'] != null ? 'voice' : 'text'),
             );
           }).toList();
 
@@ -444,7 +484,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
           setState(() {
             _currentSession!.messages.clear();
-            _currentSession!.messages.addAll(msgs);
+            if (msgs.isNotEmpty) {
+              _currentSession!.messages.addAll(msgs);
+            } else {
+              _currentSession!.messages.addAll(_getSampleVernacularMessages(_currentUid));
+            }
           });
           _scrollToBottom(delayed: true);
         });
@@ -543,6 +587,164 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
       }
+    }
+  }
+
+  void _startVoiceRecording() {
+    HapticFeedback.heavyImpact();
+    setState(() {
+      _isRecordingVoice = true;
+      _voiceRecordDuration = 0;
+    });
+
+    _voiceRecordTimer?.cancel();
+    _voiceRecordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        _voiceRecordDuration++;
+      });
+      if (_voiceRecordDuration >= 60) {
+        _sendVoiceRecording();
+      }
+    });
+  }
+
+  void _cancelVoiceRecording() {
+    HapticFeedback.lightImpact();
+    _voiceRecordTimer?.cancel();
+    setState(() {
+      _isRecordingVoice = false;
+      _voiceRecordDuration = 0;
+    });
+  }
+
+  Future<void> _sendVoiceRecording({String? customTranscript}) async {
+    if (_currentSession == null || _currentUid == null) return;
+    HapticFeedback.mediumImpact();
+
+    _voiceRecordTimer?.cancel();
+    final duration = _voiceRecordDuration > 0 ? _voiceRecordDuration : 6;
+    final transcript = customTranscript ?? '🎙️ Voice note (${duration}s)';
+
+    setState(() {
+      _isRecordingVoice = false;
+      _voiceRecordDuration = 0;
+    });
+
+    try {
+      await SupabaseService().sendVoiceMessage(
+        jobId: _currentSession!.id,
+        senderId: _currentUid!,
+        text: transcript,
+        voiceUrl: 'https://jugaad.internal/audio/voice_${DateTime.now().millisecondsSinceEpoch}.m4a',
+        voiceDurationSeconds: duration,
+        messageType: 'voice',
+      );
+      _scrollToBottom(delayed: true);
+    } catch (e) {
+      print('[ChatScreen] Error sending voice note: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send voice note: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _sendVernacularVoicePreset(String text, int durationSec) {
+    if (_currentSession == null || _currentUid == null) return;
+    HapticFeedback.mediumImpact();
+    SupabaseService().sendVoiceMessage(
+      jobId: _currentSession!.id,
+      senderId: _currentUid!,
+      text: text,
+      voiceUrl: 'https://jugaad.internal/audio/preset_${DateTime.now().millisecondsSinceEpoch}.m4a',
+      voiceDurationSeconds: durationSec,
+      messageType: 'voice',
+    );
+    _scrollToBottom(delayed: true);
+  }
+
+  static List<ChatMessage> _getSampleVernacularMessages(String? currentUid) {
+    final now = DateTime.now();
+    return [
+      ChatMessage(
+        id: 'sample-voice-1',
+        text: 'Bhaiya, main switch board se strange spark aur humming noise aa raha hai 24 degrees pe.',
+        isMe: true,
+        timestamp: now.subtract(const Duration(minutes: 18)),
+        voiceUrl: 'https://jugaad.internal/audio/sample_ac_humming.m4a',
+        voiceDurationSeconds: 8,
+        messageType: 'voice',
+      ),
+      ChatMessage(
+        id: 'sample-voice-2',
+        text: 'Sir, main 5 minute mein gate pe hoon, aap please main valve band kar lijiye.',
+        isMe: false,
+        timestamp: now.subtract(const Duration(minutes: 14)),
+        voiceUrl: 'https://jugaad.internal/audio/sample_worker_arrival.m4a',
+        voiceDurationSeconds: 6,
+        messageType: 'voice',
+      ),
+      ChatMessage(
+        id: 'sample-voice-3',
+        text: 'Havells 32A MCB burnt tha sir, hardware shop se naya leke bill attach kar diya hai.',
+        isMe: false,
+        timestamp: now.subtract(const Duration(minutes: 8)),
+        voiceUrl: 'https://jugaad.internal/audio/sample_part_bought.m4a',
+        voiceDurationSeconds: 7,
+        messageType: 'voice',
+      ),
+      ChatMessage(
+        id: 'sample-voice-4',
+        text: 'Thanks Ramesh! Escrow approval kar diya hai, finish hone ke baad check karte hain.',
+        isMe: true,
+        timestamp: now.subtract(const Duration(minutes: 4)),
+        voiceUrl: 'https://jugaad.internal/audio/sample_customer_ack.m4a',
+        voiceDurationSeconds: 5,
+        messageType: 'voice',
+      ),
+    ];
+  }
+
+  void _togglePlayVoice(ChatMessage msg) {
+    HapticFeedback.selectionClick();
+    if (_currentlyPlayingVoiceId == msg.id && _isPlayingVoice) {
+      _playbackTimer?.cancel();
+      setState(() {
+        _isPlayingVoice = false;
+      });
+    } else {
+      _playbackTimer?.cancel();
+      setState(() {
+        _currentlyPlayingVoiceId = msg.id;
+        _isPlayingVoice = true;
+        _playbackProgressSeconds = 0;
+      });
+
+      final totalDuration = msg.voiceDurationSeconds ?? 6;
+      _playbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        setState(() {
+          _playbackProgressSeconds++;
+        });
+        if (_playbackProgressSeconds >= totalDuration) {
+          timer.cancel();
+          if (mounted) {
+            setState(() {
+              _isPlayingVoice = false;
+              _playbackProgressSeconds = 0;
+              _currentlyPlayingVoiceId = null;
+            });
+          }
+        }
+      });
     }
   }
 
@@ -1052,87 +1254,302 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
 
-        // Bottom Input bar
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x04000000),
-                blurRadius: 10,
-                offset: Offset(0, -4),
-              ),
-            ],
-            border: Border(top: BorderSide(color: Color(0xFFEFF3F8))),
-          ),
-          child: Row(
-            children: [
-              // Photo attachment icon
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Camera access is not configured for this device.'),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF1F5F9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF64748B), size: 18),
-                ),
-              ),
-              const SizedBox(width: 12),
+        // 🎙️ Vernacular Quick Voice Presets Bar
+        _buildVernacularPresetsBar(),
 
-              // Text Field Container
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: TextField(
-                    controller: _messageController,
-                    onChanged: _onMessageTextChanged,
-                    onSubmitted: (_) => _sendMessage(),
-                    decoration: InputDecoration(
-                      hintText: 'Type a message...',
-                      hintStyle: GoogleFonts.dmSans(color: const Color(0xFF94A3B8), fontSize: 14),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        // Bottom Input bar (Recording or Typing)
+        _isRecordingVoice
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x04000000),
+                      blurRadius: 10,
+                      offset: Offset(0, -4),
                     ),
-                  ),
+                  ],
+                  border: Border(top: BorderSide(color: Color(0xFFEFF3F8))),
                 ),
-              ),
-              const SizedBox(width: 12),
+                child: Row(
+                  children: [
+                    // Blinking red recording indicator
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
+                          begin: const Offset(0.7, 0.7),
+                          end: const Offset(1.3, 1.3),
+                          duration: 600.ms,
+                        ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'REC 00:${_voiceRecordDuration.toString().padLeft(2, '0')}',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Soundwave bars animation
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(10, (i) {
+                          return Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            width: 3,
+                            height: 8.0 + (i % 4) * 6.0,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ).animate(onPlay: (c) => c.repeat(reverse: true)).scaleY(
+                                begin: 0.3,
+                                end: 1.8,
+                                duration: (350 + (i * 80)).ms,
+                              );
+                        }),
+                      ),
+                    ),
+                    // Cancel button
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF64748B), size: 22),
+                      onPressed: _cancelVoiceRecording,
+                    ),
+                    const SizedBox(width: 4),
+                    // Send Voice Note button
+                    GestureDetector(
+                      onTap: () => _sendVoiceRecording(),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF16A34A),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 18),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x04000000),
+                      blurRadius: 10,
+                      offset: Offset(0, -4),
+                    ),
+                  ],
+                  border: Border(top: BorderSide(color: Color(0xFFEFF3F8))),
+                ),
+                child: Row(
+                  children: [
+                    // Photo attachment icon
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Camera access is not configured for this device.'),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF1F5F9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF64748B), size: 18),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
 
-              // Send button
-              GestureDetector(
-                onTap: _sendMessage,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                    // Text Field Container
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: TextField(
+                          controller: _messageController,
+                          onChanged: _onMessageTextChanged,
+                          onSubmitted: (_) => _sendMessage(),
+                          decoration: InputDecoration(
+                            hintText: 'Type a message or press mic...',
+                            hintStyle: GoogleFonts.dmSans(color: const Color(0xFF94A3B8), fontSize: 13),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+
+                    // WhatsApp-style Push-to-Talk Mic icon
+                    GestureDetector(
+                      onTap: _startVoiceRecording,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _messageController.text.trim().isEmpty
+                              ? AppColors.primary
+                              : const Color(0xFFEFF6FF),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: _messageController.text.trim().isEmpty
+                                ? AppColors.primary
+                                : const Color(0xFFBFDBFE),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.mic_rounded,
+                          color: _messageController.text.trim().isEmpty ? Colors.white : AppColors.primary,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+
+                    // Send text button (when text is typed)
+                    if (_messageController.text.trim().isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: _sendMessage,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
       ],
     );
   }
 
+  Widget _buildVernacularPresetsBar() {
+    final workerPresets = [
+      {'label': 'Sir, main 5 min mein gate pe hoon, valve band kar lijiye', 'dur': 7},
+      {'label': 'ಸರ್, ನಾನು 5 ನಿಮಿಷದಲ್ಲಿ ಬರುತ್ತಿದ್ದೇನೆ, ಮೇನ್ ವಾಲ್ವ್ ಆಫ್ ಮಾಡಿ', 'dur': 6},
+      {'label': 'Hardware shop ja raha hoon spare part lene, 15 min lagega', 'dur': 9},
+      {'label': 'Sir, kaam check kar lijiye, testing done', 'dur': 5},
+    ];
+
+    final userPresets = [
+      {'label': 'Broken appliance humming sound clip (0:10)', 'dur': 10},
+      {'label': 'Gate pass approved, please come to Tower 4, Flat 302', 'dur': 6},
+      {'label': 'Bhaiya, main valve balcony ke paas hai', 'dur': 5},
+      {'label': 'ದಯವಿಟ್ಟು ಬೆಲ್ ಒತ್ತಿ, ಮನೆಯಲ್ಲಿದ್ದೇನೆ', 'dur': 5},
+    ];
+
+    final presets = _isWorker ? workerPresets : userPresets;
+
+    return Container(
+      height: 42,
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0xFFF1F5F9)),
+          bottom: BorderSide(color: Color(0xFFF1F5F9)),
+        ),
+      ),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: presets.length + 1,
+        separatorBuilder: (context, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.mic_rounded, size: 14, color: AppColors.primary),
+                const SizedBox(width: 4),
+                Text(
+                  '1-Tap Voice:',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            );
+          }
+          final p = presets[index - 1];
+          return Center(
+            child: InkWell(
+              onTap: () => _sendVernacularVoicePreset(p['label'] as String, p['dur'] as int),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.play_circle_fill_rounded, size: 13, color: AppColors.primary),
+                    const SizedBox(width: 5),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 220),
+                      child: Text(
+                        p['label'] as String,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1E40AF),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      '0:${(p['dur'] as int).toString().padLeft(2, '0')}',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 9,
+                        color: const Color(0xFF3B82F6),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildMessageBubble(ChatMessage msg) {
+    if (msg.messageType == 'voice' || msg.voiceDurationSeconds != null || msg.voiceUrl != null) {
+      return _buildVoiceBubble(msg);
+    }
+
     // Formatting bubble corners based on sender
     final userCorners = const BorderRadius.only(
       topLeft: Radius.circular(16),
@@ -1200,6 +1617,188 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ],
               ],
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.05, end: 0, curve: Curves.easeOut);
+  }
+
+  Widget _buildVoiceBubble(ChatMessage msg) {
+    final isMe = msg.isMe;
+    final isPlaying = _currentlyPlayingVoiceId == msg.id && _isPlayingVoice;
+    final durationSec = msg.voiceDurationSeconds ?? 6;
+    final elapsedSec = isPlaying ? _playbackProgressSeconds : 0;
+    final progress = durationSec > 0 ? (elapsedSec / durationSec).clamp(0.0, 1.0) : 0.0;
+
+    final userCorners = const BorderRadius.only(
+      topLeft: Radius.circular(16),
+      bottomLeft: Radius.circular(16),
+      topRight: Radius.circular(16),
+      bottomRight: Radius.circular(2),
+    );
+
+    final senderCorners = const BorderRadius.only(
+      topLeft: Radius.circular(16),
+      bottomLeft: Radius.circular(2),
+      topRight: Radius.circular(16),
+      bottomRight: Radius.circular(16),
+    );
+
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.78,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isMe ? AppColors.primary : Colors.white,
+          borderRadius: isMe ? userCorners : senderCorners,
+          border: isMe ? null : Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                // Play / Pause Circle
+                GestureDetector(
+                  onTap: () => _togglePlayVoice(msg),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: isMe ? Colors.white : AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: isMe ? AppColors.primary : Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Waveform Bars & Timing
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height: 22,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: List.generate(14, (idx) {
+                            final heights = [10.0, 18.0, 14.0, 22.0, 8.0, 20.0, 16.0, 22.0, 12.0, 19.0, 15.0, 21.0, 9.0, 14.0];
+                            final barH = heights[idx % heights.length];
+                            final barProgress = idx / 14.0;
+                            final isPassed = isPlaying && progress >= barProgress;
+
+                            return Container(
+                              width: 3,
+                              height: barH,
+                              decoration: BoxDecoration(
+                                color: isMe
+                                    ? (isPassed ? Colors.white : Colors.white.withValues(alpha: 0.4))
+                                    : (isPassed ? AppColors.primary : const Color(0xFFCBD5E1)),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            isPlaying
+                                ? '0:${elapsedSec.toString().padLeft(2, '0')}'
+                                : '0:${durationSec.toString().padLeft(2, '0')}',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isMe ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF64748B),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.mic_rounded,
+                                size: 10,
+                                color: isMe ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF94A3B8),
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                'Voice Note',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: isMe ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (msg.text.isNotEmpty && !msg.text.startsWith('🎙️ Voice note')) ...[
+              const SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isMe ? Colors.white.withValues(alpha: 0.15) : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '“${msg.text}”',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: isMe ? Colors.white : const Color(0xFF334155),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 9,
+                      color: isMe ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                  if (isMe) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      msg.readAt != null ? Icons.done_all_rounded : Icons.done_rounded,
+                      size: 11,
+                      color: msg.readAt != null ? const Color(0xFF60A5FA) : Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
         ),

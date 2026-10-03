@@ -10,8 +10,11 @@ class SpotlightPromoItem {
   final String tag;
   final IconData tagIcon;
   final Color tagColor;
+  final Color tagBgColor;
+  final Color tagBorderColor;
   final String title;
   final String highlightText;
+  final Color highlightColor;
   final String subtitle;
   final List<String> perks;
   final String priceText;
@@ -20,14 +23,20 @@ class SpotlightPromoItem {
   final String buttonText;
   final List<Color> gradientColors;
   final Color accentGlow;
+  final Color borderColor;
+  final Color buttonBgColor;
+  final Color buttonTextColor;
   final VoidCallback onTap;
 
   const SpotlightPromoItem({
     required this.tag,
     required this.tagIcon,
     required this.tagColor,
+    required this.tagBgColor,
+    required this.tagBorderColor,
     required this.title,
     required this.highlightText,
+    required this.highlightColor,
     required this.subtitle,
     required this.perks,
     required this.priceText,
@@ -36,6 +45,9 @@ class SpotlightPromoItem {
     required this.buttonText,
     required this.gradientColors,
     required this.accentGlow,
+    required this.borderColor,
+    this.buttonBgColor = const Color(0xFF0F172A),
+    this.buttonTextColor = Colors.white,
     required this.onTap,
   });
 }
@@ -119,13 +131,16 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
   @override
   Widget build(BuildContext context) {
     final List<SpotlightPromoItem> promoItems = [
-      // 1. AC Service Spotlight (Urban Company Deep Royal Blue)
+      // 1. AC Service Spotlight (Light Fresh Azure / Sky Blue)
       SpotlightPromoItem(
         tag: 'SUMMER COOLING SALE • 40% OFF',
         tagIcon: Icons.ac_unit_rounded,
-        tagColor: const Color(0xFF38BDF8),
+        tagColor: const Color(0xFF0284C7),
+        tagBgColor: const Color(0xFFE0F2FE),
+        tagBorderColor: const Color(0xFFBAE6FD),
         title: 'AC Deep Jet Cleaning',
         highlightText: '& Gas Boost',
+        highlightColor: const Color(0xFF0284C7),
         subtitle: '2X deeper cooling wash with anti-rust shield',
         perks: ['✓ 30-Day Guarantee', '✓ Certified AC Pros'],
         priceText: '₹399',
@@ -133,11 +148,14 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
         assetPath: 'assets/images/banner_ac_apple.jpg',
         buttonText: 'Book now',
         gradientColors: const [
-          Color(0xFF0A192F),
-          Color(0xFF0F3460),
-          Color(0xFF1E3A8A),
+          Color(0xFFF0F9FF),
+          Color(0xFFE0F2FE),
+          Color(0xFFBAE6FD),
         ],
-        accentGlow: const Color(0xFF0284C7),
+        accentGlow: const Color(0xFF38BDF8),
+        borderColor: const Color(0xFFBAE6FD),
+        buttonBgColor: const Color(0xFF0F172A),
+        buttonTextColor: Colors.white,
         onTap: () {
           HapticFeedback.mediumImpact();
           ref.read(postJobProvider.notifier).reset();
@@ -148,13 +166,16 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
         },
       ),
 
-      // 2. Doorstep Tech Lab Spotlight (Urban Company Sleek Electric Violet)
+      // 2. Doorstep Tech Lab Spotlight (Light Elegant Lavender / Violet)
       SpotlightPromoItem(
         tag: 'DOORSTEP TECH LAB • 4.9★ RATED',
         tagIcon: Icons.laptop_chromebook_rounded,
-        tagColor: const Color(0xFFA78BFA),
+        tagColor: const Color(0xFF7C3AED),
+        tagBgColor: const Color(0xFFF3E8FF),
+        tagBorderColor: const Color(0xFFDDD6FE),
         title: 'Laptop & Phone Repair',
         highlightText: 'at Your Desk',
+        highlightColor: const Color(0xFF7C3AED),
         subtitle: 'Screen, battery & logic board diagnostics in 45m',
         perks: ['✓ 6-Month Warranty', '✓ Original Spares'],
         priceText: '₹449',
@@ -162,11 +183,14 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
         assetPath: 'assets/images/service_laptop.jpg',
         buttonText: 'Book now',
         gradientColors: const [
-          Color(0xFF130924),
-          Color(0xFF2E1065),
-          Color(0xFF4C1D95),
+          Color(0xFFFAF5FF),
+          Color(0xFFF3E8FF),
+          Color(0xFFEDE9FE),
         ],
-        accentGlow: const Color(0xFF8B5CF6),
+        accentGlow: const Color(0xFFA78BFA),
+        borderColor: const Color(0xFFDDD6FE),
+        buttonBgColor: const Color(0xFF0F172A),
+        buttonTextColor: Colors.white,
         onTap: () {
           HapticFeedback.mediumImpact();
           ref.read(postJobProvider.notifier).reset();
@@ -177,13 +201,16 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
         },
       ),
 
-      // 3. Instant Electrician & Plumber Express (Urban Company High Urgency Ruby)
+      // 3. Instant Electrician & Plumber Express (Light Warm Amber / Peach Cream)
       SpotlightPromoItem(
         tag: '⚡ 15-MIN EXPRESS ARRIVAL',
         tagIcon: Icons.bolt_rounded,
-        tagColor: const Color(0xFFFBBF24),
+        tagColor: const Color(0xFFD97706),
+        tagBgColor: const Color(0xFFFEF3C7),
+        tagBorderColor: const Color(0xFFFDE68A),
         title: 'Emergency Electrician',
         highlightText: '& Plumber',
+        highlightColor: const Color(0xFFEA580C),
         subtitle: 'Immediate breakdown fixes with live GPS tracking',
         perks: ['✓ Zero Inspection Fee', '✓ Live Arrival in 15m'],
         priceText: '₹99',
@@ -191,11 +218,14 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
         assetPath: 'assets/images/service_electrician.jpg',
         buttonText: 'Instant Help',
         gradientColors: const [
-          Color(0xFF200B0B),
-          Color(0xFF831843),
-          Color(0xFF991B1B),
+          Color(0xFFFFFBEB),
+          Color(0xFFFEF3C7),
+          Color(0xFFFFEDD5),
         ],
-        accentGlow: const Color(0xFFEA580C),
+        accentGlow: const Color(0xFFFB923C),
+        borderColor: const Color(0xFFFED7AA),
+        buttonBgColor: const Color(0xFF0F172A),
+        buttonTextColor: Colors.white,
         onTap: () {
           HapticFeedback.heavyImpact();
           ref.read(postJobProvider.notifier).reset();
@@ -207,13 +237,16 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
         },
       ),
 
-      // 4. Gas Stove & Burner Overhaul (Urban Company Emerald Safety)
+      // 4. Gas Stove & Burner Overhaul (Light Fresh Mint / Botanical Sage)
       SpotlightPromoItem(
         tag: 'SAFETY CERTIFIED • 100% AUDIT',
         tagIcon: Icons.local_fire_department_rounded,
-        tagColor: const Color(0xFF34D399),
+        tagColor: const Color(0xFF059669),
+        tagBgColor: const Color(0xFFDCFCE7),
+        tagBorderColor: const Color(0xFFA7F3D0),
         title: 'Gas Stove & Hob Overhaul',
         highlightText: 'with Leak Test',
+        highlightColor: const Color(0xFF059669),
         subtitle: 'Restore blue flame efficiency & complete pipeline check',
         perks: ['✓ Blue Flame Restore', '✓ Gas Leak Audit'],
         priceText: '₹199',
@@ -221,11 +254,14 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
         assetPath: 'assets/images/banner_stove_apple.jpg',
         buttonText: 'Book now',
         gradientColors: const [
-          Color(0xFF041F1A),
-          Color(0xFF064E3B),
-          Color(0xFF065F46),
+          Color(0xFFF0FDF4),
+          Color(0xFFDCFCE7),
+          Color(0xFFD1FAE5),
         ],
-        accentGlow: const Color(0xFF10B981),
+        accentGlow: const Color(0xFF34D399),
+        borderColor: const Color(0xFFA7F3D0),
+        buttonBgColor: const Color(0xFF0F172A),
+        buttonTextColor: Colors.white,
         onTap: () {
           HapticFeedback.mediumImpact();
           ref.read(postJobProvider.notifier).reset();
@@ -283,7 +319,7 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
                         width: isActive ? 20 : 6,
                         height: 5,
                         decoration: BoxDecoration(
-                          color: isActive ? const Color(0xFF1E3A8A) : const Color(0xFFCBD5E1),
+                          color: isActive ? const Color(0xFF1D4ED8) : const Color(0xFFCBD5E1),
                           borderRadius: BorderRadius.circular(3),
                         ),
                       );
@@ -299,6 +335,13 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
                           color: Colors.white,
                           shape: BoxShape.circle,
                           border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x080F172A),
+                              blurRadius: 4,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
                         ),
                         child: const Icon(Icons.chevron_left_rounded, size: 16, color: Color(0xFF0F172A)),
                       ),
@@ -312,6 +355,13 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
                           color: Colors.white,
                           shape: BoxShape.circle,
                           border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x080F172A),
+                              blurRadius: 4,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
                         ),
                         child: const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF0F172A)),
                       ),
@@ -380,277 +430,283 @@ class _UrbanCompanySpotlightCardState extends State<_UrbanCompanySpotlightCard> 
           item.onTap();
         },
         onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedScale(
-        scale: _isPressed ? 0.98 : 1.0,
-        duration: const Duration(milliseconds: 140),
-        curve: Curves.easeOutCubic,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: item.gradientColors,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: item.accentGlow.withValues(alpha: 0.28),
-                blurRadius: 22,
-                offset: const Offset(0, 8),
+        child: AnimatedScale(
+          scale: _isPressed ? 0.985 : 1.0,
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: item.gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const BoxShadow(
-                color: Color(0x18000000),
-                blurRadius: 10,
-                offset: Offset(0, 3),
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: item.accentGlow.withValues(alpha: 0.16),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+                const BoxShadow(
+                  color: Color(0x080F172A),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+              border: Border.all(
+                color: item.borderColor,
+                width: 1.2,
               ),
-            ],
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.16),
-              width: 1.2,
             ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Ambient soft radial light in background
-              Positioned(
-                right: -40,
-                top: -40,
-                child: Container(
-                  width: 220,
-                  height: 220,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        item.accentGlow.withValues(alpha: 0.45),
-                        Colors.transparent,
-                      ],
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Ambient soft radial light in background
+                Positioned(
+                  right: -30,
+                  top: -30,
+                  child: Container(
+                    width: 220,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          item.accentGlow.withValues(alpha: 0.35),
+                          Colors.transparent,
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // Right-side High Resolution Service Photograph with smooth cinematic blend
-              Positioned(
-                top: 0,
-                bottom: 0,
-                right: 0,
-                width: isWide ? 380 : 210,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.asset(
-                      item.assetPath,
-                      fit: BoxFit.cover,
-                      cacheWidth: isWide ? 760 : 420,
-                      filterQuality: FilterQuality.medium,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.transparent,
-                        child: Icon(Icons.home_repair_service_rounded, color: Colors.white.withValues(alpha: 0.3), size: 48),
-                      ),
-                    ),
-                    // Multi-stop directional gradient mask to blend into card seamlessly
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [
-                            item.gradientColors.first,
-                            item.gradientColors.first.withValues(alpha: 0.88),
-                            item.gradientColors[1].withValues(alpha: 0.45),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.28, 0.65, 1.0],
-                        ),
-                      ),
-                    ),
-                    // Top & Bottom vignette
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            item.gradientColors.first.withValues(alpha: 0.3),
-                            Colors.transparent,
-                            item.gradientColors.last.withValues(alpha: 0.5),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Left-side Copy, Badges, Features and Urban Company Style CTA
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  isWide ? 26 : 18,
-                  isWide ? 20 : 16,
-                  isWide ? 280 : 130,
-                  isWide ? 20 : 15,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Urban Company Frosted Glass Pill
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.16),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.28),
-                              width: 1.0,
-                            ),
+                // Right-side High Resolution Service Photograph with smooth light blend
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  right: 0,
+                  width: isWide ? 380 : 210,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        item.assetPath,
+                        fit: BoxFit.cover,
+                        cacheWidth: isWide ? 760 : 420,
+                        filterQuality: FilterQuality.medium,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.transparent,
+                          child: Icon(
+                            Icons.home_repair_service_rounded,
+                            color: item.tagColor.withValues(alpha: 0.35),
+                            size: 48,
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(item.tagIcon, color: item.tagColor, size: 12),
-                              const SizedBox(width: 5),
-                              Text(
-                                item.tag,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: isWide ? 10.5 : 9.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
+                        ),
+                      ),
+                      // Multi-stop directional gradient mask to blend into the light card seamlessly
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              item.gradientColors.first,
+                              item.gradientColors.first.withValues(alpha: 0.96),
+                              item.gradientColors[1].withValues(alpha: 0.60),
+                              item.gradientColors[1].withValues(alpha: 0.15),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.25, 0.55, 0.80, 1.0],
+                          ),
+                        ),
+                      ),
+                      // Subtle top & bottom edge blend
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              item.gradientColors.first.withValues(alpha: 0.25),
+                              Colors.transparent,
+                              item.gradientColors.last.withValues(alpha: 0.35),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 8),
+                      ),
+                    ],
+                  ),
+                ),
 
-                        // Title with highlight
-                        RichText(
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          text: TextSpan(
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: isWide ? 19 : 15.5,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: -0.4,
-                              height: 1.16,
-                            ),
-                            children: [
-                              TextSpan(text: '${item.title} '),
-                              TextSpan(
-                                text: item.highlightText,
-                                style: TextStyle(
-                                  color: item.tagColor,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                // Left-side Copy, Badges, Features and Urban Company Style CTA
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    isWide ? 26 : 18,
+                    isWide ? 20 : 16,
+                    isWide ? 280 : 130,
+                    isWide ? 20 : 15,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Urban Company Clean Tag Pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                            decoration: BoxDecoration(
+                              color: item.tagBgColor,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: item.tagBorderColor,
+                                width: 1.0,
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-
-                        // Value prop subtitle
-                        Text(
-                          item.subtitle,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: isWide ? 12 : 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withValues(alpha: 0.85),
-                            height: 1.25,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-
-                    // Bottom Row: Price + Urban Company CTA Button
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
+                                Icon(item.tagIcon, color: item.tagColor, size: 12),
+                                const SizedBox(width: 5),
                                 Text(
-                                  item.priceText,
+                                  item.tag,
                                   style: GoogleFonts.plusJakartaSans(
-                                    fontSize: isWide ? 18 : 16,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  item.originalPrice,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: isWide ? 12 : 11,
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                    decoration: TextDecoration.lineThrough,
-                                    decorationColor: Colors.white.withValues(alpha: 0.8),
+                                    fontSize: isWide ? 10.5 : 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: item.tagColor,
+                                    letterSpacing: 0.4,
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                        const SizedBox(width: 14),
-                        // Elevated CTA Pill Button
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isWide ? 18 : 14,
-                            vertical: isWide ? 8.5 : 7,
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
+                          const SizedBox(height: 8),
+
+                          // Title with highlight
+                          RichText(
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            text: TextSpan(
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: isWide ? 19 : 15.5,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0F172A),
+                                letterSpacing: -0.4,
+                                height: 1.16,
                               ),
-                            ],
+                              children: [
+                                TextSpan(text: '${item.title} '),
+                                TextSpan(
+                                  text: item.highlightText,
+                                  style: TextStyle(
+                                    color: item.highlightColor,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: Row(
+                          const SizedBox(height: 5),
+
+                          // Value prop subtitle
+                          Text(
+                            item.subtitle,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: isWide ? 12 : 11,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF475569),
+                              height: 1.25,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+
+                      // Bottom Row: Price + Urban Company CTA Button
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                item.buttonText,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: isWide ? 12.5 : 11.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF0F172A),
-                                ),
-                              ),
-                              const SizedBox(width: 5),
-                              const Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 14,
-                                color: Color(0xFF0F172A),
+                              Row(
+                                children: [
+                                  Text(
+                                    item.priceText,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: isWide ? 18 : 16,
+                                      fontWeight: FontWeight.w900,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    item.originalPrice,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: isWide ? 12 : 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF94A3B8),
+                                      decoration: TextDecoration.lineThrough,
+                                      decorationColor: const Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 14),
+                          // High-contrast Apple/Urban Company CTA Pill Button
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isWide ? 18 : 14,
+                              vertical: isWide ? 8.5 : 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: item.buttonBgColor,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x220F172A),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  item.buttonText,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: isWide ? 12.5 : 11.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: item.buttonTextColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 14,
+                                  color: item.buttonTextColor,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

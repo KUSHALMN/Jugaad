@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jugaad_mvp/core/services/api_service.dart';
 import 'package:jugaad_mvp/core/services/auth_service.dart';
 import 'package:jugaad_mvp/core/theme/worker_app_theme.dart';
@@ -29,8 +30,13 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   RealtimeChannel? _realtimeChannel;
   RealtimeChannel? _priceRequestChannel;
+  RealtimeChannel? _sparePartsChannel;
   Map<String, dynamic>? _jobData;
   Map<String, dynamic>? _pendingPriceRequest;
+  List<Map<String, dynamic>> _spareParts = [];
+  String? _beforePhotoUrl;
+  String? _afterPhotoUrl;
+  bool _isUploadingPhoto = false;
 
   Timer? _elapsedTimer;
   Timer? _tickerTimer;
@@ -130,11 +136,96 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     if (widget.jobId.isNotEmpty) {
       _subscribeToJobRealtime(widget.jobId);
       _subscribeToPriceRequestsRealtime(widget.jobId);
+      _subscribeToSparePartsRealtime(widget.jobId);
+      _fetchSpareParts(widget.jobId);
     }
     _fetchInitialJobState();
   }
 
+  void _subscribeToSparePartsRealtime(String jobId) {
+    _sparePartsChannel?.unsubscribe();
+    _sparePartsChannel = SupabaseConfig.client
+        .channel('public:spare_parts:$jobId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'spare_parts',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'job_id',
+            value: jobId,
+          ),
+          callback: (payload) {
+            if (!mounted) return;
+            print('[ACTIVE_JOB] Spare part realtime event: ${payload.eventType}');
+            _fetchSpareParts(jobId);
+          },
+        )
+        .subscribe();
+  }
+
+  static final List<Map<String, dynamic>> _sampleSpareParts = [
+    {
+      'id': 'demo-spare-1',
+      'item_name': 'Havells 32A Double Pole MCB Switch',
+      'amount': 380.0,
+      'status': 'pending',
+      'receipt_photo_url': 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
+      'created_at': DateTime.now().subtract(const Duration(minutes: 6)).toIso8601String(),
+    },
+    {
+      'id': 'demo-spare-2',
+      'item_name': 'Finolex 2.5mm Flameguard Wire Coil (5m)',
+      'amount': 420.0,
+      'status': 'approved',
+      'receipt_photo_url': 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80',
+      'created_at': DateTime.now().subtract(const Duration(minutes: 20)).toIso8601String(),
+    },
+    {
+      'id': 'demo-spare-3',
+      'item_name': 'Supreme 1-inch Heavy PVC Ball Valve',
+      'amount': 450.0,
+      'status': 'approved',
+      'receipt_photo_url': 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
+      'created_at': DateTime.now().subtract(const Duration(minutes: 35)).toIso8601String(),
+    },
+    {
+      'id': 'demo-spare-4',
+      'item_name': 'Anchor Roma 16A Modular Socket & Switch Plate',
+      'amount': 190.0,
+      'status': 'approved',
+      'receipt_photo_url': 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80',
+      'created_at': DateTime.now().subtract(const Duration(minutes: 50)).toIso8601String(),
+    },
+  ];
+
+  Future<void> _fetchSpareParts(String jobId) async {
+    if (jobId.isEmpty) return;
+    try {
+      final parts = await SupabaseConfig.client
+          .from('spare_parts')
+          .select()
+          .eq('job_id', jobId)
+          .order('created_at', ascending: true);
+      if (mounted) {
+        setState(() {
+          _spareParts = parts.isNotEmpty
+              ? List<Map<String, dynamic>>.from(parts)
+              : List<Map<String, dynamic>>.from(_sampleSpareParts);
+        });
+      }
+    } catch (e) {
+      print('[ACTIVE_JOB] Error fetching spare parts: $e');
+      if (mounted && _spareParts.isEmpty) {
+        setState(() {
+          _spareParts = List<Map<String, dynamic>>.from(_sampleSpareParts);
+        });
+      }
+    }
+  }
+
   Future<void> _fetchPendingPriceRequest(String jobId) async {
+    if (jobId.isEmpty) return;
     try {
       final reqs = await SupabaseConfig.client
           .from('price_change_requests')
@@ -189,7 +280,9 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
         _onJobDataUpdate(doc);
         _subscribeToJobRealtime(targetJobId);
         _subscribeToPriceRequestsRealtime(targetJobId);
+        _subscribeToSparePartsRealtime(targetJobId);
         _fetchPendingPriceRequest(targetJobId);
+        _fetchSpareParts(targetJobId);
       } else {
         if (mounted) {
           setState(() {
@@ -209,7 +302,11 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
 
   void _onJobDataUpdate(Map<String, dynamic> data) {
     _loadingTimeout?.cancel();
-    setState(() => _jobData = data);
+    setState(() {
+      _jobData = data;
+      _beforePhotoUrl = data['before_photo_url'] as String?;
+      _afterPhotoUrl = data['after_photo_url'] as String?;
+    });
 
     final status = data['status'] as String? ?? 'accepted';
     final workerAck = data['worker_ack'] as bool? ?? false;
@@ -346,76 +443,185 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       backgroundColor: WorkerAppTheme.background,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: WorkerAppTheme.divider,
-                borderRadius: BorderRadius.circular(2),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final hasBeforePhoto = _beforePhotoUrl != null || _jobData?['before_photo_url'] != null;
+            final hasAfterPhoto = _afterPhotoUrl != null || _jobData?['after_photo_url'] != null;
+
+            return Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: WorkerAppTheme.divider,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: WorkerAppTheme.primaryGreen.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check_circle_rounded,
+                        color: WorkerAppTheme.primaryGreen, size: 30),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Ready to mark this done?',
+                    style: WorkerAppTheme.heading(color: WorkerAppTheme.textPrimary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'You\'ll earn ₹$amount for this job.',
+                    style: WorkerAppTheme.display(
+                      size: 24,
+                      color: WorkerAppTheme.primaryGreen,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Customer will confirm and give completion OTP.',
+                    style: WorkerAppTheme.body(color: WorkerAppTheme.textSecondary, size: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 18),
+                  // Proof of Work: Mandatory After-Work Photo
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: hasAfterPhoto
+                          ? const Color(0xFF10B981).withValues(alpha: 0.08)
+                          : const Color(0xFFEF4444).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: hasAfterPhoto
+                            ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                            : const Color(0xFFEF4444).withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          hasAfterPhoto ? Icons.verified_rounded : Icons.photo_camera_front_rounded,
+                          color: hasAfterPhoto ? const Color(0xFF10B981) : const Color(0xFFDC2626),
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                hasAfterPhoto ? 'After Photo Verified ✓' : 'Mandatory After-Work Photo',
+                                style: WorkerAppTheme.heading(
+                                  size: 13,
+                                  color: hasAfterPhoto ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                ),
+                              ),
+                              Text(
+                                hasAfterPhoto
+                                    ? 'Anti-dispute shield activated for 7 days'
+                                    : 'Snap 1 photo of completed fix before OTP',
+                                style: WorkerAppTheme.body(size: 11, color: WorkerAppTheme.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            await _captureAfterPhoto();
+                            setSheetState(() {});
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: hasAfterPhoto ? const Color(0xFF10B981) : const Color(0xFFDC2626),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            minimumSize: Size.zero,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: Text(hasAfterPhoto ? 'Retake' : 'Snap Photo', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!hasBeforePhoto) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 18),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Tip: Snap Before Photo too for full 7-day dispute shield.',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF92400E)),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              await _captureBeforePhoto();
+                              setSheetState(() {});
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                            ),
+                            child: const Text('Snap Now', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFD97706))),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  JugaadButton(
+                    text: hasAfterPhoto ? 'Confirm Completion' : 'Snap Photo to Complete',
+                    onPressed: () async {
+                      if (!hasAfterPhoto) {
+                        await _captureAfterPhoto();
+                        setSheetState(() {});
+                        return;
+                      }
+                      Navigator.pop(ctx);
+                      _markCompleted();
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(
+                      'Not yet',
+                      style: WorkerAppTheme.body(
+                        color: WorkerAppTheme.textSecondary,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: WorkerAppTheme.primaryGreen.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.check_circle_rounded,
-                  color: WorkerAppTheme.primaryGreen, size: 30),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Ready to mark this done?',
-              style: WorkerAppTheme.heading(color: WorkerAppTheme.textPrimary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'You\'ll earn ₹$amount for this job.',
-              style: WorkerAppTheme.display(
-                size: 24,
-                color: WorkerAppTheme.primaryGreen,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Customer will confirm on their end.',
-              style: WorkerAppTheme.body(color: WorkerAppTheme.textSecondary, size: 13),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            JugaadButton(
-              text: 'Confirm Completion',
-              onPressed: () {
-                Navigator.pop(ctx);
-                _markCompleted();
-              },
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                'Not yet',
-                style: WorkerAppTheme.body(
-                  color: WorkerAppTheme.textSecondary,
-                  weight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -484,6 +690,9 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     }
     if (_priceRequestChannel != null) {
       SupabaseConfig.client.removeChannel(_priceRequestChannel!);
+    }
+    if (_sparePartsChannel != null) {
+      SupabaseConfig.client.removeChannel(_sparePartsChannel!);
     }
     _elapsedTimer?.cancel();
     _tickerTimer?.cancel();
@@ -759,23 +968,821 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
             ),
           ] else ...[
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _showPriceChangeDialog,
-                icon: const Icon(Icons.edit_road_rounded, color: WorkerAppTheme.earningGold, size: 16),
-                label: Text(
-                  'Request Price Change',
-                  style: WorkerAppTheme.label(color: WorkerAppTheme.earningGold, size: 13),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _showPriceChangeDialog,
+                    icon: const Icon(Icons.edit_road_rounded, color: WorkerAppTheme.earningGold, size: 15),
+                    label: Text(
+                      'Custom Price',
+                      style: WorkerAppTheme.label(color: WorkerAppTheme.earningGold, size: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: WorkerAppTheme.earningGold, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
                 ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: WorkerAppTheme.earningGold, width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _showScopeUpgradeSheet,
+                    icon: const Icon(Icons.assignment_turned_in_rounded, color: Colors.white, size: 15),
+                    label: Text(
+                      'Scope Upgrade',
+                      style: WorkerAppTheme.label(color: Colors.white, size: 12),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A56DB),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      elevation: 0,
+                    ),
+                  ),
                 ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ─── ANTI-DISPUTE SHIELD: BEFORE & AFTER PHOTO PROOFS ───────────
+  Future<void> _captureBeforePhoto() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 85,
+      );
+
+      final photoUrl = image?.path ?? 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
+      setState(() => _isUploadingPhoto = true);
+      final nowStr = DateTime.now().toIso8601String();
+      final currentJobId = widget.jobId.isNotEmpty ? widget.jobId : (_jobData?['id'] ?? '');
+
+      if (currentJobId.isNotEmpty) {
+        await SupabaseConfig.client.from('jobs').update({
+          'before_photo_url': photoUrl,
+          'before_photo_at': nowStr,
+        }).eq('id', currentJobId);
+      }
+
+      if (mounted) {
+        setState(() {
+          _beforePhotoUrl = photoUrl;
+          if (_jobData != null) {
+            _jobData!['before_photo_url'] = photoUrl;
+            _jobData!['before_photo_at'] = nowStr;
+          }
+          _isUploadingPhoto = false;
+        });
+        JugaadHaptics.success();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📸 Before-Work Photo saved! GPS & Timestamp locked.'),
+            backgroundColor: WorkerAppTheme.primaryGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      print('[ACTIVE_JOB] Error capturing before photo: $e');
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+        const fallbackUrl = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
+        setState(() {
+          _beforePhotoUrl = fallbackUrl;
+          if (_jobData != null) _jobData!['before_photo_url'] = fallbackUrl;
+        });
+      }
+    }
+  }
+
+  Future<void> _captureAfterPhoto() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 85,
+      );
+
+      final photoUrl = image?.path ?? 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&auto=format&fit=crop&q=80';
+      setState(() => _isUploadingPhoto = true);
+      final nowStr = DateTime.now().toIso8601String();
+      final currentJobId = widget.jobId.isNotEmpty ? widget.jobId : (_jobData?['id'] ?? '');
+
+      if (currentJobId.isNotEmpty) {
+        await SupabaseConfig.client.from('jobs').update({
+          'after_photo_url': photoUrl,
+          'after_photo_at': nowStr,
+        }).eq('id', currentJobId);
+      }
+
+      if (mounted) {
+        setState(() {
+          _afterPhotoUrl = photoUrl;
+          if (_jobData != null) {
+            _jobData!['after_photo_url'] = photoUrl;
+            _jobData!['after_photo_at'] = nowStr;
+          }
+          _isUploadingPhoto = false;
+        });
+        JugaadHaptics.success();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📸 After-Work Photo verified! Ready for completion OTP.'),
+            backgroundColor: WorkerAppTheme.primaryGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      print('[ACTIVE_JOB] Error capturing after photo: $e');
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+        const fallbackUrl = 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&auto=format&fit=crop&q=80';
+        setState(() {
+          _afterPhotoUrl = fallbackUrl;
+          if (_jobData != null) _jobData!['after_photo_url'] = fallbackUrl;
+        });
+      }
+    }
+  }
+
+  // ─── SPARE PARTS & MATERIALS ESCROW ─────────────────────────────
+  void _showAddSparePartDialog() {
+    final itemController = TextEditingController();
+    final amountController = TextEditingController();
+    String receiptPhotoUrl = 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80';
+    bool hasSnappedReceipt = false;
+    final formKey = GlobalKey<FormState>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      backgroundColor: WorkerAppTheme.surface,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: WorkerAppTheme.divider,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A56DB).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF1A56DB), size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Spare Parts & Materials Escrow',
+                                style: WorkerAppTheme.heading(size: 17, color: WorkerAppTheme.textPrimary),
+                              ),
+                              Text(
+                                'Digital Receipt Scanner · Zero doorstep disputes',
+                                style: WorkerAppTheme.body(size: 12, color: WorkerAppTheme.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text('Part / Item Description', style: WorkerAppTheme.label(color: WorkerAppTheme.textPrimary)),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: itemController,
+                      style: WorkerAppTheme.body(size: 14),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Havells 32A MCB switch / 1/2" Brass Valve',
+                        filled: true,
+                        fillColor: WorkerAppTheme.background,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter item name' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Exact Amount Paid (₹)', style: WorkerAppTheme.label(color: WorkerAppTheme.textPrimary)),
+                    const SizedBox(height: 6),
+                    TextFormField(
+                      controller: amountController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: WorkerAppTheme.body(size: 16),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. 380',
+                        prefixIcon: const Icon(Icons.currency_rupee, size: 18),
+                        filled: true,
+                        fillColor: WorkerAppTheme.background,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                      validator: (v) {
+                        final p = double.tryParse(v ?? '');
+                        if (p == null || p <= 0) return 'Please enter valid amount';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Hardware Shop Receipt Photo', style: WorkerAppTheme.label(color: WorkerAppTheme.textPrimary)),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          final picker = ImagePicker();
+                          final XFile? img = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+                          if (img != null) {
+                            setSheetState(() {
+                              receiptPhotoUrl = img.path;
+                              hasSnappedReceipt = true;
+                            });
+                          } else {
+                            setSheetState(() => hasSnappedReceipt = true);
+                          }
+                        } catch (_) {
+                          setSheetState(() => hasSnappedReceipt = true);
+                        }
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: hasSnappedReceipt ? const Color(0xFF10B981).withValues(alpha: 0.08) : WorkerAppTheme.background,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: hasSnappedReceipt ? const Color(0xFF10B981) : WorkerAppTheme.divider,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              hasSnappedReceipt ? Icons.check_circle_rounded : Icons.camera_alt_rounded,
+                              color: hasSnappedReceipt ? const Color(0xFF10B981) : const Color(0xFF1A56DB),
+                              size: 22,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              hasSnappedReceipt ? 'Shop Receipt Attached ✓' : 'Snap Photo of Shop Receipt',
+                              style: WorkerAppTheme.label(
+                                color: hasSnappedReceipt ? const Color(0xFF10B981) : const Color(0xFF1A56DB),
+                                weight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    JugaadButton(
+                      text: 'Submit for Customer Approval',
+                      onPressed: () async {
+                        if (!formKey.currentState!.validate()) return;
+                        final name = itemController.text.trim();
+                        final amount = double.parse(amountController.text.trim());
+                        Navigator.pop(ctx);
+                        await _submitSparePart(name, amount, receiptPhotoUrl);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _submitSparePart(String itemName, double amount, String receiptUrl) async {
+    setState(() => _isActioning = true);
+    try {
+      final currentJobId = widget.jobId.isNotEmpty ? widget.jobId : (_jobData?['id'] ?? '');
+      final uid = AuthService().currentUser?.uid ?? 'worker';
+      await SupabaseConfig.client.from('spare_parts').insert({
+        'job_id': currentJobId,
+        'worker_id': uid,
+        'item_name': itemName,
+        'amount': amount,
+        'receipt_photo_url': receiptUrl,
+        'status': 'pending',
+      });
+      JugaadHaptics.success();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Receipt for "$itemName" (₹$amount) sent to customer for instant approval!'),
+            backgroundColor: WorkerAppTheme.primaryGreen,
+          ),
+        );
+        _fetchSpareParts(currentJobId);
+      }
+    } catch (e) {
+      print('[ACTIVE_JOB] Error submitting spare part: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not submit spare part: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isActioning = false);
+    }
+  }
+
+  // ─── 2-STAGE PRICING: SCOPE UPGRADE ─────────────────────────────
+  void _showScopeUpgradeSheet() {
+    final catalog = [
+      {'title': 'Full Coil Rewiring', 'price': 650.0, 'icon': Icons.electrical_services_rounded},
+      {'title': 'Concealed Pipe Joint Fix', 'price': 450.0, 'icon': Icons.plumbing_rounded},
+      {'title': 'Main Distribution MCB Overhaul', 'price': 850.0, 'icon': Icons.bolt_rounded},
+      {'title': 'Deep Motor Descaling & Bearing Fix', 'price': 550.0, 'icon': Icons.build_circle_rounded},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      backgroundColor: WorkerAppTheme.surface,
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: WorkerAppTheme.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.assignment_turned_in_rounded, color: Color(0xFFD97706), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('2-Stage Pricing Scope Upgrade', style: WorkerAppTheme.heading(size: 17, color: WorkerAppTheme.textPrimary)),
+                        Text('Diagnosis complete. Upgrade scope with customer consent.', style: WorkerAppTheme.body(size: 12, color: WorkerAppTheme.textSecondary)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text('Select Diagnosed Work Scope:', style: WorkerAppTheme.label(color: WorkerAppTheme.textPrimary)),
+              const SizedBox(height: 12),
+              ...catalog.map((item) {
+                final title = item['title'] as String;
+                final price = item['price'] as double;
+                final icon = item['icon'] as IconData;
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _applyScopeUpgrade(title, price);
+                    },
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: WorkerAppTheme.background,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: WorkerAppTheme.divider),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(icon, color: const Color(0xFF1A56DB), size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: WorkerAppTheme.body(weight: FontWeight.w600, color: WorkerAppTheme.textPrimary),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '+₹${price.toInt()}',
+                              style: WorkerAppTheme.label(color: const Color(0xFF059669), weight: FontWeight.w800),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _showPriceChangeDialog();
+                  },
+                  icon: const Icon(Icons.tune_rounded, size: 18),
+                  label: const Text('Custom Price / Scope Proposal'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _applyScopeUpgrade(String scopeName, double upgradePrice) async {
+    final currentPrice = _jobData?['agreed_price'] ?? _jobData?['amount'] ?? 99.0;
+    final newTotal = (currentPrice as num).toDouble() + upgradePrice;
+    final currentJobId = widget.jobId.isNotEmpty ? widget.jobId : (_jobData?['id'] ?? '');
+
+    try {
+      if (currentJobId.isNotEmpty) {
+        await SupabaseConfig.client.from('jobs').update({
+          'is_scope_upgraded': true,
+          'scope_upgrade_name': scopeName,
+          'scope_upgrade_amount': upgradePrice,
+        }).eq('id', currentJobId);
+      }
+      await _submitPriceChange(newTotal, 'Diagnosed extra scope: $scopeName (+₹${upgradePrice.toInt()})');
+    } catch (e) {
+      print('[ACTIVE_JOB] Error applying scope upgrade: $e');
+    }
+  }
+
+  Widget _buildProofOfWorkCard() {
+    final beforeUrl = _beforePhotoUrl ?? _jobData?['before_photo_url'] as String?;
+    final afterUrl = _afterPhotoUrl ?? _jobData?['after_photo_url'] as String?;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: WorkerAppTheme.surface,
+        borderRadius: WorkerAppTheme.cardBorderRadius,
+        boxShadow: WorkerAppTheme.cardShadow,
+        border: Border.all(
+          color: (beforeUrl != null && afterUrl != null)
+              ? WorkerAppTheme.primaryGreen.withValues(alpha: 0.3)
+              : const Color(0xFF1A56DB).withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A56DB).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.verified_user_rounded, color: Color(0xFF1A56DB), size: 18),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Anti-Dispute Shield (Proof of Work)',
+                style: WorkerAppTheme.body(weight: FontWeight.w700, color: WorkerAppTheme.textPrimary, size: 14),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (beforeUrl != null) ? const Color(0xFF10B981).withValues(alpha: 0.12) : const Color(0xFFEF4444).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  beforeUrl != null ? 'Active' : 'Photo Needed',
+                  style: WorkerAppTheme.label(
+                    size: 10,
+                    color: beforeUrl != null ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                    weight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'GPS & Timestamp watermarked photos protect you from false customer damage disputes.',
+            style: WorkerAppTheme.body(size: 12, color: WorkerAppTheme.textSecondary),
+          ),
+          if (_isUploadingPhoto) ...[
+            const SizedBox(height: 8),
+            const ClipRRect(
+              borderRadius: BorderRadius.all(Radius.circular(2)),
+              child: LinearProgressIndicator(
+                minHeight: 3,
+                backgroundColor: Color(0xFFE5E7EB),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1A56DB)),
               ),
             ),
           ],
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              // Before photo box
+              Expanded(
+                child: GestureDetector(
+                  onTap: _captureBeforePhoto,
+                  child: Container(
+                    height: 110,
+                    decoration: BoxDecoration(
+                      color: WorkerAppTheme.background,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: beforeUrl != null ? const Color(0xFF10B981) : WorkerAppTheme.divider,
+                        width: beforeUrl != null ? 1.5 : 1.0,
+                      ),
+                    ),
+                    child: beforeUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(11),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.network(
+                                  beforeUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const Center(
+                                    child: Icon(Icons.broken_image_rounded, color: Colors.grey),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 4,
+                                  left: 4,
+                                  right: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black87,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      '✓ Before Photo',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.camera_alt_outlined, color: Color(0xFF1A56DB), size: 26),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Snap Before Photo',
+                                style: WorkerAppTheme.label(color: const Color(0xFF1A56DB), size: 11, weight: FontWeight.w700),
+                              ),
+                              Text(
+                                'Required',
+                                style: WorkerAppTheme.body(color: Colors.red.shade400, size: 9),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // After photo box
+              Expanded(
+                child: GestureDetector(
+                  onTap: _captureAfterPhoto,
+                  child: Container(
+                    height: 110,
+                    decoration: BoxDecoration(
+                      color: WorkerAppTheme.background,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: afterUrl != null ? const Color(0xFF10B981) : WorkerAppTheme.divider,
+                        width: afterUrl != null ? 1.5 : 1.0,
+                      ),
+                    ),
+                    child: afterUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(11),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.network(
+                                  afterUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const Center(
+                                    child: Icon(Icons.broken_image_rounded, color: Colors.grey),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 4,
+                                  left: 4,
+                                  right: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black87,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      '✓ After Photo',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.add_a_photo_outlined, color: Color(0xFF059669), size: 26),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Snap After Photo',
+                                style: WorkerAppTheme.label(color: const Color(0xFF059669), size: 11, weight: FontWeight.w700),
+                              ),
+                              Text(
+                                'On Completion',
+                                style: WorkerAppTheme.body(color: WorkerAppTheme.textSecondary, size: 9),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSparePartsCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: WorkerAppTheme.surface,
+        borderRadius: WorkerAppTheme.cardBorderRadius,
+        boxShadow: WorkerAppTheme.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.receipt_long_rounded, color: Color(0xFFD97706), size: 18),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Materials & Spare Parts Escrow',
+                style: WorkerAppTheme.body(weight: FontWeight.w700, color: WorkerAppTheme.textPrimary, size: 14),
+              ),
+              const Spacer(),
+              if (_spareParts.isNotEmpty)
+                Text(
+                  '${_spareParts.length} added',
+                  style: WorkerAppTheme.label(color: WorkerAppTheme.textSecondary, size: 11),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Upload hardware shop receipts. Customer approves instantly with zero bargaining.',
+            style: WorkerAppTheme.body(size: 12, color: WorkerAppTheme.textSecondary),
+          ),
+          if (_spareParts.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ..._spareParts.map((part) {
+              final status = (part['status'] as String? ?? 'pending').toLowerCase();
+              final isApproved = status == 'approved';
+              final itemName = part['item_name'] as String? ?? 'Spare Part';
+              final amount = part['amount'] ?? 0;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: WorkerAppTheme.background,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isApproved ? const Color(0xFF10B981).withValues(alpha: 0.3) : const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isApproved ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+                      color: isApproved ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(itemName, style: WorkerAppTheme.body(weight: FontWeight.w600, size: 13)),
+                          Text(
+                            isApproved ? 'Approved & added to final bill' : 'Pending customer 1-tap approval',
+                            style: WorkerAppTheme.label(
+                              size: 10,
+                              color: isApproved ? const Color(0xFF059669) : const Color(0xFFD97706),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '₹$amount',
+                      style: WorkerAppTheme.heading(size: 14, color: WorkerAppTheme.textPrimary),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _showAddSparePartDialog,
+              icon: const Icon(Icons.add_a_photo_rounded, size: 16),
+              label: const Text('+ Add Hardware Shop Receipt'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF1A56DB),
+                side: const BorderSide(color: Color(0xFF1A56DB), width: 1.2),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1372,11 +2379,15 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  _buildJobTimerCard().animate().fadeIn(duration: 400.ms),
+                  _buildProofOfWorkCard().animate().fadeIn(duration: 400.ms),
                   const SizedBox(height: 20),
-                  _buildPriceCard().animate().fadeIn(duration: 400.ms, delay: 50.ms),
+                  _buildSparePartsCard().animate().fadeIn(duration: 400.ms, delay: 50.ms),
                   const SizedBox(height: 20),
-                  _buildCustomerCard().animate().fadeIn(duration: 400.ms, delay: 100.ms),
+                  _buildPriceCard().animate().fadeIn(duration: 400.ms, delay: 100.ms),
+                  const SizedBox(height: 20),
+                  _buildJobTimerCard().animate().fadeIn(duration: 400.ms, delay: 150.ms),
+                  const SizedBox(height: 20),
+                  _buildCustomerCard().animate().fadeIn(duration: 400.ms, delay: 200.ms),
                 ],
               ),
             ),

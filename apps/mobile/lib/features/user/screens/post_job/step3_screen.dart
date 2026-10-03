@@ -106,6 +106,8 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
         'job_type': jobState.jobType,
         'service_fee_type': jobState.serviceFeeType,
         'surcharge_amount': jobState.surchargeAmount,
+        'is_emergency': jobState.jobType == 'emergency',
+        'emergency_surcharge': jobState.jobType == 'emergency' ? (jobState.surchargeAmount > 0 ? jobState.surchargeAmount : 150.0) : 0.0,
       });
       final jobId = res['job_id'] ?? res['id'];
       if (jobId == null || jobId.toString().isEmpty) {
@@ -196,7 +198,10 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
     final priceMaxStr = service.priceMax.toStringAsFixed(0);
 
     final bool isLocationEmpty = jobState.lat == 0.0 && jobState.lng == 0.0;
-    final btnText = isScheduled ? 'Schedule Booking' : 'Find Workers Now';
+    final isEmergency = jobState.jobType == 'emergency';
+    final btnText = isScheduled
+        ? 'Schedule Booking'
+        : (isEmergency ? '🚨 Broadcast Flash Radar SOS' : 'Find Workers Now');
 
     return Scaffold(
       backgroundColor: UserAppTheme.background,
@@ -217,6 +222,159 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 🚨 60-Second Flash Radar Broadcast for Home Emergencies Toggle Card
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isEmergency ? null : Colors.white,
+                      gradient: isEmergency
+                          ? const LinearGradient(
+                              colors: [Color(0xFFFEF2F2), Color(0xFFFFF1F2)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isEmergency ? const Color(0xFFEF4444) : UserAppTheme.divider,
+                        width: isEmergency ? 1.5 : 1.0,
+                      ),
+                      boxShadow: [
+                        if (isEmergency)
+                          BoxShadow(
+                            color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ...UserAppTheme.cardShadow,
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: isEmergency ? const Color(0xFFFEE2E2) : const Color(0xFFF1F5F9),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.emergency_rounded,
+                                color: isEmergency ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Emergency SOS Dispatch',
+                                        style: UserAppTheme.heading(
+                                          size: 14,
+                                          weight: FontWeight.bold,
+                                          color: isEmergency ? const Color(0xFF991B1B) : UserAppTheme.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isEmergency ? const Color(0xFFDC2626) : const Color(0xFFE2E8F0),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '15-MIN',
+                                          style: UserAppTheme.label(
+                                            size: 9,
+                                            weight: FontWeight.w800,
+                                            color: isEmergency ? Colors.white : const Color(0xFF475569),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Burst pipes, main fuse sparks, lockouts',
+                                    style: UserAppTheme.body(size: 11, color: UserAppTheme.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch.adaptive(
+                              value: isEmergency,
+                              activeTrackColor: const Color(0xFFDC2626),
+                              onChanged: (val) {
+                                HapticFeedback.mediumImpact();
+                                ref.read(postJobProvider.notifier).setEmergency(val);
+                              },
+                            ),
+                          ],
+                        ),
+                        if (isEmergency) ...[
+                          const SizedBox(height: 12),
+                          const Divider(color: Color(0xFFFECACA), height: 1),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              const Icon(Icons.radar_rounded, size: 14, color: Color(0xFFDC2626)),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Triggers 5 km geo-fenced siren broadcast to all online certified pros (+₹150 hazard allowance included).',
+                                  style: UserAppTheme.body(
+                                    size: 11,
+                                    weight: FontWeight.w600,
+                                    color: const Color(0xFFB91C1C),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              '💥 Burst Pipe Flooding',
+                              '⚡ Main Fuse Sparking',
+                              '🔒 Night Door Lockout',
+                              '♨️ Gas Leak / Geyser',
+                            ].map((tag) {
+                              return InkWell(
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  ref.read(postJobProvider.notifier).setDescription('Urgent Emergency: $tag. Requires immediate assistance.');
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: const Color(0xFFFCA5A5)),
+                                  ),
+                                  child: Text(
+                                    tag,
+                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF991B1B)),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 300.ms),
+
                   // --- ORDER SUMMARY CARD Title
                   Row(
                     children: [
@@ -388,8 +546,37 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
                               ),
                             ],
                           ),
-                          showDivider: false,
+                          showDivider: isEmergency,
                         ),
+                        if (isEmergency)
+                          _buildSummaryRow(
+                            icon: Icons.emergency_rounded,
+                            iconColor: const Color(0xFFDC2626),
+                            label: 'Emergency Hazard Allowance',
+                            valueWidget: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '+₹150',
+                                  style: UserAppTheme.body(
+                                    size: 15,
+                                    weight: FontWeight.bold,
+                                    color: const Color(0xFFDC2626),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Guaranteed 15-min emergency pro arrival',
+                                  style: UserAppTheme.body(
+                                    size: 12,
+                                    weight: FontWeight.w600,
+                                    color: const Color(0xFFB91C1C),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            showDivider: false,
+                          ),
                       ],
                     ),
                   ).animate().fadeIn(delay: 100.ms, duration: 400.ms).slideY(begin: 0.05),
@@ -499,6 +686,7 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
           if (_showSearchOverlay)
             _SearchingOverlay(
               serviceType: jobState.skill,
+              isEmergency: isEmergency,
               onCancel: () {
                 setState(() {
                   _showSearchOverlay = false;
@@ -695,10 +883,12 @@ class _ConfirmScaleButtonState extends State<ConfirmScaleButton> with SingleTick
 // ─── FULL-SCREEN SEARCHING ANIMATION OVERLAY ────────────────────────
 class _SearchingOverlay extends StatefulWidget {
   final String serviceType;
+  final bool isEmergency;
   final VoidCallback onCancel;
 
   const _SearchingOverlay({
     required this.serviceType,
+    this.isEmergency = false,
     required this.onCancel,
   });
 
@@ -721,6 +911,8 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
   Timer? _typewriterTimer;
   int _dotCount = 0;
   Timer? _dotTimer;
+  int _countdownSeconds = 60;
+  Timer? _countdownTimer;
 
   @override
   void initState() {
@@ -728,7 +920,7 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
 
     _radarController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: Duration(milliseconds: widget.isEmergency ? 1200 : 2000),
     )..repeat();
 
     _fadeInController = AnimationController(
@@ -738,13 +930,27 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
 
     _iconPulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: Duration(milliseconds: widget.isEmergency ? 600 : 1200),
     )..repeat(reverse: true);
 
     _glowController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: Duration(milliseconds: widget.isEmergency ? 1000 : 2000),
     )..repeat(reverse: true);
+
+    if (widget.isEmergency) {
+      _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        setState(() {
+          if (_countdownSeconds > 1) {
+            _countdownSeconds--;
+          }
+        });
+      });
+    }
 
     _initStatuses();
     _startCycle();
@@ -759,13 +965,22 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
             word.isNotEmpty ? '${word[0].toUpperCase()}${word.substring(1)}' : '')
         .join(' ');
 
-    _statuses = [
-      'Scanning nearby coordinates',
-      'Locating active ${displayService}s',
-      'Checking live availability',
-      'Optimizing nearest routes',
-      'Matching best worker for you',
-    ];
+    if (widget.isEmergency) {
+      _statuses = [
+        '🚨 Flash Radar: Siren broadcast to pros within 5 km',
+        '⚡ ₹150 Emergency Hazard Allowance attached',
+        '🛰️ Geo-fenced high-priority siren active',
+        '⏱️ Routing nearest pro via Google Maps (15-min arrival)',
+      ];
+    } else {
+      _statuses = [
+        'Scanning nearby coordinates',
+        'Locating active ${displayService}s',
+        'Checking live availability',
+        'Optimizing nearest routes',
+        'Matching best worker for you',
+      ];
+    }
   }
 
   void _startDotAnimation() {
@@ -819,6 +1034,7 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
     _cycleTimer?.cancel();
     _typewriterTimer?.cancel();
     _dotTimer?.cancel();
+    _countdownTimer?.cancel();
     super.dispose();
   }
 
@@ -865,7 +1081,7 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: UserAppTheme.skyAccent,
+                  color: widget.isEmergency ? const Color(0xFFEF4444) : UserAppTheme.skyAccent,
                   width: 2.0,
                 ),
               ),
@@ -889,13 +1105,18 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
       child: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment(0, -0.1),
-            colors: [
-              Color(0xFF1E3A8A), // Deep blue center
-              Color(0xFF0F172A), // Dark slate edge
-            ],
+            center: const Alignment(0, -0.1),
+            colors: widget.isEmergency
+                ? const [
+                    Color(0xFF7F1D1D), // Crimson emergency center
+                    Color(0xFF0F172A), // Dark slate edge
+                  ]
+                : const [
+                    Color(0xFF1E3A8A), // Deep blue center
+                    Color(0xFF0F172A), // Dark slate edge
+                  ],
             radius: 1.5,
           ),
         ),
@@ -912,16 +1133,20 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '🔍 Finding Helpers...',
+                            widget.isEmergency
+                                ? '🚨 60s Flash Radar SOS (${_countdownSeconds}s)'
+                                : '🔍 Finding Helpers...',
                             style: UserAppTheme.heading(
                               size: 18,
                               weight: FontWeight.bold,
-                              color: Colors.white,
+                              color: widget.isEmergency ? const Color(0xFFFCA5A5) : Colors.white,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Connecting to nearby experts',
+                            widget.isEmergency
+                                ? 'Broadcasting 5 km siren to certified pros'
+                                : 'Connecting to nearby experts',
                             style: UserAppTheme.body(
                               size: 13,
                               color: Colors.white70,
@@ -933,7 +1158,10 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
                     OutlinedButton(
                       onPressed: widget.onCancel,
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.white30, width: 1.0),
+                        side: BorderSide(
+                          color: widget.isEmergency ? const Color(0xFFFCA5A5) : Colors.white30,
+                          width: 1.0,
+                        ),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),
                         padding: const EdgeInsets.symmetric(
@@ -974,8 +1202,8 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: UserAppTheme.skyAccent.withValues(
-                                    alpha: 0.08 + _glowController.value * 0.07),
+                                color: (widget.isEmergency ? const Color(0xFFEF4444) : UserAppTheme.skyAccent)
+                                    .withValues(alpha: 0.12 + _glowController.value * 0.1),
                                 blurRadius: 60,
                                 spreadRadius: 30,
                               ),
@@ -994,33 +1222,42 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
                       animation: _iconPulseController,
                       builder: (context, _) {
                         final scale =
-                            1.0 + _iconPulseController.value * 0.08;
+                            1.0 + _iconPulseController.value * 0.12;
                         return Transform.scale(
                           scale: scale,
                           child: Container(
                             width: 68,
                             height: 68,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  UserAppTheme.primaryBlue,
-                                  UserAppTheme.skyAccent,
-                                ],
+                              gradient: LinearGradient(
+                                colors: widget.isEmergency
+                                    ? const [
+                                        Color(0xFFDC2626),
+                                        Color(0xFFEF4444),
+                                      ]
+                                    : const [
+                                        UserAppTheme.primaryBlue,
+                                        UserAppTheme.skyAccent,
+                                      ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: UserAppTheme.primaryBlue
-                                      .withValues(alpha: 0.4),
-                                  blurRadius: 20,
-                                  spreadRadius: 4,
+                                  color: (widget.isEmergency
+                                          ? const Color(0xFFDC2626)
+                                          : UserAppTheme.primaryBlue)
+                                      .withValues(alpha: 0.5),
+                                  blurRadius: 24,
+                                  spreadRadius: 6,
                                 ),
                               ],
                             ),
                             child: Icon(
-                              _getServiceIcon(widget.serviceType),
+                              widget.isEmergency
+                                  ? Icons.emergency_rounded
+                                  : _getServiceIcon(widget.serviceType),
                               color: Colors.white,
                               size: 30,
                             ),
@@ -1071,11 +1308,17 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(2),
                           gradient: LinearGradient(
-                            colors: [
-                              Colors.transparent,
-                              UserAppTheme.skyAccent.withValues(alpha: 0.8),
-                              Colors.transparent,
-                            ],
+                            colors: widget.isEmergency
+                                ? const [
+                                    Colors.transparent,
+                                    Color(0xFFEF4444),
+                                    Colors.transparent,
+                                  ]
+                                : [
+                                    Colors.transparent,
+                                    UserAppTheme.skyAccent.withValues(alpha: 0.8),
+                                    Colors.transparent,
+                                  ],
                           ),
                         ),
                       ),
@@ -1090,11 +1333,13 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
               Padding(
                 padding: const EdgeInsets.only(bottom: 32),
                 child: Text(
-                  'This may take a few seconds',
+                  widget.isEmergency
+                      ? 'Guaranteed 15-minute arrival • Siren broadcast to nearby certified pros'
+                      : 'This may take a few seconds',
                   style: UserAppTheme.body(
                     size: 12,
-                    color: Colors.white38,
-                    weight: FontWeight.w500,
+                    color: widget.isEmergency ? const Color(0xFFFCA5A5) : Colors.white38,
+                    weight: FontWeight.w600,
                   ),
                 ),
               ),

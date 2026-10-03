@@ -667,6 +667,35 @@ class SupabaseService {
     });
   }
 
+  /// Sends a vernacular voice note message with optional audio URL and duration.
+  Future<void> sendVoiceMessage({
+    required String jobId,
+    required String senderId,
+    required String text,
+    String? voiceUrl,
+    int? voiceDurationSeconds,
+    String messageType = 'voice',
+  }) async {
+    try {
+      await _client.from('messages').insert({
+        'job_id': jobId,
+        'sender_id': senderId,
+        'text': text,
+        'voice_url': voiceUrl,
+        'voice_duration_seconds': voiceDurationSeconds,
+        'message_type': messageType,
+      });
+    } catch (e) {
+      // In case voice columns are not yet migrated in database, fallback smoothly to text
+      print('[SupabaseService] Voice columns missing or insert failed, falling back to text: $e');
+      await _client.from('messages').insert({
+        'job_id': jobId,
+        'sender_id': senderId,
+        'text': text.startsWith('🎙️') ? text : '🎙️ Voice note (${voiceDurationSeconds ?? 6}s): $text',
+      });
+    }
+  }
+
   // ─── User Notifications ───────────────────────────────────────────────────
 
   /// Stream notifications for a user in real-time, ordered by created_at.
