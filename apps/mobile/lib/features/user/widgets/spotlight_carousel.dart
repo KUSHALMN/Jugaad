@@ -124,7 +124,9 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
           HapticFeedback.mediumImpact();
           ref.read(postJobProvider.notifier).reset();
           ref.read(postJobProvider.notifier).setSkill('AC Service');
-          context.push('/user/worker-search?service=AC%20Service');
+          ref.read(postJobProvider.notifier).setUrgency('now');
+          ref.read(postJobProvider.notifier).setScheduledAt(null);
+          context.push('/user/post-job/step2');
         },
       ),
 
@@ -151,7 +153,9 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
           HapticFeedback.mediumImpact();
           ref.read(postJobProvider.notifier).reset();
           ref.read(postJobProvider.notifier).setSkill('Laptop Repair');
-          context.push('/user/worker-search?service=Laptop%20Repair');
+          ref.read(postJobProvider.notifier).setUrgency('now');
+          ref.read(postJobProvider.notifier).setScheduledAt(null);
+          context.push('/user/post-job/step2');
         },
       ),
 
@@ -177,9 +181,11 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
         onTap: () {
           HapticFeedback.heavyImpact();
           ref.read(postJobProvider.notifier).reset();
+          ref.read(postJobProvider.notifier).setSkill('Electrician');
           ref.read(postJobProvider.notifier).setEmergency(true);
           ref.read(postJobProvider.notifier).setUrgency('now');
-          context.push('/user/post-job/step1');
+          ref.read(postJobProvider.notifier).setScheduledAt(null);
+          context.push('/user/post-job/step2');
         },
       ),
 
@@ -206,7 +212,9 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
           HapticFeedback.mediumImpact();
           ref.read(postJobProvider.notifier).reset();
           ref.read(postJobProvider.notifier).setSkill('Stove Repair');
-          context.push('/user/worker-search?service=Stove%20Repair');
+          ref.read(postJobProvider.notifier).setUrgency('now');
+          ref.read(postJobProvider.notifier).setScheduledAt(null);
+          context.push('/user/post-job/step2');
         },
       ),
     ];

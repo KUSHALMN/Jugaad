@@ -219,14 +219,16 @@ class _ServicesGridState extends ConsumerState<ServicesGrid> {
                     HapticFeedback.mediumImpact();
                     ref.read(postJobProvider.notifier).reset();
                     ref.read(postJobProvider.notifier).setSkill(item.categoryName);
-                    context.push('/user/worker-search?service=${Uri.encodeComponent(item.categoryName)}');
+                    ref.read(postJobProvider.notifier).setUrgency('now');
+                    ref.read(postJobProvider.notifier).setScheduledAt(null);
+                    context.push('/user/post-job/step2');
                   },
                   onBookTap: () {
                     HapticFeedback.heavyImpact();
                     ref.read(postJobProvider.notifier).reset();
                     ref.read(postJobProvider.notifier).setSkill(item.categoryName);
                     ref.read(postJobProvider.notifier).setUrgency('now');
-                    ref.read(postJobProvider.notifier).setEmergency(true);
+                    ref.read(postJobProvider.notifier).setScheduledAt(null);
                     context.push('/user/post-job/step2');
                   },
                 ),

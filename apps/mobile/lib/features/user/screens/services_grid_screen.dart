@@ -18,27 +18,47 @@ class ServicesGridScreen extends ConsumerStatefulWidget {
 
 class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
   String _selectedCategory = 'All';
-  // ONLY categories relevant to the 7 home screen services
   final List<String> _categories = ['All', 'Home', 'Tech'];
 
   Color _getCategoryColor(String category, String title) {
     final lowerTitle = title.toLowerCase();
     if (lowerTitle.contains('electric') || lowerTitle.contains('power')) {
-      return const Color(0xFFEA580C); // Orange
+      return const Color(0xFFEA580C);
     } else if (lowerTitle.contains('plumb') || lowerTitle.contains('water')) {
-      return const Color(0xFF2563EB); // Blue
+      return const Color(0xFF2563EB);
     } else if (lowerTitle.contains('ac') || lowerTitle.contains('cool')) {
-      return const Color(0xFF0284C7); // Sky Blue
+      return const Color(0xFF0284C7);
     } else if (lowerTitle.contains('carpenter')) {
-      return const Color(0xFFD97706); // Amber
+      return const Color(0xFFD97706);
     } else if (lowerTitle.contains('stove') || lowerTitle.contains('gas') || lowerTitle.contains('fire')) {
-      return const Color(0xFFE11D48); // Rose
+      return const Color(0xFFE11D48);
     } else if (lowerTitle.contains('phone')) {
-      return const Color(0xFF0D9488); // Teal
+      return const Color(0xFF0D9488);
     } else if (lowerTitle.contains('laptop')) {
-      return const Color(0xFF6366F1); // Indigo
+      return const Color(0xFF6366F1);
     }
     return AppColors.primary;
+  }
+
+  String _getServiceImage(String id) {
+    switch (id.toLowerCase()) {
+      case 'electrician':
+        return 'assets/images/service_electrician.jpg';
+      case 'plumber':
+        return 'assets/images/service_plumber.jpg';
+      case 'laptop_repair':
+        return 'assets/images/service_laptop.jpg';
+      case 'phone_repair':
+        return 'assets/images/banner_tech_apple.jpg';
+      case 'ac_service':
+        return 'assets/images/banner_ac_apple.jpg';
+      case 'stove_repair':
+        return 'assets/images/banner_stove_apple.jpg';
+      case 'carpenter':
+        return 'assets/images/banner_tools_apple.jpg';
+      default:
+        return 'assets/images/banner_tools_apple.jpg';
+    }
   }
 
   @override
@@ -152,7 +172,6 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
               child: Builder(
                 builder: (context) {
                   final servicesList = servicesAsync.value ?? kAllServices;
-                  // Strictly allow ONLY the 7 home screen categories
                   const allowedIds = {
                     'electrician',
                     'plumber',
@@ -198,16 +217,14 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
     final double childAspectRatio;
 
     if (screenWidth >= 1024) {
-      // 3 columns on wide screens give generous, roomy SaaS cards
       crossAxisCount = 3;
-      childAspectRatio = 1.55;
+      childAspectRatio = 0.95;
     } else if (screenWidth >= 650) {
       crossAxisCount = 2;
-      childAspectRatio = 1.45;
+      childAspectRatio = 0.92;
     } else {
-      // Mobile: compact 2-column with nice breathing room
       crossAxisCount = 2;
-      childAspectRatio = 1.18;
+      childAspectRatio = 0.74;
     }
 
     return Center(
@@ -237,14 +254,15 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
 
   Widget _buildModernServiceCard(ServiceDef service, int index) {
     final Color accentColor = _getCategoryColor(service.category, service.title);
-    final Color bgTint = accentColor.withValues(alpha: 0.08);
+    final String imagePath = _getServiceImage(service.id);
 
     return _ServiceCardItem(
       service: service,
       accentColor: accentColor,
-      bgTint: bgTint,
+      imagePath: imagePath,
       onTap: () {
         HapticFeedback.mediumImpact();
+        ref.read(postJobProvider.notifier).reset();
         ref.read(postJobProvider.notifier).setSkill(service.title);
         ref.read(postJobProvider.notifier).setUrgency('now');
         ref.read(postJobProvider.notifier).setScheduledAt(null);
@@ -257,13 +275,13 @@ class _ServicesGridScreenState extends ConsumerState<ServicesGridScreen> {
 class _ServiceCardItem extends StatefulWidget {
   final ServiceDef service;
   final Color accentColor;
-  final Color bgTint;
+  final String imagePath;
   final VoidCallback onTap;
 
   const _ServiceCardItem({
     required this.service,
     required this.accentColor,
-    required this.bgTint,
+    required this.imagePath,
     required this.onTap,
   });
 
@@ -294,7 +312,7 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
         onTapCancel: () => setState(() => _isPressed = false),
         child: AnimatedScale(
           scale: scale,
-          duration: const Duration(milliseconds: 150),
+          duration: const Duration(milliseconds: 140),
           curve: Curves.easeOutCubic,
           child: Container(
             decoration: BoxDecoration(
@@ -304,159 +322,208 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
                 color: _isHovered
                     ? accentColor.withValues(alpha: 0.50)
                     : const Color(0xFFE2E8F0),
-                width: 1.0,
+                width: 1.1,
               ),
               boxShadow: [
                 BoxShadow(
                   color: _isHovered
-                      ? accentColor.withValues(alpha: 0.12)
-                      : const Color(0x060F172A),
+                      ? accentColor.withValues(alpha: 0.14)
+                      : const Color(0x080F172A),
                   blurRadius: _isHovered ? 16 : 8,
                   offset: const Offset(0, 3),
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Top Row: Icon Container + Rating Badge
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 38,
-                          height: 38,
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top High-Resolution Service Image with Floating Badges
+                Expanded(
+                  flex: 12,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        widget.imagePath,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: const Color(0xFFF1F5F9),
+                          child: Center(
+                            child: Icon(service.icon, color: accentColor, size: 28),
+                          ),
+                        ),
+                      ),
+                      // Subtle gradient mask
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.25),
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.45),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Top Left: Category Icon Badge
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          width: 30,
+                          height: 30,
                           decoration: BoxDecoration(
-                            color: widget.bgTint,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: accentColor.withValues(alpha: 0.20),
-                              width: 1,
-                            ),
+                            color: Colors.white.withValues(alpha: 0.92),
+                            shape: BoxShape.circle,
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x15000000),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
                           alignment: Alignment.center,
                           child: Icon(
                             service.icon,
                             color: accentColor,
-                            size: 20,
+                            size: 16,
                           ),
                         ),
-                        Container(
+                      ),
+                      // Top Right: Rating Pill
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFFBEB),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: const Color(0xFFFDE68A),
-                              width: 1,
-                            ),
+                            color: Colors.black.withValues(alpha: 0.75),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 0.8),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 13),
-                              const SizedBox(width: 2.5),
+                              const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 12),
+                              const SizedBox(width: 3),
                               Text(
                                 service.rating.toStringAsFixed(1),
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 10.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF92400E),
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-
-                    // Middle: Service Title & Pricing estimate
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          service.title,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0F172A),
-                            letterSpacing: -0.3,
-                            height: 1.2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '₹${service.priceMin.toInt()} - ₹${service.priceMax.toInt()} est.',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF64748B),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-
-                    // Bottom Row: Category chip & compact Book button
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            service.category,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF475569),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: accentColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Book',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: accentColor,
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 11,
-                                color: accentColor,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+
+                // Bottom Content: Title, Price, Category & Book Button
+                Expanded(
+                  flex: 11,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12.0, 10.0, 12.0, 10.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              service.title,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0F172A),
+                                letterSpacing: -0.3,
+                                height: 1.15,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '₹${service.priceMin.toInt()} - ₹${service.priceMax.toInt()} est.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF64748B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+
+                        // Bottom Row: Category Chip & Urban Company Book Button
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                service.category,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0F172A),
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x18000000),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Book',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 11,
+                                    color: Colors.white,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

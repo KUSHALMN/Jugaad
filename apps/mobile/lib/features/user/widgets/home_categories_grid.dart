@@ -267,13 +267,12 @@ class HomeCategoriesGrid extends ConsumerWidget {
                                   HapticFeedback.mediumImpact();
                                   ref.read(postJobProvider.notifier).reset();
                                   ref.read(postJobProvider.notifier).setSkill(cat.serviceSkill);
+                                  ref.read(postJobProvider.notifier).setUrgency('now');
+                                  ref.read(postJobProvider.notifier).setScheduledAt(null);
                                   if (cat.isEmergency) {
                                     ref.read(postJobProvider.notifier).setEmergency(true);
-                                    ref.read(postJobProvider.notifier).setUrgency('now');
-                                    context.push('/user/post-job/step2');
-                                  } else {
-                                    context.push('/user/worker-search?service=${Uri.encodeComponent(cat.serviceSkill)}');
                                   }
+                                  context.push('/user/post-job/step2');
                                 },
                               ),
                             );
