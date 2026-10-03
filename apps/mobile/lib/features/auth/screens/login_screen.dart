@@ -14,7 +14,8 @@ import '../../../core/config/supabase_config.dart';
 
 /// Minimalist, Apple & Urban Company-grade Sign-In Screen
 /// Features Claude-style warm editorial serif typography (Newsreader),
-/// a serene warm cream canvas, and tactile, high-craft input elements.
+/// website brand Royal Blue (`#1A56DB`) theme accents,
+/// and smooth, friction-free authentication.
 class LoginScreen extends StatefulWidget {
   final PortalMode selectedRole;
 
@@ -27,7 +28,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
 
-  bool _isLoading = false;
+  bool _isGoogleLoading = false;
+  bool _isEmailLoading = false;
   bool _isEmailMode = false;
   bool _isSignUp = false;
   bool _obscurePassword = true;
@@ -61,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // ─── Sign In with Google ───────────────────────────────────────────
   Future<void> _signInWithGoogle() async {
     HapticFeedback.lightImpact();
-    setState(() => _isLoading = true);
+    setState(() => _isGoogleLoading = true);
 
     final container = ProviderScope.containerOf(context);
     container.read(authProvider.notifier).suppressAutoFetch();
@@ -70,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final userCredential = await _authService.signInWithGoogle();
       if (userCredential == null || userCredential.user == null) {
         container.read(authProvider.notifier).unsuppressAutoFetch();
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isGoogleLoading = false);
         return;
       }
       if (!mounted) return;
@@ -78,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } on PlatformException catch (e) {
       if (!mounted) return;
       container.read(authProvider.notifier).unsuppressAutoFetch();
-      setState(() => _isLoading = false);
+      setState(() => _isGoogleLoading = false);
       if (e.code == 'sign_in_cancelled') return;
       _showToast(e.code == 'sign_in_failed'
           ? 'Sign-in failed. Please verify configuration.'
@@ -86,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       container.read(authProvider.notifier).unsuppressAutoFetch();
-      setState(() => _isLoading = false);
+      setState(() => _isGoogleLoading = false);
       if (e.code == 'account-exists-with-different-credential') {
         _showToast('An account already exists with this email. Please sign in with email/password.');
       } else {
@@ -95,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       container.read(authProvider.notifier).unsuppressAutoFetch();
-      setState(() => _isLoading = false);
+      setState(() => _isGoogleLoading = false);
       String msg = e.toString().replaceAll('Exception: ', '');
       if (msg.contains('cancelled')) return;
       _showToast(msg);
@@ -128,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _isEmailLoading = true);
 
     final container = ProviderScope.containerOf(context);
     container.read(authProvider.notifier).suppressAutoFetch();
@@ -147,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       container.read(authProvider.notifier).unsuppressAutoFetch();
-      setState(() => _isLoading = false);
+      setState(() => _isEmailLoading = false);
       String msg = e.toString().replaceAll('Exception: ', '');
       _showToast(msg);
     }
@@ -224,7 +226,10 @@ class _LoginScreenState extends State<LoginScreen> {
     authNotifier.setRole(roleToSet);
     authNotifier.unsuppressAutoFetch();
 
-    setState(() => _isLoading = false);
+    setState(() {
+      _isGoogleLoading = false;
+      _isEmailLoading = false;
+    });
 
     if (selectedRole == PortalMode.user) {
       context.go('/user/home');
@@ -254,6 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isWorker = widget.selectedRole == PortalMode.worker;
+    final primaryThemeColor = isWorker ? const Color(0xFF044E32) : const Color(0xFF1A56DB);
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9F6), // Warm Claude / Apple cream canvas
@@ -277,10 +283,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 30,
-                            height: 30,
+                            width: 32,
+                            height: 32,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8.0),
+                              borderRadius: BorderRadius.circular(9.0),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.08),
@@ -290,22 +296,22 @@ class _LoginScreenState extends State<LoginScreen> {
                               ],
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8.0),
+                              borderRadius: BorderRadius.circular(9.0),
                               child: Image.asset(
                                 'assets/images/app_icon.png',
-                                width: 30,
-                                height: 30,
+                                width: 32,
+                                height: 32,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.flash_on_rounded, color: Color(0xFF191817), size: 20),
+                                    Icon(Icons.flash_on_rounded, color: primaryThemeColor, size: 22),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8.0),
+                          const SizedBox(width: 10.0),
                           Text(
                             'JUGAAD',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13.0,
+                              fontSize: 13.5,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 2.0,
                               color: const Color(0xFF191817),
@@ -321,12 +327,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // ── Claude-Style Warm Editorial Headline ─────────────────
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 5.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 5.5),
                     decoration: BoxDecoration(
-                      color: isWorker ? const Color(0xFFECFDF5) : const Color(0xFFF0EEE6),
+                      color: isWorker ? const Color(0xFFECFDF5) : const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(20.0),
                       border: Border.all(
-                        color: isWorker ? const Color(0xFFA7F3D0) : const Color(0xFFE5E2D8),
+                        color: isWorker ? const Color(0xFFA7F3D0) : const Color(0xFFDBEAFE),
                         width: 1.0,
                       ),
                     ),
@@ -336,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.2,
-                        color: isWorker ? const Color(0xFF044E32) : const Color(0xFF5A5852),
+                        color: primaryThemeColor,
                       ),
                     ),
                   ).animate().fadeIn(delay: 80.ms, duration: 350.ms).slideY(begin: 0.15, end: 0.0),
@@ -391,8 +397,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 250),
                       child: _isEmailMode
-                          ? _buildEmailForm(isWorker)
-                          : _buildQuickAuthView(isWorker),
+                          ? _buildEmailForm(isWorker, primaryThemeColor)
+                          : _buildQuickAuthView(isWorker, primaryThemeColor),
                     ),
                   ).animate().fadeIn(delay: 260.ms, duration: 400.ms).slideY(begin: 0.1, end: 0.0),
 
@@ -421,7 +427,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
   // VIEW: QUICK SOCIAL & EMAIL SELECTOR
   // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildQuickAuthView(bool isWorker) {
+  Widget _buildQuickAuthView(bool isWorker, Color primaryThemeColor) {
     return Column(
       key: const ValueKey('quick_auth_view'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -430,20 +436,20 @@ class _LoginScreenState extends State<LoginScreen> {
         SizedBox(
           height: 52.0,
           child: OutlinedButton(
-            onPressed: _isLoading ? null : _signInWithGoogle,
+            onPressed: (_isGoogleLoading || _isEmailLoading) ? null : _signInWithGoogle,
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0xFFE5E2DA), width: 1.0),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.0)),
               backgroundColor: Colors.white,
               elevation: 0,
             ),
-            child: _isLoading
-                ? const SizedBox(
+            child: _isGoogleLoading
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF191817)),
+                      valueColor: AlwaysStoppedAnimation<Color>(primaryThemeColor),
                     ),
                   )
                 : Row(
@@ -506,7 +512,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         const SizedBox(height: 20.0),
 
-        // Email Action Button (Obsidian Black or Deep Emerald)
+        // Email Action Button (Royal Blue for Customer, Deep Emerald for Worker)
         SizedBox(
           height: 52.0,
           child: ElevatedButton(
@@ -518,7 +524,8 @@ class _LoginScreenState extends State<LoginScreen> {
               });
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: isWorker ? const Color(0xFF044E32) : const Color(0xFF191817),
+              backgroundColor: primaryThemeColor, // Vibrant Royal Blue or Emerald
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.0)),
               elevation: 0,
             ),
@@ -526,7 +533,7 @@ class _LoginScreenState extends State<LoginScreen> {
               'Continue with Email',
               style: GoogleFonts.plusJakartaSans(
                 color: Colors.white,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 fontSize: 14.5,
               ),
             ),
@@ -552,7 +559,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
   // VIEW: EMAIL SIGN-IN / SIGN-UP FORM
   // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildEmailForm(bool isWorker) {
+  Widget _buildEmailForm(bool isWorker, Color primaryThemeColor) {
     return Column(
       key: const ValueKey('email_form_view'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -580,7 +587,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF716F68),
+                    color: primaryThemeColor,
                   ),
                 ),
               ),
@@ -610,7 +617,7 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: _nameController,
             keyboardType: TextInputType.name,
             style: GoogleFonts.plusJakartaSans(fontSize: 14.0, color: const Color(0xFF191817)),
-            decoration: _minimalInputDecoration('Full Name', _nameError),
+            decoration: _minimalInputDecoration('Full Name', _nameError, primaryThemeColor),
           ),
           const SizedBox(height: 14.0),
         ],
@@ -622,7 +629,7 @@ class _LoginScreenState extends State<LoginScreen> {
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           style: GoogleFonts.plusJakartaSans(fontSize: 14.0, color: const Color(0xFF191817)),
-          decoration: _minimalInputDecoration('name@example.com', _emailError),
+          decoration: _minimalInputDecoration('name@example.com', _emailError, primaryThemeColor),
         ),
 
         const SizedBox(height: 14.0),
@@ -637,6 +644,7 @@ class _LoginScreenState extends State<LoginScreen> {
           decoration: _minimalInputDecoration(
             '••••••••',
             _passwordError,
+            primaryThemeColor,
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -657,7 +665,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Text(
                 'Forgot password?',
                 style: GoogleFonts.plusJakartaSans(
-                  color: isWorker ? const Color(0xFF044E32) : const Color(0xFF191817),
+                  color: primaryThemeColor,
                   fontWeight: FontWeight.w600,
                   fontSize: 12.0,
                 ),
@@ -672,13 +680,13 @@ class _LoginScreenState extends State<LoginScreen> {
         SizedBox(
           height: 52.0,
           child: ElevatedButton(
-            onPressed: _isLoading ? null : _submitEmail,
+            onPressed: _isEmailLoading ? null : _submitEmail,
             style: ElevatedButton.styleFrom(
-              backgroundColor: isWorker ? const Color(0xFF044E32) : const Color(0xFF191817),
+              backgroundColor: primaryThemeColor,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.0)),
               elevation: 0,
             ),
-            child: _isLoading
+            child: _isEmailLoading
                 ? const SizedBox(
                     width: 20,
                     height: 20,
@@ -691,7 +699,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     _isSignUp ? 'Create Account' : 'Sign In',
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       fontSize: 14.5,
                     ),
                   ),
@@ -725,7 +733,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     text: _isSignUp ? 'Sign In' : 'Sign Up',
                     style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.w700,
-                      color: isWorker ? const Color(0xFF044E32) : const Color(0xFF191817),
+                      color: primaryThemeColor,
                     ),
                   ),
                 ],
@@ -748,7 +756,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  InputDecoration _minimalInputDecoration(String hint, String? error, {Widget? suffixIcon}) {
+  InputDecoration _minimalInputDecoration(String hint, String? error, Color focusColor, {Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hint,
       hintStyle: GoogleFonts.plusJakartaSans(color: const Color(0xFFA8A59E), fontSize: 13.5),
@@ -767,7 +775,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12.0),
-        borderSide: const BorderSide(color: Color(0xFF191817), width: 1.5),
+        borderSide: BorderSide(color: focusColor, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12.0),

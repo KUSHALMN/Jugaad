@@ -2,68 +2,86 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
+/// Global Typography System
+/// Powered by Claude-style warm editorial serif (Newsreader) for headlines
+/// and Apple-grade humanist sans-serif (Plus Jakarta Sans) for body.
 class AppTextStyles {
-  // Headings: Google Fonts 'Nunito' — weight 800, bold, rounded feel
-  static TextStyle heading1({Color color = AppColors.textPrimary}) => GoogleFonts.nunito(
-        fontSize: 28,
-        fontWeight: FontWeight.w800,
+  // Headings: Claude-style 'Newsreader' serif — elegant, editorial, human
+  static TextStyle heading1({Color color = AppColors.textPrimary}) => GoogleFonts.newsreader(
+        fontSize: 32,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.6,
         color: color,
       );
 
-  static TextStyle heading2({Color color = AppColors.textPrimary}) => GoogleFonts.nunito(
-        fontSize: 22,
-        fontWeight: FontWeight.w800,
+  static TextStyle heading2({Color color = AppColors.textPrimary}) => GoogleFonts.newsreader(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.4,
         color: color,
       );
 
-  static TextStyle heading3({Color color = AppColors.textPrimary}) => GoogleFonts.nunito(
-        fontSize: 18,
-        fontWeight: FontWeight.w800,
+  static TextStyle heading3({Color color = AppColors.textPrimary}) => GoogleFonts.newsreader(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.3,
         color: color,
       );
 
-  static TextStyle heading4({Color color = AppColors.textPrimary}) => GoogleFonts.nunito(
-        fontSize: 16,
-        fontWeight: FontWeight.w800,
+  static TextStyle heading4({Color color = AppColors.textPrimary}) => GoogleFonts.newsreader(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.2,
         color: color,
       );
 
-  // Body: Google Fonts 'DM Sans' — weight 400/500, clean and readable
-  static TextStyle bodyLarge({Color color = AppColors.textPrimary, FontWeight weight = FontWeight.w500}) => GoogleFonts.dmSans(
+  // Body: Google Fonts 'Plus Jakarta Sans' — clean, modern, ultra-readable
+  static TextStyle bodyLarge({Color color = AppColors.textPrimary, FontWeight weight = FontWeight.w500}) =>
+      GoogleFonts.plusJakartaSans(
         fontSize: 16,
         fontWeight: weight,
         color: color,
+        height: 1.5,
       );
 
-  static TextStyle bodyMedium({Color color = AppColors.textSecondary, FontWeight weight = FontWeight.w400}) => GoogleFonts.dmSans(
+  static TextStyle bodyMedium({Color color = AppColors.textSecondary, FontWeight weight = FontWeight.w400}) =>
+      GoogleFonts.plusJakartaSans(
         fontSize: 14,
         fontWeight: weight,
         color: color,
+        height: 1.45,
       );
 
-  static TextStyle bodySmall({Color color = AppColors.textSecondary, FontWeight weight = FontWeight.w400}) => GoogleFonts.dmSans(
+  static TextStyle bodySmall({Color color = AppColors.textSecondary, FontWeight weight = FontWeight.w400}) =>
+      GoogleFonts.plusJakartaSans(
         fontSize: 12,
         fontWeight: weight,
         color: color,
+        height: 1.4,
       );
 
-  // Numbers/Stats: Nunito weight 900, large display size
-  static TextStyle numbersDisplay({double fontSize = 36, Color color = AppColors.primary}) => GoogleFonts.nunito(
+  // Numbers/Stats: Newsreader / Plus Jakarta display
+  static TextStyle numbersDisplay({double fontSize = 36, Color color = AppColors.primary}) =>
+      GoogleFonts.newsreader(
         fontSize: fontSize,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.5,
         color: color,
       );
 
-  // Display Hero: Nunito 900, extra large for earnings/key metrics
-  static TextStyle displayHero({double fontSize = 48, Color color = AppColors.textPrimary}) => GoogleFonts.nunito(
+  // Display Hero: Extra large for hero banners / milestone totals
+  static TextStyle displayHero({double fontSize = 44, Color color = AppColors.textPrimary}) =>
+      GoogleFonts.newsreader(
         fontSize: fontSize,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w600,
         color: color,
         letterSpacing: -1.0,
+        height: 1.15,
       );
 
   // Label Caps: Small-caps uppercase tracking for section headers
-  static TextStyle labelCaps({Color color = AppColors.textPrimary}) => GoogleFonts.dmSans(
+  static TextStyle labelCaps({Color color = AppColors.textPrimary}) =>
+      GoogleFonts.plusJakartaSans(
         fontSize: 11,
         fontWeight: FontWeight.w700,
         color: color,

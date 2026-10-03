@@ -5,55 +5,59 @@ import 'user_app_theme.dart';
 import 'worker_app_theme.dart';
 
 class AppTheme {
-  // Syne and DM Sans Text Themes
+  // Claude Newsreader and Plus Jakarta Sans Text Themes
   static TextTheme _baseTextTheme() {
     return TextTheme(
-      displayLarge: GoogleFonts.syne(
+      displayLarge: GoogleFonts.newsreader(
         fontSize: 32,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.6,
         color: AppColors.textPrimary,
       ),
-      displayMedium: GoogleFonts.syne(
+      displayMedium: GoogleFonts.newsreader(
         fontSize: 28,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.5,
         color: AppColors.textPrimary,
       ),
-      headlineMedium: GoogleFonts.syne(
+      headlineMedium: GoogleFonts.newsreader(
         fontSize: 22,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.3,
         color: AppColors.textPrimary,
       ),
-      titleLarge: GoogleFonts.syne(
+      titleLarge: GoogleFonts.newsreader(
         fontSize: 18,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.2,
         color: AppColors.textPrimary,
       ),
-      titleMedium: GoogleFonts.syne(
+      titleMedium: GoogleFonts.newsreader(
         fontSize: 16,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       ),
-      bodyLarge: GoogleFonts.dmSans(
+      bodyLarge: GoogleFonts.plusJakartaSans(
         fontSize: 16,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
       ),
-      bodyMedium: GoogleFonts.dmSans(
+      bodyMedium: GoogleFonts.plusJakartaSans(
         fontSize: 14,
         fontWeight: FontWeight.w400,
         color: AppColors.textSecondary,
       ),
-      bodySmall: GoogleFonts.dmSans(
+      bodySmall: GoogleFonts.plusJakartaSans(
         fontSize: 12,
         fontWeight: FontWeight.w400,
         color: AppColors.textSecondary,
       ),
-      labelLarge: GoogleFonts.dmSans(
+      labelLarge: GoogleFonts.plusJakartaSans(
         fontSize: 14,
         fontWeight: FontWeight.w700,
         color: AppColors.primary,
       ),
-      labelSmall: GoogleFonts.dmSans(
+      labelSmall: GoogleFonts.plusJakartaSans(
         fontSize: 11,
         fontWeight: FontWeight.w500,
         color: AppColors.textSecondary,
@@ -75,14 +79,14 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
       textTheme: _baseTextTheme(),
 
-      // AppBar styling — transparent by default
+      // AppBar styling — transparent by default with Newsreader
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: GoogleFonts.syne(
+        titleTextStyle: GoogleFonts.newsreader(
           fontSize: 20,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
@@ -120,11 +124,11 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16.0),
           borderSide: const BorderSide(color: AppColors.danger, width: 1.5),
         ),
-        labelStyle: GoogleFonts.dmSans(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
-        hintStyle: GoogleFonts.dmSans(color: AppColors.textSecondary),
+        labelStyle: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+        hintStyle: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary),
       ),
 
-      // Bottom Nav Bar styling — custom widget handles this, just base config
+      // Bottom Nav Bar styling
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         elevation: 0,
         backgroundColor: AppColors.surface,
@@ -139,9 +143,9 @@ class AppTheme {
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(50.0), // Pill shape
+            borderRadius: BorderRadius.circular(50.0),
           ),
-          textStyle: GoogleFonts.dmSans(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 16.0,
             fontWeight: FontWeight.bold,
           ),
@@ -155,8 +159,8 @@ class AppTheme {
         unselectedLabelColor: AppColors.textSecondary,
         indicatorColor: primaryColor,
         indicatorSize: TabBarIndicatorSize.label,
-        labelStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w800),
-        unselectedLabelStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600),
+        labelStyle: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800),
+        unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w600),
         dividerColor: Colors.transparent,
       ),
     );

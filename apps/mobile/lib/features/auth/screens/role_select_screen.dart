@@ -9,7 +9,8 @@ import '../../../core/theme/portal_mode.dart';
 
 /// Minimalist, Apple & Urban Company-grade Role Select Screen
 /// Features Claude-style warm editorial serif typography (Newsreader),
-/// a serene warm cream canvas, and tactile, sculpted interactive cards.
+/// website brand Royal Blue (`#1A56DB`) and Partner Emerald accents,
+/// on a serene warm cream canvas.
 class RoleSelectScreen extends StatefulWidget {
   const RoleSelectScreen({super.key});
 
@@ -51,10 +52,10 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 30,
-                            height: 30,
+                            width: 32,
+                            height: 32,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8.0),
+                              borderRadius: BorderRadius.circular(9.0),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.08),
@@ -64,22 +65,22 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                               ],
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8.0),
+                              borderRadius: BorderRadius.circular(9.0),
                               child: Image.asset(
                                 'assets/images/app_icon.png',
-                                width: 30,
-                                height: 30,
+                                width: 32,
+                                height: 32,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.flash_on_rounded, color: Color(0xFF191817), size: 20),
+                                    const Icon(Icons.flash_on_rounded, color: Color(0xFF1A56DB), size: 22),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8.0),
+                          const SizedBox(width: 10.0),
                           Text(
                             'JUGAAD',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13.0,
+                              fontSize: 13.5,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 2.0,
                               color: const Color(0xFF191817),
@@ -87,7 +88,6 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                           ),
                         ],
                       ),
-                      // Visual balance placeholder
                       const SizedBox(width: 40),
                     ],
                   ).animate().fadeIn(duration: 300.ms),
@@ -96,11 +96,11 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
 
                   // ── Claude-Style Warm Editorial Headline ─────────────────
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 5.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 5.5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0EEE6),
+                      color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(20.0),
-                      border: Border.all(color: const Color(0xFFE5E2D8), width: 1.0),
+                      border: Border.all(color: const Color(0xFFDBEAFE), width: 1.0),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -109,7 +109,7 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                           width: 6,
                           height: 6,
                           decoration: const BoxDecoration(
-                            color: Color(0xFF059669),
+                            color: Color(0xFF1A56DB),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -120,7 +120,7 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.2,
-                            color: const Color(0xFF5A5852),
+                            color: const Color(0xFF1A56DB),
                           ),
                         ),
                       ],
@@ -156,13 +156,14 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
 
                   const SizedBox(height: 40.0),
 
-                  // ── Portal Card 1: Consumer / Booking ─────────────────────
+                  // ── Portal Card 1: Consumer / Booking (Website Brand Royal Blue) ──
                   _buildMinimalRoleCard(
                     mode: PortalMode.user,
                     eyebrow: 'CONSUMER & BUSINESS',
                     title: 'Book a Service',
                     description: 'Find trusted local professionals for home repairs, electrical, plumbing, carpentry, and cleaning.',
-                    accentColor: const Color(0xFF191817),
+                    accentColor: const Color(0xFF1A56DB), // Website Royal Blue
+                    bgAccent: const Color(0xFFEFF6FF),
                     icon: Icons.search_rounded,
                     isHovered: _hoveredMode == PortalMode.user,
                     onHover: (hovered) => setState(() => _hoveredMode = hovered ? PortalMode.user : null),
@@ -171,13 +172,14 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
 
                   const SizedBox(height: 16.0),
 
-                  // ── Portal Card 2: Professional / Earning ───────────────────
+                  // ── Portal Card 2: Professional / Earning (Emerald Green) ────────
                   _buildMinimalRoleCard(
                     mode: PortalMode.worker,
                     eyebrow: 'SERVICE PROFESSIONALS',
                     title: 'Join as a Partner',
                     description: 'Receive verified job dispatches in your neighborhood, set your own hours, and withdraw daily payouts.',
-                    accentColor: const Color(0xFF044E32),
+                    accentColor: const Color(0xFF059669), // Partner Emerald Green
+                    bgAccent: const Color(0xFFECFDF5),
                     icon: Icons.handyman_rounded,
                     isHovered: _hoveredMode == PortalMode.worker,
                     onHover: (hovered) => setState(() => _hoveredMode = hovered ? PortalMode.worker : null),
@@ -223,6 +225,7 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
     required String title,
     required String description,
     required Color accentColor,
+    required Color bgAccent,
     required IconData icon,
     required bool isHovered,
     required ValueChanged<bool>? onHover,
@@ -240,12 +243,12 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(22.0),
           border: Border.all(
-            color: isHovered ? const Color(0xFF191817) : const Color(0xFFE8E5DD),
+            color: isHovered ? accentColor : const Color(0xFFE8E5DD),
             width: isHovered ? 1.5 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isHovered ? 0.06 : 0.02),
+              color: accentColor.withValues(alpha: isHovered ? 0.08 : 0.02),
               blurRadius: isHovered ? 24 : 12,
               offset: Offset(0, isHovered ? 8 : 3),
             ),
@@ -257,7 +260,7 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(22.0),
-            splashColor: Colors.black.withValues(alpha: 0.04),
+            splashColor: accentColor.withValues(alpha: 0.06),
             highlightColor: Colors.transparent,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 22.0),
@@ -269,16 +272,12 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: mode == PortalMode.worker
-                          ? const Color(0xFFECFDF5)
-                          : const Color(0xFFF4F3EE),
+                      color: bgAccent,
                       borderRadius: BorderRadius.circular(14.0),
                     ),
                     child: Icon(
                       icon,
-                      color: mode == PortalMode.worker
-                          ? const Color(0xFF044E32)
-                          : const Color(0xFF191817),
+                      color: accentColor,
                       size: 22.0,
                     ),
                   ),
@@ -296,7 +295,7 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                             fontSize: 10.0,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.0,
-                            color: const Color(0xFF8C8980),
+                            color: accentColor,
                           ),
                         ),
                         const SizedBox(height: 3.0),
@@ -331,16 +330,16 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: isHovered ? const Color(0xFF191817) : const Color(0xFFF7F6F2),
+                      color: isHovered ? accentColor : bgAccent,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isHovered ? const Color(0xFF191817) : const Color(0xFFE5E2D8),
+                        color: isHovered ? accentColor : accentColor.withValues(alpha: 0.2),
                         width: 1.0,
                       ),
                     ),
                     child: Icon(
                       Icons.arrow_forward_rounded,
-                      color: isHovered ? Colors.white : const Color(0xFF191817),
+                      color: isHovered ? Colors.white : accentColor,
                       size: 16.0,
                     ),
                   ),

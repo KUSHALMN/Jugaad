@@ -50,16 +50,17 @@ class UserAppTheme {
   static const double buttonHeight = 52.0;
   static final BorderRadius buttonBorderRadius = BorderRadius.circular(14.0);
 
-  // --- TYPOGRAPHY (Plus Jakarta Sans) ---
+  // --- TYPOGRAPHY (Claude Newsreader Serif for Headlines + Plus Jakarta Sans for Body) ---
   static TextStyle display({
     double size = 28.0,
     Color color = textPrimary,
-    FontWeight weight = FontWeight.w700,
+    FontWeight weight = FontWeight.w600,
   }) {
-    return GoogleFonts.plusJakartaSans(
+    return GoogleFonts.newsreader(
       fontSize: size,
       fontWeight: weight,
       color: color,
+      letterSpacing: -0.6,
     );
   }
 
@@ -68,10 +69,11 @@ class UserAppTheme {
     Color color = textPrimary,
     FontWeight weight = FontWeight.w600,
   }) {
-    return GoogleFonts.plusJakartaSans(
+    return GoogleFonts.newsreader(
       fontSize: size,
       fontWeight: weight,
       color: color,
+      letterSpacing: -0.3,
     );
   }
 
@@ -106,13 +108,13 @@ class UserAppTheme {
       scaffoldBackgroundColor: background,
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.w700, color: textPrimary),
-        displayMedium: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w700, color: textPrimary),
-        headlineMedium: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w600, color: textPrimary),
-        titleLarge: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w600, color: textPrimary),
+        displayLarge: GoogleFonts.newsreader(fontSize: 32, fontWeight: FontWeight.w600, color: textPrimary, letterSpacing: -0.6),
+        displayMedium: GoogleFonts.newsreader(fontSize: 28, fontWeight: FontWeight.w600, color: textPrimary, letterSpacing: -0.5),
+        headlineMedium: GoogleFonts.newsreader(fontSize: 22, fontWeight: FontWeight.w600, color: textPrimary, letterSpacing: -0.3),
+        titleLarge: GoogleFonts.newsreader(fontSize: 18, fontWeight: FontWeight.w600, color: textPrimary, letterSpacing: -0.2),
         bodyLarge: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w400, color: textPrimary),
         bodyMedium: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w400, color: textSecondary),
-        labelLarge: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w500, color: textPrimary),
+        labelLarge: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
       ),
       dividerColor: divider,
       cardTheme: CardThemeData(
