@@ -4,15 +4,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/providers/auth_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/portal_mode.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/config/supabase_config.dart';
-import '../../../shared/widgets/jugaad_button.dart';
 
+/// Minimalist, Apple & Urban Company-grade Sign-In Screen
+/// Features Claude-style warm editorial serif typography (Newsreader),
+/// a serene warm cream canvas, and tactile, high-craft input elements.
 class LoginScreen extends StatefulWidget {
   final PortalMode selectedRole;
 
@@ -42,7 +44,8 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        pkg_provider.Provider.of<PortalModeProvider>(context, listen: false).setMode(widget.selectedRole);
+        pkg_provider.Provider.of<PortalModeProvider>(context, listen: false)
+            .setMode(widget.selectedRole);
       }
     });
   }
@@ -55,8 +58,9 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // BUG FIX: Suppress auto-fetch to prevent race condition with _handleRouting
+  // ─── Sign In with Google ───────────────────────────────────────────
   Future<void> _signInWithGoogle() async {
+    HapticFeedback.lightImpact();
     setState(() => _isLoading = true);
 
     final container = ProviderScope.containerOf(context);
@@ -67,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (userCredential == null || userCredential.user == null) {
         container.read(authProvider.notifier).unsuppressAutoFetch();
         setState(() => _isLoading = false);
-        return; // User cancelled
+        return;
       }
       if (!mounted) return;
       await _handleRouting(userCredential.user!.uid);
@@ -75,22 +79,18 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       container.read(authProvider.notifier).unsuppressAutoFetch();
       setState(() => _isLoading = false);
-      if (e.code == 'sign_in_cancelled') {
-        return;
-      }
-      if (e.code == 'sign_in_failed') {
-        _showErrorToast('Sign-in failed. Please check SHA configuration.');
-      } else {
-        _showErrorToast('Sign-in failed: ${e.message ?? e.code}');
-      }
+      if (e.code == 'sign_in_cancelled') return;
+      _showToast(e.code == 'sign_in_failed'
+          ? 'Sign-in failed. Please verify configuration.'
+          : 'Sign-in failed: ${e.message ?? e.code}');
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       container.read(authProvider.notifier).unsuppressAutoFetch();
       setState(() => _isLoading = false);
       if (e.code == 'account-exists-with-different-credential') {
-        _showErrorToast('An account already exists with a different credential. Please use email/password login.');
+        _showToast('An account already exists with this email. Please sign in with email/password.');
       } else {
-        _showErrorToast(e.message ?? 'Authentication failed');
+        _showToast(e.message ?? 'Authentication failed');
       }
     } catch (e) {
       if (!mounted) return;
@@ -98,12 +98,13 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = false);
       String msg = e.toString().replaceAll('Exception: ', '');
       if (msg.contains('cancelled')) return;
-      _showErrorToast(msg);
+      _showToast(msg);
     }
   }
 
-  // ─── Email Sign-In / Sign-Up ─────────────────────────
+  // ─── Email Sign-In / Sign-Up ───────────────────────────────────────
   Future<void> _submitEmail() async {
+    HapticFeedback.lightImpact();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final name = _nameController.text.trim();
@@ -115,11 +116,11 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (_isSignUp && name.isEmpty) {
-      setState(() => _nameError = 'Please enter your name');
+      setState(() => _nameError = 'Please enter your full name');
       return;
     }
     if (email.isEmpty || !email.contains('@')) {
-      setState(() => _emailError = 'Enter a valid email address');
+      setState(() => _emailError = 'Please enter a valid email address');
       return;
     }
     if (password.length < 6) {
@@ -135,9 +136,11 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       User user;
       if (_isSignUp) {
-        user = await _authService.signUpWithEmail(email: email, password: password, name: name);
+        user = await _authService.signUpWithEmail(
+            email: email, password: password, name: name);
       } else {
-        user = await _authService.signInWithEmail(email: email, password: password);
+        user = await _authService.signInWithEmail(
+            email: email, password: password);
       }
       if (!mounted) return;
       await _handleRouting(user.uid);
@@ -146,15 +149,15 @@ class _LoginScreenState extends State<LoginScreen> {
       container.read(authProvider.notifier).unsuppressAutoFetch();
       setState(() => _isLoading = false);
       String msg = e.toString().replaceAll('Exception: ', '');
-      _showErrorToast(msg);
+      _showToast(msg);
     }
   }
 
-  // ─── Forgot Password ────────────────────────────────
+  // ─── Forgot Password ──────────────────────────────────────────────
   Future<void> _forgotPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      _showErrorToast('Enter your email address first');
+      _showToast('Enter your email address first to reset password');
       return;
     }
 
@@ -162,23 +165,28 @@ class _LoginScreenState extends State<LoginScreen> {
       await _authService.sendPasswordReset(email);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password reset email sent! Check your inbox.'),
-          backgroundColor: AppColors.success,
+        SnackBar(
+          content: Text(
+            'Password reset link sent to $email',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFF059669),
           behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       String msg = e.toString().replaceAll('Exception: ', '');
-      _showErrorToast(msg);
+      _showToast(msg);
     }
   }
 
-  // ─── Handle Routing ──────────────────────────────────
+  // ─── Routing Handler ───────────────────────────────────────────────
   Future<void> _handleRouting(String uid) async {
     final selectedRole = widget.selectedRole;
-    pkg_provider.Provider.of<PortalModeProvider>(context, listen: false).setMode(selectedRole);
+    pkg_provider.Provider.of<PortalModeProvider>(context, listen: false)
+        .setMode(selectedRole);
 
     bool isFirstTime = true;
     final client = SupabaseConfig.client;
@@ -204,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      debugPrint('[ROUTING] _handleRouting: Supabase query: $e');
+      debugPrint('[ROUTING] _handleRouting query error: $e');
     }
 
     if (!mounted) return;
@@ -229,552 +237,411 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _showErrorToast(String message) {
+  void _showToast(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.danger,
+        content: Text(
+          message,
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        backgroundColor: const Color(0xFF191817),
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = widget.selectedRole.primary;
+    final isWorker = widget.selectedRole == PortalMode.worker;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth >= 960;
-          if (isDesktop) {
-            return _buildDesktopLayout(context, primaryColor);
-          }
-          return _buildMobileLayout(context, primaryColor);
-        },
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // DESKTOP LAYOUT (2-Column SaaS Split Screen)
-  // ═══════════════════════════════════════════════════════════════════════
-  Widget _buildDesktopLayout(BuildContext context, Color primaryColor) {
-    final isWorker = widget.selectedRole == PortalMode.worker;
-
-    return Row(
-      children: [
-        // Left Column: Brand Hero & Social Proof
-        Expanded(
-          flex: 5,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isWorker
-                    ? const [Color(0xFF042417), Color(0xFF063A25), Color(0xFF0D5E3E)]
-                    : const [Color(0xFF060D1E), Color(0xFF0A1C3C), Color(0xFF0F2C61)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 56.0, vertical: 48.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Brand Header
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12.0),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.18),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12.0),
-                        child: Image.asset(
-                          'assets/images/app_icon.png',
-                          width: 44,
-                          height: 44,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.flash_on_rounded, color: Colors.white, size: 28),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14.0),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'JUGAAD',
-                          style: AppTextStyles.heading3(color: Colors.white).copyWith(
-                            letterSpacing: 2.0,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        Text(
-                          isWorker ? 'SERVICE PARTNER PORTAL' : 'CUSTOMER DISCOVERY PORTAL',
-                          style: AppTextStyles.labelCaps(color: Colors.white.withValues(alpha: 0.65)).copyWith(
-                            fontSize: 10.0,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-
-                const Spacer(),
-
-                // Live pro indicator
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 7.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(30.0),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 9,
-                        height: 9,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF22C55E),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8.0),
-                      Text(
-                        isWorker ? 'Instant Job Alerts Active in Mysuru' : '480+ Verified Pros Online Now',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.95),
-                          fontSize: 12.0,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24.0),
-
-                Text(
-                  isWorker
-                      ? 'Empower Your Business.\nEarn On Your Own Terms.'
-                      : 'The On-Demand Standard\nFor Quality Home Work.',
-                  style: AppTextStyles.displayHero(fontSize: 38.0, color: Colors.white).copyWith(
-                    height: 1.15,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.8,
-                  ),
-                ),
-
-                const SizedBox(height: 16.0),
-
-                Text(
-                  isWorker
-                      ? 'Join hundreds of electricians, plumbers, and technicians getting reliable daily jobs, zero commission during launch, and instant UPI payouts.'
-                      : 'Experience upfront transparent pricing, 15-minute dispatch, and verified local professionals backed by ₹10,000 damage protection.',
-                  style: AppTextStyles.bodyLarge(color: Colors.white.withValues(alpha: 0.75)).copyWith(
-                    height: 1.5,
-                    fontSize: 15.5,
-                  ),
-                ),
-
-                const SizedBox(height: 36.0),
-
-                // Metrics Bar
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(20.0),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: isWorker
-                        ? [
-                            _buildStatItem('₹42,000', 'Avg. Monthly Pro Earn', Icons.trending_up_rounded),
-                            Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.15)),
-                            _buildStatItem('0%', 'Intro Commission', Icons.percent_rounded),
-                            Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.15)),
-                            _buildStatItem('Daily', 'Direct Payouts', Icons.flash_on_rounded),
-                          ]
-                        : [
-                            _buildStatItem('15 min', 'Avg. Arrival', Icons.bolt_rounded),
-                            Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.15)),
-                            _buildStatItem('₹10,000', 'Protection Cover', Icons.shield_rounded),
-                            Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.15)),
-                            _buildStatItem('4.9 / 5', 'Pro Rating', Icons.star_rounded),
-                          ],
-                  ),
-                ),
-
-                const Spacer(),
-
-                // Security Guarantee
-                Row(
-                  children: [
-                    const Icon(Icons.lock_outline_rounded, color: Colors.white70, size: 16),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Bank-grade 256-bit encryption • Your data is always protected',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.65), fontSize: 12.0),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Right Column: Auth Form Card
-        Expanded(
-          flex: 6,
-          child: Container(
-            color: const Color(0xFFF8FAFC),
-            child: SafeArea(
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: 24,
-                    left: 32,
-                    child: _buildBackButton(context),
-                  ),
-                  Center(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 40.0),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 480),
-                        child: _buildFormCard(context, primaryColor),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // MOBILE / TABLET COMPACT LAYOUT
-  // ═══════════════════════════════════════════════════════════════════════
-  Widget _buildMobileLayout(BuildContext context, Color primaryColor) {
-    final isWorker = widget.selectedRole == PortalMode.worker;
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          children: [
-            // Top Header Banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20.0, 16.0, 20.0, 28.0),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isWorker
-                      ? const [Color(0xFF042417), Color(0xFF063A25), Color(0xFF16A34A)]
-                      : const [Color(0xFF071329), Color(0xFF0E2856), Color(0xFF1A56DB)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(28.0),
-                  bottomRight: Radius.circular(28.0),
-                ),
-              ),
+      backgroundColor: const Color(0xFFFAF9F6), // Warm Claude / Apple cream canvas
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // ── Top Navigation & Brand Lockup ─────────────────────────
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildBackButton(context, isDark: true),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        child: Text(
-                          isWorker ? 'WORKER PORTAL' : 'CUSTOMER PORTAL',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.6,
+                      _buildBackButton(context),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8.0),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8.0),
+                              child: Image.asset(
+                                'assets/images/app_icon.png',
+                                width: 30,
+                                height: 30,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(Icons.flash_on_rounded, color: Color(0xFF191817), size: 20),
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8.0),
+                          Text(
+                            'JUGAAD',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13.0,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 2.0,
+                              color: const Color(0xFF191817),
+                            ),
+                          ),
+                        ],
                       ),
+                      const SizedBox(width: 40),
                     ],
-                  ),
-                  const SizedBox(height: 20.0),
-                  Text(
-                    isWorker ? 'Sign In as Partner' : 'Welcome to Jugaad',
-                    style: AppTextStyles.heading1(color: Colors.white).copyWith(
-                      fontSize: 26.0,
-                      fontWeight: FontWeight.w900,
+                  ).animate().fadeIn(duration: 300.ms),
+
+                  const SizedBox(height: 40.0),
+
+                  // ── Claude-Style Warm Editorial Headline ─────────────────
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 5.0),
+                    decoration: BoxDecoration(
+                      color: isWorker ? const Color(0xFFECFDF5) : const Color(0xFFF0EEE6),
+                      borderRadius: BorderRadius.circular(20.0),
+                      border: Border.all(
+                        color: isWorker ? const Color(0xFFA7F3D0) : const Color(0xFFE5E2D8),
+                        width: 1.0,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6.0),
+                    child: Text(
+                      isWorker ? 'SERVICE PARTNER PORTAL' : 'CUSTOMER DISCOVERY',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                        color: isWorker ? const Color(0xFF044E32) : const Color(0xFF5A5852),
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 80.ms, duration: 350.ms).slideY(begin: 0.15, end: 0.0),
+
+                  const SizedBox(height: 16.0),
+
+                  Text(
+                    isWorker ? 'Partner Access' : 'Welcome to Jugaad',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.newsreader(
+                      fontSize: 38.0,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.8,
+                      color: const Color(0xFF191817),
+                      height: 1.15,
+                    ),
+                  ).animate().fadeIn(delay: 140.ms, duration: 350.ms).slideY(begin: 0.15, end: 0.0),
+
+                  const SizedBox(height: 10.0),
+
                   Text(
                     isWorker
-                        ? 'Access your jobs, earnings, and profile'
-                        : 'Book verified skills and track services live',
-                    style: AppTextStyles.bodyMedium(color: Colors.white.withValues(alpha: 0.85)).copyWith(
-                      fontSize: 13.5,
+                        ? 'Sign in to access your local dispatch requests, active customer missions, and instant payouts.'
+                        : 'Sign in to book certified local professionals for fast, dependable home and office care.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF716F68),
+                      height: 1.5,
                     ),
-                  ),
+                  ).animate().fadeIn(delay: 200.ms, duration: 350.ms).slideY(begin: 0.15, end: 0.0),
+
+                  const SizedBox(height: 36.0),
+
+                  // ── Centered Sculpted Auth Card ───────────────────────────
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(28.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24.0),
+                      border: Border.all(color: const Color(0xFFE8E5DD), width: 1.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      child: _isEmailMode
+                          ? _buildEmailForm(isWorker)
+                          : _buildQuickAuthView(isWorker),
+                    ),
+                  ).animate().fadeIn(delay: 260.ms, duration: 400.ms).slideY(begin: 0.1, end: 0.0),
+
+                  const SizedBox(height: 28.0),
+
+                  // ── Discreet Security & Trust Guarantee ───────────────────
+                  Text(
+                    'Protected by bank-grade 256-bit encryption. Your credentials remain private and secure.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF9E9B93),
+                      height: 1.4,
+                    ),
+                  ).animate().fadeIn(delay: 340.ms, duration: 400.ms),
                 ],
               ),
             ),
-
-            // Form Body Card
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: _buildFormCard(context, primaryColor),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // AUTH FORM CARD
-  // ═══════════════════════════════════════════════════════════════════════
-  Widget _buildFormCard(BuildContext context, Color primaryColor) {
-    final isWorker = widget.selectedRole == PortalMode.worker;
-
-    return Container(
-      padding: const EdgeInsets.all(28.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24.0),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: _isEmailMode
-            ? _buildEmailForm(primaryColor, isWorker)
-            : _buildMainAuthView(primaryColor, isWorker),
-      ),
-    );
-  }
-
-  Widget _buildMainAuthView(Color primaryColor, bool isWorker) {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // VIEW: QUICK SOCIAL & EMAIL SELECTOR
+  // ═══════════════════════════════════════════════════════════════════════════
+  Widget _buildQuickAuthView(bool isWorker) {
     return Column(
-      key: const ValueKey('main_auth_view'),
-      crossAxisAlignment: CrossAxisAlignment.start,
+      key: const ValueKey('quick_auth_view'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Portal Badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.5),
-          decoration: BoxDecoration(
-            color: isWorker
-                ? const Color(0xFF16A34A).withValues(alpha: 0.08)
-                : const Color(0xFF1A56DB).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8.0),
-          ),
-          child: Text(
-            isWorker ? 'SERVICE PARTNER LOGIN' : 'SIGN IN TO CONTINUE',
-            style: TextStyle(
-              color: isWorker ? const Color(0xFF16A34A) : const Color(0xFF1A56DB),
-              fontSize: 10.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.6,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 14.0),
-
-        Text(
-          isWorker ? 'Sign in to Partner Portal' : 'Sign in to Jugaad',
-          style: AppTextStyles.heading2(color: const Color(0xFF0F172A)).copyWith(
-            fontSize: 24.0,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 6.0),
-        Text(
-          isWorker
-              ? 'Receive live leads and manage earnings nearby'
-              : 'Book top-rated verified experts in minutes',
-          style: AppTextStyles.bodyMedium(color: const Color(0xFF64748B)),
-        ),
-
-        const SizedBox(height: 32.0),
-
-        // Google Sign-In Button
+        // Google Sign-In Button (Apple & Urban Company clean styling)
         SizedBox(
-          width: double.infinity,
           height: 52.0,
-          child: OutlinedButton.icon(
+          child: OutlinedButton(
             onPressed: _isLoading ? null : _signInWithGoogle,
-            icon: _isLoading
-                ? SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(primaryColor)),
-                  )
-                : const Icon(Icons.g_mobiledata, color: Color(0xFF4285F4), size: 28),
-            label: Text(
-              'Continue with Google',
-              style: AppTextStyles.bodyLarge(color: const Color(0xFF0F172A), weight: FontWeight.w700),
-            ),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+              side: const BorderSide(color: Color(0xFFE5E2DA), width: 1.0),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.0)),
               backgroundColor: Colors.white,
               elevation: 0,
             ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF191817)),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Google G icon badge
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6.0),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'G',
+                            style: TextStyle(
+                              color: Color(0xFF4285F4),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 15.0,
+                              fontFamily: 'Roboto',
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12.0),
+                      Text(
+                        'Continue with Google',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFF191817),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.5,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
 
         const SizedBox(height: 20.0),
 
-        // Divider
+        // Minimal Divider
         Row(
           children: [
-            const Expanded(child: Divider(color: Color(0xFFE2E8F0), height: 1.0)),
+            const Expanded(child: Divider(color: Color(0xFFECEAE3), height: 1.0)),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 14.0),
               child: Text(
-                'or continue with email',
-                style: AppTextStyles.bodySmall(color: const Color(0xFF94A3B8), weight: FontWeight.w600),
+                'or with email',
+                style: GoogleFonts.plusJakartaSans(
+                  color: const Color(0xFF9E9B93),
+                  fontSize: 12.0,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-            const Expanded(child: Divider(color: Color(0xFFE2E8F0), height: 1.0)),
+            const Expanded(child: Divider(color: Color(0xFFECEAE3), height: 1.0)),
           ],
         ),
 
         const SizedBox(height: 20.0),
 
-        // Email Button
-        JugaadButton(
-          text: 'Continue with Email',
-          isLoading: _isLoading && _isEmailMode,
-          onPressed: _isLoading
-              ? null
-              : () => setState(() {
-                    _isEmailMode = true;
-                    _isSignUp = false;
-                  }),
-          type: isWorker ? JugaadButtonType.success : JugaadButtonType.primary,
+        // Email Action Button (Obsidian Black or Deep Emerald)
+        SizedBox(
+          height: 52.0,
+          child: ElevatedButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              setState(() {
+                _isEmailMode = true;
+                _isSignUp = false;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isWorker ? const Color(0xFF044E32) : const Color(0xFF191817),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.0)),
+              elevation: 0,
+            ),
+            child: Text(
+              'Continue with Email',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14.5,
+              ),
+            ),
+          ),
         ),
 
-        const SizedBox(height: 28.0),
+        const SizedBox(height: 22.0),
 
         // Terms Footer
-        Center(
-          child: Text(
-            'By continuing, you agree to Jugaad\'s Terms of Service & Privacy Policy',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodySmall(color: const Color(0xFF94A3B8)).copyWith(
-              fontSize: 11.5,
-              height: 1.4,
-            ),
+        Text(
+          'By continuing, you agree to Jugaad\'s Terms of Service and Privacy Policy.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 11.5,
+            color: const Color(0xFF9E9B93),
+            height: 1.4,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildEmailForm(Color primaryColor, bool isWorker) {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // VIEW: EMAIL SIGN-IN / SIGN-UP FORM
+  // ═══════════════════════════════════════════════════════════════════════════
+  Widget _buildEmailForm(bool isWorker) {
     return Column(
       key: const ValueKey('email_form_view'),
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Form Header with Back Navigation
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               _isSignUp ? 'Create Account' : 'Sign in with Email',
-              style: AppTextStyles.heading2(color: const Color(0xFF0F172A)).copyWith(
+              style: GoogleFonts.newsreader(
                 fontSize: 22.0,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.4,
+                color: const Color(0xFF191817),
               ),
             ),
-            TextButton(
-              onPressed: () => setState(() => _isEmailMode = false),
-              child: const Text('Back'),
+            InkWell(
+              onTap: () => setState(() => _isEmailMode = false),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text(
+                  '← Options',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF716F68),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
+
         const SizedBox(height: 4.0),
+
         Text(
           _isSignUp
-              ? 'Join Jugaad and unlock instant hyperlocal services'
-              : 'Enter your credentials to access your dashboard',
-          style: AppTextStyles.bodyMedium(color: const Color(0xFF64748B)),
+              ? 'Enter your name and credentials to create an account'
+              : 'Enter your email address and password to sign in',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12.5,
+            color: const Color(0xFF716F68),
+          ),
         ),
 
-        const SizedBox(height: 24.0),
+        const SizedBox(height: 22.0),
 
-        // Full Name Field (Sign Up only)
+        // Full Name (Only on Sign Up)
         if (_isSignUp) ...[
           _buildFieldLabel('Full Name'),
           const SizedBox(height: 6.0),
           TextField(
             controller: _nameController,
             keyboardType: TextInputType.name,
-            style: AppTextStyles.bodyLarge(color: AppColors.textPrimary),
-            decoration: _inputDecoration('John Doe', Icons.person_outline_rounded, _nameError, primaryColor),
+            style: GoogleFonts.plusJakartaSans(fontSize: 14.0, color: const Color(0xFF191817)),
+            decoration: _minimalInputDecoration('Full Name', _nameError),
           ),
-          const SizedBox(height: 16.0),
+          const SizedBox(height: 14.0),
         ],
 
-        // Email Field
+        // Email Address
         _buildFieldLabel('Email Address'),
         const SizedBox(height: 6.0),
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
-          style: AppTextStyles.bodyLarge(color: AppColors.textPrimary),
-          decoration: _inputDecoration('name@example.com', Icons.email_outlined, _emailError, primaryColor),
+          style: GoogleFonts.plusJakartaSans(fontSize: 14.0, color: const Color(0xFF191817)),
+          decoration: _minimalInputDecoration('name@example.com', _emailError),
         ),
 
-        const SizedBox(height: 16.0),
+        const SizedBox(height: 14.0),
 
-        // Password Field
+        // Password
         _buildFieldLabel('Password'),
         const SizedBox(height: 6.0),
         TextField(
           controller: _passwordController,
           obscureText: _obscurePassword,
-          style: AppTextStyles.bodyLarge(color: AppColors.textPrimary),
-          decoration: _inputDecoration(
+          style: GoogleFonts.plusJakartaSans(fontSize: 14.0, color: const Color(0xFF191817)),
+          decoration: _minimalInputDecoration(
             '••••••••',
-            Icons.lock_outline_rounded,
             _passwordError,
-            primaryColor,
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                color: const Color(0xFF64748B),
-                size: 20,
+                color: const Color(0xFF8C8980),
+                size: 18,
               ),
               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
             ),
@@ -786,22 +653,49 @@ class _LoginScreenState extends State<LoginScreen> {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: _forgotPassword,
+              style: TextButton.styleFrom(padding: EdgeInsets.zero),
               child: Text(
                 'Forgot password?',
-                style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13.0),
+                style: GoogleFonts.plusJakartaSans(
+                  color: isWorker ? const Color(0xFF044E32) : const Color(0xFF191817),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12.0,
+                ),
               ),
             ),
           ),
         ] else ...[
-          const SizedBox(height: 20.0),
+          const SizedBox(height: 18.0),
         ],
 
         // Submit Button
-        JugaadButton(
-          text: _isSignUp ? 'Create Account' : 'Sign In',
-          isLoading: _isLoading,
-          onPressed: _isLoading ? null : _submitEmail,
-          type: isWorker ? JugaadButtonType.success : JugaadButtonType.primary,
+        SizedBox(
+          height: 52.0,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _submitEmail,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isWorker ? const Color(0xFF044E32) : const Color(0xFF191817),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.0)),
+              elevation: 0,
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    _isSignUp ? 'Create Account' : 'Sign In',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14.5,
+                    ),
+                  ),
+          ),
         ),
 
         const SizedBox(height: 16.0),
@@ -819,12 +713,20 @@ class _LoginScreenState extends State<LoginScreen> {
             },
             child: RichText(
               text: TextSpan(
-                style: AppTextStyles.bodyMedium(color: const Color(0xFF64748B)),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12.5,
+                  color: const Color(0xFF716F68),
+                ),
                 children: [
-                  TextSpan(text: _isSignUp ? 'Already have an account? ' : "Don't have an account? "),
+                  TextSpan(
+                    text: _isSignUp ? 'Already have an account? ' : "Don't have an account? ",
+                  ),
                   TextSpan(
                     text: _isSignUp ? 'Sign In' : 'Sign Up',
-                    style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w700,
+                      color: isWorker ? const Color(0xFF044E32) : const Color(0xFF191817),
+                    ),
                   ),
                 ],
               ),
@@ -838,97 +740,66 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildFieldLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(
-        color: Color(0xFF1E293B),
-        fontWeight: FontWeight.w700,
-        fontSize: 13.5,
+      style: GoogleFonts.plusJakartaSans(
+        color: const Color(0xFF191817),
+        fontWeight: FontWeight.w600,
+        fontSize: 12.5,
       ),
     );
   }
 
-  InputDecoration _inputDecoration(
-    String hint,
-    IconData icon,
-    String? error,
-    Color primaryColor, {
-    Widget? suffixIcon,
-  }) {
+  InputDecoration _minimalInputDecoration(String hint, String? error, {Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14.5),
-      prefixIcon: Icon(icon, color: const Color(0xFF64748B), size: 20),
+      hintStyle: GoogleFonts.plusJakartaSans(color: const Color(0xFFA8A59E), fontSize: 13.5),
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: const Color(0xFFF9F8F5),
       errorText: error,
-      errorStyle: const TextStyle(color: Color(0xFFDC2626), fontSize: 12),
+      errorStyle: GoogleFonts.plusJakartaSans(color: const Color(0xFFDC2626), fontSize: 11),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14.0),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(color: Color(0xFFE8E5DD)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14.0),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(color: Color(0xFFE8E5DD), width: 1.0),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14.0),
-        borderSide: BorderSide(color: primaryColor, width: 2.0),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(color: Color(0xFF191817), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14.0),
-        borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.2),
+        borderRadius: BorderRadius.circular(12.0),
+        borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.0),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
     );
   }
 
-  Widget _buildStatItem(String value, String label, IconData icon) {
-    return Column(
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white70, size: 16),
-            const SizedBox(width: 4),
-            Text(
-              value,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16.0),
-            ),
-          ],
-        ),
-        const SizedBox(height: 3),
-        Text(
-          label,
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.65), fontSize: 11.0),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBackButton(BuildContext context, {bool isDark = false}) {
+  Widget _buildBackButton(BuildContext context) {
     return Container(
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12.0),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFE2E8F0),
-        ),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+        border: Border.all(color: const Color(0xFFE8E5DD), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: IconButton(
-        icon: Icon(
+        icon: const Icon(
           Icons.arrow_back_rounded,
-          color: isDark ? Colors.white : const Color(0xFF0F172A),
-          size: 20.0,
+          color: Color(0xFF191817),
+          size: 18.0,
         ),
+        padding: EdgeInsets.zero,
         onPressed: () {
           if (_isEmailMode) {
             setState(() => _isEmailMode = false);
