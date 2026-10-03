@@ -401,64 +401,67 @@ class _CategoryTileState extends State<_CategoryTile> {
     final cardHeight = widget.cardHeight;
     final isCompact = cardHeight < 76;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) {
-          setState(() => _isPressed = false);
-          widget.onTap();
-        },
-        onTapCancel: () => setState(() => _isPressed = false),
-        child: AnimatedScale(
-          scale: _isPressed ? 0.94 : (_isHovered ? 1.03 : 1.0),
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: double.infinity,
-                height: cardHeight,
-                decoration: BoxDecoration(
-                  color: cat.bgColor,
-                  borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
-                  border: Border.all(
-                    color: _isHovered
-                        ? cat.iconColor.withValues(alpha: 0.6)
-                        : cat.iconColor.withValues(alpha: 0.20),
-                    width: 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
+    return RepaintBoundary(
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) {
+            setState(() => _isPressed = false);
+            widget.onTap();
+          },
+          onTapCancel: () => setState(() => _isPressed = false),
+          child: AnimatedScale(
+            scale: _isPressed ? 0.94 : (_isHovered ? 1.03 : 1.0),
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOutCubic,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: cardHeight,
+                  decoration: BoxDecoration(
+                    color: cat.bgColor,
+                    borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
+                    border: Border.all(
                       color: _isHovered
-                          ? cat.iconColor.withValues(alpha: 0.22)
-                          : cat.iconColor.withValues(alpha: 0.08),
-                      blurRadius: _isHovered ? 14 : 8,
-                      offset: const Offset(0, 3),
+                          ? cat.iconColor.withValues(alpha: 0.6)
+                          : cat.iconColor.withValues(alpha: 0.20),
+                      width: 1.2,
                     ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Asset image
-                    Image.asset(
-                      cat.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Icon(
-                            cat.icon,
-                            color: cat.iconColor,
-                            size: isCompact ? 22 : (widget.isDesktop ? 30 : 25),
-                          ),
-                        );
-                      },
-                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _isHovered
+                            ? cat.iconColor.withValues(alpha: 0.22)
+                            : cat.iconColor.withValues(alpha: 0.08),
+                        blurRadius: _isHovered ? 14 : 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Asset image with downsampling cache for 120Hz smooth rendering
+                      Image.asset(
+                        cat.imageUrl,
+                        fit: BoxFit.cover,
+                        cacheWidth: isCompact ? 160 : (widget.isDesktop ? 280 : 200),
+                        filterQuality: FilterQuality.medium,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Center(
+                            child: Icon(
+                              cat.icon,
+                              color: cat.iconColor,
+                              size: isCompact ? 22 : (widget.isDesktop ? 30 : 25),
+                            ),
+                          );
+                        },
+                      ),
                     // Soft gradient overlay
                     Container(
                       decoration: BoxDecoration(
@@ -551,8 +554,9 @@ class _CategoryTileState extends State<_CategoryTile> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 

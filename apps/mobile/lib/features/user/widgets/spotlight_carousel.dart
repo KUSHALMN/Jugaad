@@ -69,6 +69,24 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
     });
   }
 
+  bool _imagesPrecached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_imagesPrecached) {
+      _imagesPrecached = true;
+      for (final path in const [
+        'assets/images/banner_ac_apple.jpg',
+        'assets/images/service_laptop.jpg',
+        'assets/images/service_electrician.jpg',
+        'assets/images/banner_stove_apple.jpg',
+      ]) {
+        precacheImage(AssetImage(path), context);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -354,13 +372,14 @@ class _UrbanCompanySpotlightCardState extends State<_UrbanCompanySpotlightCard> 
     final item = widget.item;
     final isWide = widget.isWide;
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        item.onTap();
-      },
-      onTapCancel: () => setState(() => _isPressed = false),
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) {
+          setState(() => _isPressed = false);
+          item.onTap();
+        },
+        onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedScale(
         scale: _isPressed ? 0.98 : 1.0,
         duration: const Duration(milliseconds: 140),
@@ -425,6 +444,8 @@ class _UrbanCompanySpotlightCardState extends State<_UrbanCompanySpotlightCard> 
                     Image.asset(
                       item.assetPath,
                       fit: BoxFit.cover,
+                      cacheWidth: isWide ? 760 : 420,
+                      filterQuality: FilterQuality.medium,
                       errorBuilder: (context, error, stackTrace) => Container(
                         color: Colors.transparent,
                         child: Icon(Icons.home_repair_service_rounded, color: Colors.white.withValues(alpha: 0.3), size: 48),
@@ -629,6 +650,7 @@ class _UrbanCompanySpotlightCardState extends State<_UrbanCompanySpotlightCard> 
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

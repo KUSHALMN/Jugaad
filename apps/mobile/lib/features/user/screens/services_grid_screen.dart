@@ -300,60 +300,63 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
 
     final double scale = _isPressed ? 0.97 : (_isHovered ? 1.02 : 1.0);
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) {
-          setState(() => _isPressed = false);
-          widget.onTap();
-        },
-        onTapCancel: () => setState(() => _isPressed = false),
-        child: AnimatedScale(
-          scale: scale,
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutCubic,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: _isHovered
-                    ? accentColor.withValues(alpha: 0.50)
-                    : const Color(0xFFE2E8F0),
-                width: 1.1,
-              ),
-              boxShadow: [
-                BoxShadow(
+    return RepaintBoundary(
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) {
+            setState(() => _isPressed = false);
+            widget.onTap();
+          },
+          onTapCancel: () => setState(() => _isPressed = false),
+          child: AnimatedScale(
+            scale: scale,
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOutCubic,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
                   color: _isHovered
-                      ? accentColor.withValues(alpha: 0.14)
-                      : const Color(0x080F172A),
-                  blurRadius: _isHovered ? 16 : 8,
-                  offset: const Offset(0, 3),
+                      ? accentColor.withValues(alpha: 0.50)
+                      : const Color(0xFFE2E8F0),
+                  width: 1.1,
                 ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top High-Resolution Service Image with Floating Badges
-                Expanded(
-                  flex: 12,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.asset(
-                        widget.imagePath,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: const Color(0xFFF1F5F9),
-                          child: Center(
-                            child: Icon(service.icon, color: accentColor, size: 28),
+                boxShadow: [
+                  BoxShadow(
+                    color: _isHovered
+                        ? accentColor.withValues(alpha: 0.14)
+                        : const Color(0x080F172A),
+                    blurRadius: _isHovered ? 16 : 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top High-Resolution Service Image with Floating Badges
+                  Expanded(
+                    flex: 12,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(
+                          widget.imagePath,
+                          fit: BoxFit.cover,
+                          cacheWidth: 400,
+                          filterQuality: FilterQuality.medium,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: const Color(0xFFF1F5F9),
+                            child: Center(
+                              child: Icon(service.icon, color: accentColor, size: 28),
+                            ),
                           ),
                         ),
-                      ),
                       // Subtle gradient mask
                       Container(
                         decoration: BoxDecoration(
@@ -528,6 +531,7 @@ class _ServiceCardItemState extends State<_ServiceCardItem> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

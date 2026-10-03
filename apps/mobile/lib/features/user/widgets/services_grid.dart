@@ -309,54 +309,57 @@ class _ServiceCardState extends State<_ServiceCard> {
   Widget build(BuildContext context) {
     final item = widget.item;
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedScale(
-        scale: _isPressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOutCubic,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: const Color(0xFFE2E8F0),
-              width: 1.1,
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x060F172A),
-                blurRadius: 14,
-                offset: Offset(0, 4),
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) {
+          setState(() => _isPressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _isPressed = false),
+        child: AnimatedScale(
+          scale: _isPressed ? 0.97 : 1.0,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOutCubic,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1.1,
               ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Top High-End Apple Asset Image with Rating Pill
-              Stack(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 124,
-                    child: Image.asset(
-                      item.assetPath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: const Color(0xFFF1F5F9),
-                        child: Center(
-                          child: Icon(item.icon, color: item.accentColor, size: 30),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x060F172A),
+                  blurRadius: 14,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Top High-End Apple Asset Image with Rating Pill
+                Stack(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 124,
+                      child: Image.asset(
+                        item.assetPath,
+                        fit: BoxFit.cover,
+                        cacheWidth: 420,
+                        filterQuality: FilterQuality.medium,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: const Color(0xFFF1F5F9),
+                          child: Center(
+                            child: Icon(item.icon, color: item.accentColor, size: 30),
+                          ),
                         ),
                       ),
                     ),
-                  ),
                   // Rating Badge in photo
                   Positioned(
                     bottom: 7,
@@ -510,6 +513,7 @@ class _ServiceCardState extends State<_ServiceCard> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

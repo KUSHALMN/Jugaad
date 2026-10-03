@@ -553,10 +553,13 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
           onNotification: (ScrollNotification scroll) {
             if (scroll is ScrollUpdateNotification) {
               if (scroll.metrics.pixels < 0) {
-                setState(() {
-                  _pullOffset = scroll.metrics.pixels.abs();
-                });
-              } else {
+                final newOffset = scroll.metrics.pixels.abs();
+                if ((newOffset - _pullOffset).abs() > 3.0) {
+                  setState(() {
+                    _pullOffset = newOffset;
+                  });
+                }
+              } else if (_pullOffset != 0.0) {
                 setState(() {
                   _pullOffset = 0.0;
                 });
@@ -566,9 +569,11 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
               if (_pullOffset > 75.0 && !_isBrandedRefreshing) {
                 _triggerBrandedRefresh();
               }
-              setState(() {
-                _pullOffset = 0.0;
-              });
+              if (_pullOffset != 0.0) {
+                setState(() {
+                  _pullOffset = 0.0;
+                });
+              }
             }
             return false;
           },
