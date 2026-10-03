@@ -287,16 +287,27 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8.0),
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12.0),
+                          borderRadius: BorderRadius.circular(9.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: Image.asset(
-                          'assets/images/jugaad_logo.png',
-                          width: 28,
-                          height: 28,
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.flash_on_rounded, color: Colors.white, size: 24),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(9.0),
+                          child: Image.asset(
+                            'assets/images/app_icon.png',
+                            width: 32,
+                            height: 32,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.flash_on_rounded, color: Colors.white, size: 24),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10.0),
@@ -428,17 +439,27 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10.0),
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14.0),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  borderRadius: BorderRadius.circular(12.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                child: Image.asset(
-                  'assets/images/jugaad_logo.png',
-                  width: 32,
-                  height: 32,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.flash_on_rounded, color: Colors.white, size: 28),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12.0),
+                  child: Image.asset(
+                    'assets/images/app_icon.png',
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.flash_on_rounded, color: Colors.white, size: 28),
+                  ),
                 ),
               ),
               const SizedBox(width: 14.0),
