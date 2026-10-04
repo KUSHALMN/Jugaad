@@ -33,7 +33,7 @@ class AnimatedCounter extends StatelessWidget {
       builder: (context, animatedValue, child) {
         return Text(
           '$prefix${animatedValue.toInt()}$suffix',
-          style: GoogleFonts.nunito(
+          style: GoogleFonts.plusJakartaSans(
             fontSize: fontSize,
             fontWeight: FontWeight.w900,
             color: color,
@@ -74,7 +74,7 @@ class AnimatedDoubleCounter extends StatelessWidget {
       builder: (context, animatedValue, child) {
         return Text(
           '$prefix${animatedValue.toStringAsFixed(decimalPlaces)}$suffix',
-          style: GoogleFonts.nunito(
+          style: GoogleFonts.plusJakartaSans(
             fontSize: fontSize,
             fontWeight: FontWeight.w900,
             color: color,

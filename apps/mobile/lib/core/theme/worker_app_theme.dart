@@ -2,23 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class WorkerAppTheme {
-  // --- COLORS ---
-  static const Color primaryGreen = Color(0xFF16A34A);
-  static const Color deepGreen = Color(0xFF14532D);
+  // --- COLORS (Jugaad Brand: Forest Green & Signature Orange) ---
+  static const Color primaryGreen = Color(0xFF0D7844); // Signature Forest Green
+  static const Color deepGreen = Color(0xFF064E3B);
   static const Color mintAccent = Color(0xFF86EFAC);
+  static const Color accentOrange = Color(0xFFEA580C); // Signature Orange
   static const Color background = Color(0xFFF4F7F4);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color textPrimary = Color(0xFF0F1F0F);
   static const Color textSecondary = Color(0xFF4B5563);
   static const Color earningGold = Color(0xFFF59E0B);
   static const Color urgentRed = Color(0xFFDC2626);
-  static const Color trustBlue = Color(0xFF2563EB);
+  static const Color trustBlue = Color(0xFFEA580C); // Unified to Signature Orange
   static const Color divider = Color(0xFFE5E7EB);
   static const Color shadowColor = Color(0x12000000); // rgba(0,0,0,0.07)
 
   // --- GRADIENTS ---
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [primaryGreen, Color(0xFF22C55E)],
+    colors: [primaryGreen, Color(0xFF16A34A)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -29,8 +30,14 @@ class WorkerAppTheme {
     end: Alignment.bottomRight,
   );
 
+  static const LinearGradient orangeGradient = LinearGradient(
+    colors: [accentOrange, Color(0xFFF97316)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   static const LinearGradient payoutGradient = LinearGradient(
-    colors: [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
+    colors: [accentOrange, Color(0xFFF97316)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -107,6 +114,12 @@ class WorkerAppTheme {
       useMaterial3: true,
       scaffoldBackgroundColor: background,
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryGreen,
+        primary: primaryGreen,
+        secondary: accentOrange,
+        surface: surface,
+      ),
       textTheme: TextTheme(
         displayLarge: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.w800, color: textPrimary),
         displayMedium: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: textPrimary),
@@ -115,6 +128,21 @@ class WorkerAppTheme {
         bodyLarge: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w400, color: textPrimary),
         bodyMedium: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w400, color: textSecondary),
         labelLarge: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryGreen,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: buttonBorderRadius,
+          ),
+          textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 16.0,
+            fontWeight: FontWeight.bold,
+          ),
+          minimumSize: const Size.fromHeight(buttonHeight),
+        ),
       ),
       dividerColor: divider,
       cardTheme: CardThemeData(

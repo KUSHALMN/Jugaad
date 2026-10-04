@@ -22,10 +22,14 @@ extension PortalModeExtension on PortalMode {
   Color get primaryLight {
     switch (this) {
       case PortalMode.user:
-        return const Color(0xFFEFF6FF);
+        return const Color(0xFFF0FDF4); // Light mint
       case PortalMode.worker:
-        return const Color(0xFFE1F5EE);
+        return const Color(0xFFF0FDF4); // Light mint
     }
+  }
+
+  Color get secondary {
+    return const Color(0xFFEA580C); // Jugaad signature orange
   }
 
   ThemeData get theme {

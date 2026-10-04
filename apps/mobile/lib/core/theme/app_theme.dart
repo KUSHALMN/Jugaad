@@ -5,34 +5,34 @@ import 'user_app_theme.dart';
 import 'worker_app_theme.dart';
 
 class AppTheme {
-  // Claude Newsreader and Plus Jakarta Sans Text Themes
+  // Pure Plus Jakarta Sans Text Theme across entire app
   static TextTheme _baseTextTheme() {
     return TextTheme(
-      displayLarge: GoogleFonts.newsreader(
+      displayLarge: GoogleFonts.plusJakartaSans(
         fontSize: 32,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w800,
         letterSpacing: -0.6,
         color: AppColors.textPrimary,
       ),
-      displayMedium: GoogleFonts.newsreader(
+      displayMedium: GoogleFonts.plusJakartaSans(
         fontSize: 28,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w800,
         letterSpacing: -0.5,
         color: AppColors.textPrimary,
       ),
-      headlineMedium: GoogleFonts.newsreader(
+      headlineMedium: GoogleFonts.plusJakartaSans(
         fontSize: 22,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         letterSpacing: -0.3,
         color: AppColors.textPrimary,
       ),
-      titleLarge: GoogleFonts.newsreader(
+      titleLarge: GoogleFonts.plusJakartaSans(
         fontSize: 18,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         letterSpacing: -0.2,
         color: AppColors.textPrimary,
       ),
-      titleMedium: GoogleFonts.newsreader(
+      titleMedium: GoogleFonts.plusJakartaSans(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
@@ -77,16 +77,17 @@ class AppTheme {
       brightness: Brightness.light,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.background,
+      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
       textTheme: _baseTextTheme(),
 
-      // AppBar styling — transparent by default with Newsreader
+      // AppBar styling — transparent by default
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: GoogleFonts.newsreader(
+        titleTextStyle: GoogleFonts.plusJakartaSans(
           fontSize: 20,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
         iconTheme: const IconThemeData(color: AppColors.textPrimary),

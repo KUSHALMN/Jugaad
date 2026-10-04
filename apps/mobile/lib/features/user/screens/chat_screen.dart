@@ -788,7 +788,7 @@ class _ChatScreenState extends State<ChatScreen> {
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
           child: Text(
             'Chats',
-            style: GoogleFonts.syne(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF0F172A),
@@ -819,7 +819,7 @@ class _ChatScreenState extends State<ChatScreen> {
               },
               decoration: InputDecoration(
                 hintText: 'Search chats or services...',
-                hintStyle: GoogleFonts.dmSans(
+                hintStyle: GoogleFonts.plusJakartaSans(
                   color: const Color(0xFF94A3B8),
                   fontSize: 14,
                 ),
@@ -894,7 +894,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   backgroundColor: session.avatarColor.withValues(alpha: 0.12),
                                   child: Text(
                                     initials,
-                                    style: GoogleFonts.dmSans(
+                                    style: GoogleFonts.plusJakartaSans(
                                       color: session.avatarColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 18,
@@ -930,7 +930,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                       Expanded(
                                         child: Text(
                                           session.name,
-                                          style: GoogleFonts.syne(
+                                          style: GoogleFonts.plusJakartaSans(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
                                             color: const Color(0xFF0F172A),
@@ -942,7 +942,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                       const SizedBox(width: 8),
                                       Text(
                                         timeStr,
-                                        style: GoogleFonts.dmSans(
+                                        style: GoogleFonts.plusJakartaSans(
                                           fontSize: 11,
                                           color: const Color(0xFF94A3B8),
                                           fontWeight: FontWeight.w500,
@@ -953,7 +953,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   const SizedBox(height: 3),
                                   Text(
                                     session.service.toUpperCase(),
-                                    style: GoogleFonts.dmSans(
+                                    style: GoogleFonts.plusJakartaSans(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                       color: session.avatarColor,
@@ -966,7 +966,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                       Expanded(
                                         child: Text(
                                           lastMsg?.text ?? 'No messages yet.',
-                                          style: GoogleFonts.dmSans(
+                                          style: GoogleFonts.plusJakartaSans(
                                             fontSize: 13,
                                             color: session.unreadCount > 0
                                                 ? const Color(0xFF0F172A)
@@ -1038,7 +1038,7 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(height: 20),
           Text(
             'No Active Chats',
-            style: GoogleFonts.syne(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF0F172A),
@@ -1050,7 +1050,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Text(
               'Your conversation threads with service experts will appear here once a booking is assigned.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.plusJakartaSans(
                 color: const Color(0xFF64748B),
                 fontSize: 13,
                 height: 1.4,
@@ -1106,7 +1106,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     backgroundColor: session.avatarColor.withValues(alpha: 0.12),
                     child: Text(
                       initials,
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.plusJakartaSans(
                         color: session.avatarColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -1139,7 +1139,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     Text(
                       session.name,
-                      style: GoogleFonts.syne(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF0F172A),
@@ -1152,7 +1152,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       children: [
                         Text(
                           session.service,
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
                             color: session.avatarColor,
                             fontWeight: FontWeight.bold,
@@ -1163,7 +1163,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         const SizedBox(width: 6),
                         Text(
                           session.isOnline ? 'Online' : 'Offline',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
                             color: session.isOnline ? const Color(0xFF16A34A) : const Color(0xFF94A3B8),
                           ),
@@ -1230,7 +1230,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         children: [
                           Text(
                             '${session.name} is typing',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: const Color(0xFF64748B),
                               fontWeight: FontWeight.w500,
@@ -1290,7 +1290,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(width: 10),
                     Text(
                       'REC 00:${_voiceRecordDuration.toString().padLeft(2, '0')}',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.red,
@@ -1390,7 +1390,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           onSubmitted: (_) => _sendMessage(),
                           decoration: InputDecoration(
                             hintText: 'Type a message or press mic...',
-                            hintStyle: GoogleFonts.dmSans(color: const Color(0xFF94A3B8), fontSize: 13),
+                            hintStyle: GoogleFonts.plusJakartaSans(color: const Color(0xFF94A3B8), fontSize: 13),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           ),
@@ -1486,7 +1486,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 const SizedBox(width: 4),
                 Text(
                   '1-Tap Voice:',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
@@ -1516,7 +1516,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       constraints: const BoxConstraints(maxWidth: 220),
                       child: Text(
                         p['label'] as String,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF1E40AF),
@@ -1528,7 +1528,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(width: 5),
                     Text(
                       '0:${(p['dur'] as int).toString().padLeft(2, '0')}',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 9,
                         color: const Color(0xFF3B82F6),
                         fontWeight: FontWeight.bold,
@@ -1590,7 +1590,7 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             Text(
               msg.text,
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 color: msg.isMe ? Colors.white : const Color(0xFF1E293B),
                 height: 1.4,
@@ -1602,7 +1602,7 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Text(
                   '${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 9,
                     color: msg.isMe ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF94A3B8),
                   ),
@@ -1725,7 +1725,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             isPlaying
                                 ? '0:${elapsedSec.toString().padLeft(2, '0')}'
                                 : '0:${durationSec.toString().padLeft(2, '0')}',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: isMe ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF64748B),
@@ -1741,7 +1741,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               const SizedBox(width: 2),
                               Text(
                                 'Voice Note',
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.plusJakartaSans(
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
                                   color: isMe ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF94A3B8),
@@ -1767,7 +1767,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 child: Text(
                   '“${msg.text}”',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
                     fontStyle: FontStyle.italic,
                     color: isMe ? Colors.white : const Color(0xFF334155),
@@ -1783,7 +1783,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Text(
                     '${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}',
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 9,
                       color: isMe ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF94A3B8),
                     ),

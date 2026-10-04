@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/portal_mode.dart';
 
 /// Premium pill-shaped animated bottom navigation bar.
@@ -50,7 +51,7 @@ class _JugaadBottomNavState extends State<JugaadBottomNav>
   @override
   Widget build(BuildContext context) {
     final isUser = widget.mode == PortalMode.user;
-    final activeColor = isUser ? const Color(0xFF1A56DB) : const Color(0xFF16A34A);
+    final activeColor = const Color(0xFF0D7844); // Signature Jugaad Green
     final inactiveColor = isUser ? const Color(0xFF94A3B8) : const Color(0xFF9CA3AF);
 
     final List<_NavItem> items = isUser
@@ -148,8 +149,7 @@ class _JugaadBottomNavState extends State<JugaadBottomNav>
           const SizedBox(height: 3),
           Text(
             item.label,
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+            style: GoogleFonts.plusJakartaSans(
               color: isActive ? activeColor : inactiveColor,
               fontSize: 10.5,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,

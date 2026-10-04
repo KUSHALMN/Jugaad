@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class UserAppTheme {
-  // --- COLORS ---
-  static const Color primaryBlue = Color(0xFF1A56DB);
-  static const Color skyAccent = Color(0xFF60A5FA);
-  static const Color background = Color(0xFFF8FAFF);
+  // --- COLORS (Jugaad Brand: Forest Green & Vibrant Orange) ---
+  static const Color primaryColor = Color(0xFF0D7844); // Signature Forest Green
+  static const Color primaryBlue = primaryColor; // Backward-compatible alias
+  static const Color primaryGreen = primaryColor; // Forest Green
+  static const Color accentOrange = Color(0xFFEA580C); // Signature Orange
+  static const Color skyAccent = accentOrange; // Backward-compatible alias
+  static const Color background = Color(0xFFF8FAFC);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color textPrimary = Color(0xFF0F172A);
   static const Color textSecondary = Color(0xFF64748B);
@@ -16,7 +19,13 @@ class UserAppTheme {
 
   // --- GRADIENTS ---
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [primaryBlue, Color(0xFF3B82F6)],
+    colors: [primaryColor, Color(0xFF16A34A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient orangeGradient = LinearGradient(
+    colors: [accentOrange, Color(0xFFF97316)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -28,7 +37,7 @@ class UserAppTheme {
   );
 
   static const LinearGradient headerGradient = LinearGradient(
-    colors: [Color(0xFFEFF6FF), Color(0xFFF8FAFF)],
+    colors: [Color(0xFFF0FDF4), Color(0xFFF8FAFC)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
@@ -50,13 +59,13 @@ class UserAppTheme {
   static const double buttonHeight = 52.0;
   static final BorderRadius buttonBorderRadius = BorderRadius.circular(14.0);
 
-  // --- TYPOGRAPHY (Claude Newsreader Serif for Headlines + Plus Jakarta Sans for Body) ---
+  // --- TYPOGRAPHY (Google Fonts Plus Jakarta Sans everywhere) ---
   static TextStyle display({
     double size = 28.0,
     Color color = textPrimary,
-    FontWeight weight = FontWeight.w600,
+    FontWeight weight = FontWeight.w800,
   }) {
-    return GoogleFonts.newsreader(
+    return GoogleFonts.plusJakartaSans(
       fontSize: size,
       fontWeight: weight,
       color: color,
@@ -67,9 +76,9 @@ class UserAppTheme {
   static TextStyle heading({
     double size = 18.0,
     Color color = textPrimary,
-    FontWeight weight = FontWeight.w600,
+    FontWeight weight = FontWeight.w700,
   }) {
-    return GoogleFonts.newsreader(
+    return GoogleFonts.plusJakartaSans(
       fontSize: size,
       fontWeight: weight,
       color: color,
@@ -92,7 +101,7 @@ class UserAppTheme {
   static TextStyle label({
     double size = 12.0,
     Color color = textSecondary,
-    FontWeight weight = FontWeight.w500,
+    FontWeight weight = FontWeight.w600,
   }) {
     return GoogleFonts.plusJakartaSans(
       fontSize: size,
@@ -107,14 +116,37 @@ class UserAppTheme {
       useMaterial3: true,
       scaffoldBackgroundColor: background,
       fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryColor,
+        primary: primaryColor,
+        secondary: accentOrange,
+        surface: surface,
+      ),
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.newsreader(fontSize: 32, fontWeight: FontWeight.w600, color: textPrimary, letterSpacing: -0.6),
-        displayMedium: GoogleFonts.newsreader(fontSize: 28, fontWeight: FontWeight.w600, color: textPrimary, letterSpacing: -0.5),
-        headlineMedium: GoogleFonts.newsreader(fontSize: 22, fontWeight: FontWeight.w600, color: textPrimary, letterSpacing: -0.3),
-        titleLarge: GoogleFonts.newsreader(fontSize: 18, fontWeight: FontWeight.w600, color: textPrimary, letterSpacing: -0.2),
-        bodyLarge: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w400, color: textPrimary),
+        displayLarge: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.w800, color: textPrimary, letterSpacing: -0.6),
+        displayMedium: GoogleFonts.plusJakartaSans(fontSize: 28, fontWeight: FontWeight.w800, color: textPrimary, letterSpacing: -0.5),
+        headlineMedium: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w700, color: textPrimary, letterSpacing: -0.3),
+        titleLarge: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: textPrimary, letterSpacing: -0.2),
+        titleMedium: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w600, color: textPrimary),
+        bodyLarge: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w500, color: textPrimary),
         bodyMedium: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w400, color: textSecondary),
-        labelLarge: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary),
+        labelLarge: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700, color: primaryColor),
+        labelSmall: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600, color: textSecondary),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: buttonBorderRadius,
+          ),
+          textStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 16.0,
+            fontWeight: FontWeight.bold,
+          ),
+          minimumSize: const Size.fromHeight(buttonHeight),
+        ),
       ),
       dividerColor: divider,
       cardTheme: CardThemeData(

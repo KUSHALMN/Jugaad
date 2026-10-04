@@ -427,7 +427,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                 children: [
                   Text(
                     'Jugaad Experts',
-                    style: GoogleFonts.syne(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF0F172A),
@@ -436,7 +436,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Browse all skilled workers and their live status.',
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
                       color: const Color(0xFF64748B),
                     ),
@@ -475,7 +475,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                   },
                   decoration: InputDecoration(
                     hintText: 'Search by name, skill, area, or email...',
-                    hintStyle: GoogleFonts.dmSans(
+                    hintStyle: GoogleFonts.plusJakartaSans(
                       color: const Color(0xFF94A3B8),
                       fontSize: 14,
                     ),
@@ -516,7 +516,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                     child: ChoiceChip(
                       label: Text(
                         category,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: isSelected ? Colors.white : const Color(0xFF64748B),
@@ -577,7 +577,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                         children: [
                           Text(
                             'Region Busy Advisory',
-                            style: GoogleFonts.syne(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF92400E),
@@ -586,7 +586,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                           const SizedBox(height: 3),
                           Text(
                             'Workers in your region are currently busy. You can book these high-rated ${_selectedCategory == 'All' ? 'service specialists' : '$_selectedCategory experts'} across the entire city!',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: const Color(0xFF78350F),
                               fontWeight: FontWeight.w500,
@@ -678,7 +678,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                   children: [
                     Text(
                       'SCANNING ALL LOCATIONS',
-                      style: GoogleFonts.syne(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.8,
@@ -688,7 +688,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                     const SizedBox(height: 2),
                     Text(
                       'Matching certified pros by availability & rating...',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         color: const Color(0xFF64748B),
                       ),
@@ -819,7 +819,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
           const SizedBox(height: 20),
           Text(
             'No Workers Found',
-            style: GoogleFonts.syne(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF0F172A),
@@ -831,7 +831,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
             child: Text(
               'Try adjusting your search query or reset filters to see all available experts.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.plusJakartaSans(
                 color: const Color(0xFF64748B),
                 fontSize: 13,
                 height: 1.4,
@@ -852,7 +852,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
             icon: const Icon(Icons.refresh_rounded, size: 16),
             label: Text(
               'Reset Filters & Show All',
-              style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 13),
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 13),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -920,7 +920,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                   child: (worker['id_document_url'] == null || (worker['id_document_url'] as String).isEmpty)
                                       ? Text(
                                           (worker['name'] as String? ?? 'W').substring(0, 1).toUpperCase(),
-                                          style: GoogleFonts.dmSans(
+                                          style: GoogleFonts.plusJakartaSans(
                                             color: const Color(0xFF1A56DB),
                                             fontWeight: FontWeight.bold,
                                             fontSize: 28,
@@ -938,7 +938,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                           Flexible(
                                             child: Text(
                                               worker['name'] ?? 'Worker Name',
-                                              style: GoogleFonts.syne(
+                                              style: GoogleFonts.plusJakartaSans(
                                                 fontSize: 20,
                                                 fontWeight: FontWeight.bold,
                                                 color: const Color(0xFF0F172A),
@@ -977,7 +977,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                             const SizedBox(width: 6),
                                             Text(
                                               (worker['is_available'] == true) ? 'Available Now' : 'Offline',
-                                              style: GoogleFonts.dmSans(
+                                              style: GoogleFonts.plusJakartaSans(
                                                 color: (worker['is_available'] == true)
                                                     ? const Color(0xFF2E7D32)
                                                     : const Color(0xFF64748B),
@@ -1036,7 +1036,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                             if (worker['bio'] != null && (worker['bio'] as String).trim().isNotEmpty) ...[
                               Text(
                                 'About Me',
-                                style: GoogleFonts.syne(
+                                style: GoogleFonts.plusJakartaSans(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: const Color(0xFF0F172A),
@@ -1045,7 +1045,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                               const SizedBox(height: 8),
                               Text(
                                 worker['bio'],
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.plusJakartaSans(
                                   fontSize: 14,
                                   color: const Color(0xFF475569),
                                   height: 1.5,
@@ -1057,7 +1057,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                             // Skills Section
                             Text(
                               'Skills',
-                              style: GoogleFonts.syne(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF0F172A),
@@ -1076,7 +1076,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                         ),
                                         child: Text(
                                           s,
-                                          style: GoogleFonts.dmSans(
+                                          style: GoogleFonts.plusJakartaSans(
                                             color: const Color(0xFF475569),
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
@@ -1090,7 +1090,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                             // Contact details
                             Text(
                               'Contact Details',
-                              style: GoogleFonts.syne(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF0F172A),
@@ -1110,7 +1110,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                               children: [
                                 Text(
                                   'Reviews & Job History',
-                                  style: GoogleFonts.syne(
+                                  style: GoogleFonts.plusJakartaSans(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF0F172A),
@@ -1119,7 +1119,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                 if (reviews.isNotEmpty)
                                   Text(
                                     '${reviews.length} total',
-                                    style: GoogleFonts.dmSans(
+                                    style: GoogleFonts.plusJakartaSans(
                                       fontSize: 12,
                                       color: const Color(0xFF94A3B8),
                                       fontWeight: FontWeight.w500,
@@ -1139,7 +1139,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                                 child: Text(
                                   'No reviews yet for this worker.',
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.plusJakartaSans(
                                     fontSize: 13.5,
                                     color: const Color(0xFF94A3B8),
                                     fontStyle: FontStyle.italic,
@@ -1183,7 +1183,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                           children: [
                                             Text(
                                               reviewerName,
-                                              style: GoogleFonts.dmSans(
+                                              style: GoogleFonts.plusJakartaSans(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 13,
                                                 color: const Color(0xFF1E293B),
@@ -1191,7 +1191,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                             ),
                                             Text(
                                               timeStr,
-                                              style: GoogleFonts.dmSans(
+                                              style: GoogleFonts.plusJakartaSans(
                                                 fontSize: 11,
                                                 color: const Color(0xFF94A3B8),
                                               ),
@@ -1214,7 +1214,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                           const SizedBox(height: 8),
                                           Text(
                                             comment,
-                                            style: GoogleFonts.dmSans(
+                                            style: GoogleFonts.plusJakartaSans(
                                               fontSize: 13,
                                               color: const Color(0xFF475569),
                                               height: 1.4,
@@ -1245,7 +1245,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                textStyle: GoogleFonts.dmSans(
+                                textStyle: GoogleFonts.plusJakartaSans(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1325,7 +1325,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
             const SizedBox(height: 6),
             Text(
               value,
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
                 color: const Color(0xFF0F172A),
@@ -1337,7 +1337,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
             const SizedBox(height: 2),
             Text(
               title,
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
                 color: const Color(0xFF64748B),
               ),
@@ -1357,7 +1357,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
         Expanded(
           child: Text(
             detail,
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 13.5,
               color: const Color(0xFF334155),
             ),
@@ -1463,7 +1463,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                       child: (photoUrl == null || photoUrl.isEmpty)
                           ? Text(
                               initials,
-                              style: GoogleFonts.dmSans(
+                              style: GoogleFonts.plusJakartaSans(
                                 color: const Color(0xFF1A56DB),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
@@ -1499,7 +1499,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                           Flexible(
                             child: Text(
                               name,
-                              style: GoogleFonts.syne(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF0F172A),
@@ -1524,7 +1524,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                         ),
                         child: Text(
                           categoryText.toUpperCase(),
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.plusJakartaSans(
                             color: const Color(0xFF1E40AF),
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -1541,7 +1541,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                           const SizedBox(width: 4),
                           Text(
                             rating != null ? rating.toStringAsFixed(1) : 'New',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.plusJakartaSans(
                               fontWeight: FontWeight.bold,
                               fontSize: 12.5,
                               color: const Color(0xFF1E293B),
@@ -1553,7 +1553,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                           const SizedBox(width: 6),
                           Text(
                             '$jobs completed',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: const Color(0xFF64748B),
                             ),
@@ -1575,7 +1575,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                                 ),
                                 child: Text(
                                   s,
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.plusJakartaSans(
                                     color: const Color(0xFF475569),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
@@ -1596,7 +1596,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                               const SizedBox(width: 4),
                               Text(
                                 '$exp Exp',
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
                                   color: const Color(0xFF64748B),
                                 ),
@@ -1605,7 +1605,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                           ),
                           Text(
                             '₹$rate/hr',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.plusJakartaSans(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                               color: const Color(0xFF0F172A),
@@ -1623,7 +1623,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                           Expanded(
                             child: Text(
                               area,
-                              style: GoogleFonts.dmSans(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 color: const Color(0xFF94A3B8),
                               ),
@@ -1714,7 +1714,7 @@ Widget _buildVerificationChip(String label, bool isVerified, IconData icon, Colo
         const SizedBox(width: 4),
         Text(
           label,
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.plusJakartaSans(
             fontSize: 10,
             color: isVerified ? color : const Color(0xFF64748B),
             fontWeight: FontWeight.bold,

@@ -143,7 +143,7 @@ class _DesktopUserNavBar extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                          colors: [Color(0xFF0D7844), Color(0xFF16A34A)],
                         ),
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -214,7 +214,7 @@ class _DesktopUserNavBar extends StatelessWidget {
                         duration: const Duration(milliseconds: 180),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFEFF6FF) : Colors.transparent,
+                          color: isSelected ? const Color(0xFFF0FDF4) : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -223,7 +223,7 @@ class _DesktopUserNavBar extends StatelessWidget {
                             Icon(
                               isSelected ? item.$1 : item.$2,
                               size: 18,
-                              color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+                              color: isSelected ? const Color(0xFF0D7844) : const Color(0xFF64748B),
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -231,7 +231,7 @@ class _DesktopUserNavBar extends StatelessWidget {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 13,
                                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                color: isSelected ? const Color(0xFF1D4ED8) : const Color(0xFF475569),
+                                color: isSelected ? const Color(0xFF0D7844) : const Color(0xFF475569),
                               ),
                             ),
                           ],

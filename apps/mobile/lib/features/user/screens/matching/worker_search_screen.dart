@@ -102,7 +102,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
               ),
               Text(
                 'Select Location & Service Zone',
-                style: GoogleFonts.syne(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -111,7 +111,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
               const SizedBox(height: 8),
               Text(
                 'Select one of our active zones to find available workers nearby:',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   color: AppColors.textSecondary,
                 ),
@@ -132,7 +132,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                         leading: const Icon(Icons.location_on_rounded, color: AppColors.primary),
                         title: Text(
                           preset['name'],
-                          style: GoogleFonts.dmSans(fontWeight: FontWeight.bold),
+                          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
                           'Coords: ${preset['lat'].toStringAsFixed(4)}, ${preset['lng'].toStringAsFixed(4)}',
@@ -222,7 +222,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                   child: (profilePhoto == null || profilePhoto.isEmpty)
                       ? Text(
                           name.isNotEmpty ? name[0].toUpperCase() : 'W',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.plusJakartaSans(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 24,
@@ -240,7 +240,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                           Flexible(
                             child: Text(
                               name,
-                              style: GoogleFonts.syne(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -251,7 +251,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(category, style: GoogleFonts.dmSans(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                      Text(category, style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -260,11 +260,11 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                             const SizedBox(width: 4),
                             Text(
                               rating.toStringAsFixed(1),
-                              style: GoogleFonts.dmSans(fontWeight: FontWeight.bold),
+                              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
                             ),
                             Text(
                               ' ($completedJobs jobs)',
-                              style: GoogleFonts.dmSans(fontSize: 11, color: AppColors.textSecondary),
+                              style: GoogleFonts.plusJakartaSans(fontSize: 11, color: AppColors.textSecondary),
                             ),
                           ] else ...[
                             Container(
@@ -275,14 +275,14 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                               ),
                               child: Text(
                                 'NEW PRO',
-                                style: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary),
                               ),
                             ),
                           ],
                           const SizedBox(width: 12),
                           const Icon(Icons.near_me, color: AppColors.primary, size: 16),
                           const SizedBox(width: 4),
-                          Text(distanceText, style: GoogleFonts.dmSans(fontSize: 12)),
+                          Text(distanceText, style: GoogleFonts.plusJakartaSans(fontSize: 12)),
                         ],
                       ),
                     ],
@@ -302,25 +302,25 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                 children: [
                   Column(
                     children: [
-                      Text('ESTIMATED ETA', style: GoogleFonts.dmSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                      Text('ESTIMATED ETA', style: GoogleFonts.plusJakartaSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text('~$etaMins mins', style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                      Text('~$etaMins mins', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
                     ],
                   ),
                   Container(width: 1, height: 30, color: Colors.blue.withValues(alpha: 0.2)),
                   Column(
                     children: [
-                      Text('RATE', style: GoogleFonts.dmSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                      Text('RATE', style: GoogleFonts.plusJakartaSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text(hourlyRate != null && hourlyRate > 0 ? '₹${hourlyRate.toInt()}/hr' : 'Standard', style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
+                      Text(hourlyRate != null && hourlyRate > 0 ? '₹${hourlyRate.toInt()}/hr' : 'Standard', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
                     ],
                   ),
                   Container(width: 1, height: 30, color: Colors.blue.withValues(alpha: 0.2)),
                   Column(
                     children: [
-                      Text('STATUS', style: GoogleFonts.dmSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                      Text('STATUS', style: GoogleFonts.plusJakartaSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text('Available', style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
+                      Text('Available', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
                     ],
                   ),
                 ],
@@ -340,7 +340,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                   backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                child: Text('Book $name Now', style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                child: Text('Book $name Now', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
           ],
@@ -373,7 +373,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
       appBar: AppBar(
         title: Text(
           'Find a Worker',
-          style: GoogleFonts.syne(
+          style: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
             fontSize: 20,
@@ -414,7 +414,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                     child: ChoiceChip(
                       label: Text(
                         service,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: isSelected ? Colors.white : AppColors.textSecondary,
@@ -477,7 +477,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                                 state.serviceType.isNotEmpty
                                     ? 'No nearest ${state.serviceType}s within 5km — showing top-rated ${state.serviceType}s in Mysore.'
                                     : 'No nearest workers within 5km — showing top-rated workers in Mysore.',
-                                style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF92400E)),
+                                style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF92400E)),
                               ),
                             ),
                           ],
@@ -586,7 +586,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                         const SizedBox(width: 4),
                         Text(
                           name,
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: isSelected ? Colors.white : AppColors.textPrimary,
@@ -623,13 +623,13 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
           Text(
             'No Workers Found Nearby',
             textAlign: TextAlign.center,
-            style: GoogleFonts.syne(fontSize: 18, fontWeight: FontWeight.bold),
+            style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             'Try selecting a different service category or zone.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.dmSans(color: AppColors.textSecondary),
+            style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary),
           ),
         ],
       );
@@ -686,7 +686,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                           children: [
                             Text(
                               'High-Demand Region Advisory',
-                              style: GoogleFonts.syne(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFF92400E),
@@ -696,7 +696,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                             Text(
                               state.advisoryMessage ??
                                   'Workers in your region (${state.userDivision}) are currently busy. You can book these high-rated ${state.serviceType.isEmpty ? 'Service' : state.serviceType} specialists across ${state.userCity}!',
-                              style: GoogleFonts.dmSans(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 height: 1.35,
                                 color: const Color(0xFF78350F),
@@ -717,12 +717,12 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                     state.isCitywideFallback
                         ? 'Top-Rated ${state.serviceType.isEmpty ? 'Workers' : state.serviceType} (${state.userCity})'
                         : '${state.workers.length} ${state.serviceType.isEmpty ? 'Workers' : '${state.serviceType}s'} Available',
-                    style: GoogleFonts.syne(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   TextButton.icon(
                     onPressed: _showManualLocationPicker,
                     icon: const Icon(Icons.location_on, size: 16, color: AppColors.primary),
-                    label: Text(state.activeLocationName, style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    label: Text(state.activeLocationName, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
                   ),
                 ],
               ),
@@ -777,7 +777,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
           child: (profilePhoto == null || profilePhoto.isEmpty)
               ? Text(
                   name.isNotEmpty ? name[0].toUpperCase() : 'W',
-                  style: GoogleFonts.dmSans(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 18),
+                  style: GoogleFonts.plusJakartaSans(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 18),
                 )
               : null,
         ),
@@ -786,7 +786,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
             Expanded(
               child: Text(
                 name,
-                style: GoogleFonts.syne(fontWeight: FontWeight.bold, fontSize: 15),
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -806,7 +806,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                     const SizedBox(width: 2),
                     Text(
                       'Top-Rated',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF92400E),
@@ -823,14 +823,14 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 2),
-            Text('$category • ETA: ~$etaMins mins', style: GoogleFonts.dmSans(fontSize: 12, color: AppColors.textSecondary)),
+            Text('$category • ETA: ~$etaMins mins', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.textSecondary)),
             const SizedBox(height: 5),
             Row(
               children: [
                 if (rating > 0 && completedJobs > 0) ...[
                   const Icon(Icons.star, color: Colors.amber, size: 14),
                   const SizedBox(width: 2),
-                  Text(rating.toStringAsFixed(1), style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 12)),
+                  Text(rating.toStringAsFixed(1), style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 12)),
                   const SizedBox(width: 8),
                 ] else ...[
                   Container(
@@ -839,7 +839,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                       color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text('NEW', style: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    child: Text('NEW', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)),
                   ),
                   const SizedBox(width: 8),
                 ],
@@ -848,13 +848,13 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                 Expanded(
                   child: Text(
                     distanceText,
-                    style: GoogleFonts.dmSans(fontSize: 11, color: Colors.grey[600]),
+                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: Colors.grey[600]),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 if (hourlyRate != null && hourlyRate > 0) ...[
                   const SizedBox(width: 8),
-                  Text('•  ₹${hourlyRate.toInt()}/hr', style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF10B981))),
+                  Text('•  ₹${hourlyRate.toInt()}/hr', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF10B981))),
                 ],
               ],
             ),
@@ -867,7 +867,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           ),
-          child: Text('Book', style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
+          child: Text('Book', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
         ),
       ),
     );
@@ -1050,7 +1050,7 @@ class _ScanningTelemetryHeaderState extends State<_ScanningTelemetryHeader> {
               const SizedBox(width: 10),
               Text(
                 'RADAR TELEMETRY',
-                style: GoogleFonts.syne(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.0,
@@ -1072,7 +1072,7 @@ class _ScanningTelemetryHeaderState extends State<_ScanningTelemetryHeader> {
               const SizedBox(width: 6),
               Text(
                 'LIVE',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF10B981),
@@ -1086,7 +1086,7 @@ class _ScanningTelemetryHeaderState extends State<_ScanningTelemetryHeader> {
             child: Text(
               phases[_phaseIndex],
               key: ValueKey(_phaseIndex),
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF1E293B),
@@ -1286,7 +1286,7 @@ class _LocalPulsingRadarState extends State<LocalPulsingRadar> with TickerProvid
                   const SizedBox(width: 6),
                   Text(
                     'LIVE RADAR • 5.0 KM RANGE',
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,

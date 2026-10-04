@@ -144,7 +144,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Reject Worker',
-          style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 18),
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -152,7 +152,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
           children: [
             Text(
               'Please enter a reason for rejecting $workerName:',
-              style: GoogleFonts.dmSans(fontSize: 14, color: AppColors.textSecondary),
+              style: GoogleFonts.plusJakartaSans(fontSize: 14, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -168,7 +168,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.dmSans(color: Colors.grey)),
+            child: Text('Cancel', style: GoogleFonts.plusJakartaSans(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -176,7 +176,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
               backgroundColor: Colors.red,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: Text('Reject Worker', style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Reject Worker', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -239,7 +239,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
             children: [
               Text(
                 'Verification Document — $workerName',
-                style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 16),
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 16),
               ClipRRect(
@@ -275,7 +275,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
       appBar: AppBar(
         title: Text(
           'Admin • Worker Approvals',
-          style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
         ),
         backgroundColor: Colors.white,
         elevation: 1,
@@ -309,7 +309,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
                       children: [
                         const Icon(Icons.error_outline, color: Colors.red, size: 48),
                         const SizedBox(height: 12),
-                        Text(_errorMessage!, textAlign: TextAlign.center, style: GoogleFonts.dmSans()),
+                        Text(_errorMessage!, textAlign: TextAlign.center, style: GoogleFonts.plusJakartaSans()),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _fetchWorkers,
@@ -336,7 +336,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
       return Center(
         child: Text(
           'No workers in this status.',
-          style: GoogleFonts.dmSans(fontSize: 16, color: Colors.grey),
+          style: GoogleFonts.plusJakartaSans(fontSize: 16, color: Colors.grey),
         ),
       );
     }
@@ -375,7 +375,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
                       child: (docUrl == null || docUrl.isEmpty)
                           ? Text(
                               name.isNotEmpty ? name[0].toUpperCase() : 'W',
-                              style: GoogleFonts.dmSans(
+                              style: GoogleFonts.plusJakartaSans(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
@@ -393,7 +393,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
                               Expanded(
                                 child: Text(
                                   name,
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.plusJakartaSans(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                     color: AppColors.textPrimary,
@@ -406,12 +406,12 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
                           const SizedBox(height: 4),
                           Text(
                             '$category • $area',
-                            style: GoogleFonts.dmSans(fontSize: 13, color: AppColors.textSecondary),
+                            style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.textSecondary),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'Phone: $phone',
-                            style: GoogleFonts.dmSans(fontSize: 12, color: Colors.grey),
+                            style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.grey),
                           ),
                         ],
                       ),
@@ -423,7 +423,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
                   OutlinedButton.icon(
                     onPressed: () => _showDocumentDialog(docUrl, name),
                     icon: const Icon(Icons.badge, size: 18),
-                    label: Text('View Verification Document', style: GoogleFonts.dmSans(fontSize: 13)),
+                    label: Text('View Verification Document', style: GoogleFonts.plusJakartaSans(fontSize: 13)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary),
@@ -444,7 +444,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          child: Text('Reject', style: GoogleFonts.dmSans(fontWeight: FontWeight.bold)),
+                          child: Text('Reject', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -456,7 +456,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          child: Text('Approve', style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, color: Colors.white)),
+                          child: Text('Approve', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                       ),
                     ],
@@ -498,7 +498,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
       child: Text(
         label,
-        style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.bold, color: fg),
+        style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.bold, color: fg),
       ),
     );
   }

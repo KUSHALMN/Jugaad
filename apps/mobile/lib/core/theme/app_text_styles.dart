@@ -3,32 +3,32 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 /// Global Typography System
-/// Powered by Claude-style warm editorial serif (Newsreader) for headlines
-/// and Apple-grade humanist sans-serif (Plus Jakarta Sans) for body.
+/// Powered strictly by Google Fonts 'Plus Jakarta Sans' across all headlines and body
+/// for a 100% unified, consistent, modern, readable brand experience.
 class AppTextStyles {
-  // Headings: Claude-style 'Newsreader' serif — elegant, editorial, human
-  static TextStyle heading1({Color color = AppColors.textPrimary}) => GoogleFonts.newsreader(
+  // Headings: Plus Jakarta Sans — modern, crisp, geometric humanist
+  static TextStyle heading1({Color color = AppColors.textPrimary}) => GoogleFonts.plusJakartaSans(
         fontSize: 32,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w800,
         letterSpacing: -0.6,
         color: color,
       );
 
-  static TextStyle heading2({Color color = AppColors.textPrimary}) => GoogleFonts.newsreader(
+  static TextStyle heading2({Color color = AppColors.textPrimary}) => GoogleFonts.plusJakartaSans(
         fontSize: 24,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         letterSpacing: -0.4,
         color: color,
       );
 
-  static TextStyle heading3({Color color = AppColors.textPrimary}) => GoogleFonts.newsreader(
+  static TextStyle heading3({Color color = AppColors.textPrimary}) => GoogleFonts.plusJakartaSans(
         fontSize: 20,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         letterSpacing: -0.3,
         color: color,
       );
 
-  static TextStyle heading4({Color color = AppColors.textPrimary}) => GoogleFonts.newsreader(
+  static TextStyle heading4({Color color = AppColors.textPrimary}) => GoogleFonts.plusJakartaSans(
         fontSize: 17,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.2,
@@ -60,20 +60,20 @@ class AppTextStyles {
         height: 1.4,
       );
 
-  // Numbers/Stats: Newsreader / Plus Jakarta display
+  // Numbers/Stats: Plus Jakarta Sans display
   static TextStyle numbersDisplay({double fontSize = 36, Color color = AppColors.primary}) =>
-      GoogleFonts.newsreader(
+      GoogleFonts.plusJakartaSans(
         fontSize: fontSize,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         letterSpacing: -0.5,
         color: color,
       );
 
   // Display Hero: Extra large for hero banners / milestone totals
   static TextStyle displayHero({double fontSize = 44, Color color = AppColors.textPrimary}) =>
-      GoogleFonts.newsreader(
+      GoogleFonts.plusJakartaSans(
         fontSize: fontSize,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w800,
         color: color,
         letterSpacing: -1.0,
         height: 1.15,

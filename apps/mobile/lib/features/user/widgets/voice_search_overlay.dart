@@ -240,7 +240,7 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
               // Header title
               Text(
                 'Voice Search',
-                style: GoogleFonts.syne(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF0F172A),
@@ -250,7 +250,7 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
               Text(
                 'Speak electrical, plumbing, laptop repair...',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   color: const Color(0xFF64748B),
                 ),
@@ -339,7 +339,7 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                 child: Text(
                   _speechText,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: _isListening ? const Color(0xFF1E293B) : const Color(0xFF64748B),
@@ -356,7 +356,7 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Popular Searches',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF475569),
@@ -382,7 +382,7 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                       ),
                       child: Text(
                         s,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF475569),
@@ -402,7 +402,7 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                   children: [
                     Text(
                       'Recent Searches',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF475569),
@@ -416,7 +416,7 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                       },
                       child: Text(
                         'Clear All',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFFEF4444),
@@ -433,9 +433,9 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                     return Container(
                       padding: const EdgeInsets.fromLTRB(14, 8, 10, 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: const Color(0xFFF0FDF4),
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: const Color(0xFFDBEAFE)),
+                        border: Border.all(color: const Color(0xFFDCFCE7)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -448,15 +448,15 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                                 const Icon(
                                   Icons.history_rounded,
                                   size: 12,
-                                  color: Color(0xFF1A56DB),
+                                  color: Color(0xFF0D7844),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   term,
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF1A56DB),
+                                    color: const Color(0xFF0D7844),
                                   ),
                                 ),
                               ],
