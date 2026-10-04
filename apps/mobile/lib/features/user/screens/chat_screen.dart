@@ -1465,7 +1465,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Container(
       height: 42,
-      color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: const BoxDecoration(
         color: Colors.white,

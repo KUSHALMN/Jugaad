@@ -157,15 +157,35 @@ def main():
             cmd_admin = f'start "Jugaad Admin Web (Port 5173)" cmd /k "cd /d \"{ADMIN_DIR}\" && npm run dev"'
             os.system(cmd_admin)
 
+        # Clean up any legacy temp profile locks
+        legacy_profile = os.path.join(os.environ.get("TEMP", "C:/temp"), "flutter_chrome_dev")
+        if os.path.exists(legacy_profile):
+            try:
+                import shutil
+                shutil.rmtree(legacy_profile, ignore_errors=True)
+            except Exception:
+                pass
+
         if run_mobile:
             extra_flags = ""
-            if target_dev == "chrome":
-                temp_profile = os.path.join(os.environ.get("TEMP", "C:/temp"), "flutter_chrome_dev").replace("\\", "/")
-                extra_flags = f' --web-browser-flag "--user-data-dir={temp_profile}" --web-browser-flag "--disable-web-security"'
+            if target_dev in ("chrome", "edge"):
+                extra_flags = ' --web-browser-flag "--remote-allow-origins=*"'
+            elif target_dev == "web-server":
+                extra_flags = " --web-port 3000 --web-hostname localhost"
 
             print(f"[2/2] Launching Flutter Mobile on '{target_dev}' in dedicated window...")
             cmd_mobile = f'start "Jugaad Flutter Mobile" cmd /k "cd /d \"{MOBILE_DIR}\" && flutter run -d {target_dev}{extra_flags}"'
             os.system(cmd_mobile)
+
+            if target_dev == "web-server":
+                def open_web():
+                    time.sleep(4)
+                    try:
+                        import webbrowser
+                        webbrowser.open("http://localhost:3000")
+                    except Exception:
+                        pass
+                threading.Thread(target=open_web, daemon=True).start()
 
         print("\n" + "=" * 65)
         print("  [SUCCESS] Both Backend and Frontend are now RUNNING!")
@@ -214,12 +234,10 @@ def main():
     if run_mobile:
         flutter_cmd = "flutter.bat" if sys.platform == "win32" else "flutter"
         flutter_args = [flutter_cmd, "run", "-d", target_dev]
-        if target_dev == "chrome":
-            temp_profile = os.path.join(os.environ.get("TEMP", "C:/temp"), "flutter_chrome_dev").replace("\\", "/")
-            flutter_args += [
-                "--web-browser-flag", f"--user-data-dir={temp_profile}",
-                "--web-browser-flag", "--disable-web-security"
-            ]
+        if target_dev in ("chrome", "edge"):
+            flutter_args += ["--web-browser-flag", "--remote-allow-origins=*"]
+        elif target_dev == "web-server":
+            flutter_args += ["--web-port", "3000", "--web-hostname", "localhost"]
 
         print(f"--> [Starting] Flutter Mobile ({' '.join(flutter_args)})...")
         mobile_proc = subprocess.Popen(
