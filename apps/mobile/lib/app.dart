@@ -168,7 +168,12 @@ class AppRouter {
         // Note: We DO NOT redirect /splash here so that the SplashScreen can render and play its opening animation!
         if (location.startsWith('/auth') || location == '/onboarding') {
           if (isWorkerMode) {
-            print('[ROUTER] Worker logged in -> navigating to /worker/register/step1');
+            final isExistingWorker = userSession.role == 'worker';
+            if (isExistingWorker) {
+              print('[ROUTER] Registered worker logged in -> navigating to /worker/home');
+              return '/worker/home';
+            }
+            print('[ROUTER] New worker logged in -> navigating to /worker/register/step1');
             return '/worker/register/step1';
           }
           return '/user/home';

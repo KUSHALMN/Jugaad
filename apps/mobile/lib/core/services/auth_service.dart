@@ -225,7 +225,7 @@ class AuthService {
       await result.user!.reload();
       
       final updatedUser = _auth.currentUser!;
-      await _ensureUserDoc(updatedUser);
+      await _ensureUserDoc(updatedUser, explicitName: name.trim());
       return updatedUser;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
@@ -283,14 +283,17 @@ class AuthService {
   }
 
   // ─── 7. Ensure Supabase user document exists ──────────────
-  Future<void> _ensureUserDoc(User user) async {
+  Future<void> _ensureUserDoc(User user, {String? explicitName}) async {
     try {
       // Fix M2: use null for missing phone instead of empty string
       // to avoid violating NOT NULL constraints on the backend.
       final phone = (user.phoneNumber?.isNotEmpty == true) ? user.phoneNumber : null;
+      final name = (explicitName != null && explicitName.isNotEmpty)
+          ? explicitName
+          : (user.displayName ?? '');
       await ApiService().syncUser(
         user.email ?? '',
-        user.displayName ?? '',
+        name,
         phone,
       );
     } catch (e) {

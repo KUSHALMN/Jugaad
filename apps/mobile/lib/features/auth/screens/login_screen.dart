@@ -222,6 +222,21 @@ class _LoginScreenState extends State<LoginScreen> {
             .maybeSingle();
         if (userDoc != null) {
           isFirstTime = false;
+        } else {
+          // Direct fallback upsert to ensure user row always exists in Supabase
+          final currentUser = FirebaseAuth.instance.currentUser;
+          try {
+            await client.from('users').upsert({
+              'id': uid,
+              'firebase_uid': uid,
+              'email': currentUser?.email,
+              'name': currentUser?.displayName ?? '',
+              'role': 'employer',
+            });
+            debugPrint('[ROUTING] Direct fallback user row ensured in Supabase');
+          } catch (upsertErr) {
+            debugPrint('[ROUTING] Direct upsert fallback (non-fatal): $upsertErr');
+          }
         }
       }
     } catch (e) {
@@ -233,8 +248,13 @@ class _LoginScreenState extends State<LoginScreen> {
     final container = ProviderScope.containerOf(context);
     final authNotifier = container.read(authProvider.notifier);
 
-    final roleToSet = selectedRole == PortalMode.worker ? 'worker' : 'user';
-    authNotifier.setRole(roleToSet);
+    // If worker is new, don't prematurely set 'worker' role until registration completes
+    final roleToSet = selectedRole == PortalMode.worker
+        ? (isFirstTime ? null : 'worker')
+        : 'user';
+    if (roleToSet != null) {
+      authNotifier.setRole(roleToSet);
+    }
     authNotifier.unsuppressAutoFetch();
 
     setState(() {
@@ -876,80 +896,104 @@ class _LoginScreenState extends State<LoginScreen> {
     required Color iconBgColor,
     required String title,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 58,
-          height: 58,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16.0),
-            border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
+    final cleanTitle = title.replaceAll('\n', ' ');
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16.0),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _showToast('$cleanTitle services ready in $_selectedCity');
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16.0),
+                  border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, color: iconColor, size: 22),
+                ),
+              ),
+              const SizedBox(height: 8.0),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12.0,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1E293B),
+                  height: 1.2,
+                ),
               ),
             ],
           ),
-          alignment: Alignment.center,
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            alignment: Alignment.center,
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
         ),
-        const SizedBox(height: 8.0),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 12.0,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF1E293B),
-            height: 1.2,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
   Widget _buildCompactBadge(IconData icon, Color iconColor, Color iconBgColor, String title) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(icon, size: 14, color: iconColor),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _showToast('$title services ready in $_selectedCity');
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
-          const SizedBox(width: 6),
-          Text(
-            title,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1E293B),
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(icon, size: 14, color: iconColor),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1465,45 +1509,58 @@ class _LoginScreenState extends State<LoginScreen> {
     required String title,
     required String subtitle,
   }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: bgColor,
-            shape: BoxShape.circle,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _showToast('$title: $subtitle');
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          alignment: Alignment.center,
-          child: Icon(icon, color: iconColor, size: 20),
         ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF0F172A),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF64748B),
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
 }
