@@ -380,58 +380,13 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15.0),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              'assets/images/banner_tools_apple.jpg',
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Image.network(
-                'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=600&auto=format&fit=crop&q=80',
-                fit: BoxFit.cover,
-              ),
-            ),
-            // Floating bottom badge
-            Positioned(
-              bottom: 8,
-              left: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF064E3B).withValues(alpha: 0.92),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        color: Colors.white24,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.home_work_rounded, color: Colors.white, size: 12),
-                    ),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(
-                        'Reliable local professionals for your everyday needs',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          height: 1.25,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        child: Image.asset(
+          'assets/images/customer_showcase_card.png',
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Image.asset(
+            'assets/images/banner_tools_apple.jpg',
+            fit: BoxFit.cover,
+          ),
         ),
       ),
     );
@@ -632,68 +587,13 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(15.0),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              'assets/images/service_electrician.jpg',
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Image.network(
-                'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&auto=format&fit=crop&q=80',
-                fit: BoxFit.cover,
-              ),
-            ),
-
-            // Floating Top Pills
-            Positioned(
-              top: 8,
-              left: 8,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildFloatingPill(icon: Icons.access_time_rounded, label: 'Set your hours'),
-                  const SizedBox(height: 4),
-                  _buildFloatingPill(icon: Icons.currency_rupee_rounded, label: 'Earn daily'),
-                  const SizedBox(height: 4),
-                  _buildFloatingPill(icon: Icons.business_center_rounded, label: 'Get job requests'),
-                ],
-              ),
-            ),
-
-            // Floating Bottom Badge
-            Positioned(
-              bottom: 8,
-              left: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.94),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFFED7AA)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.verified_user_rounded, color: Color(0xFFEA580C), size: 14),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(
-                        'Turn your skills into verified job opportunities in your area',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF0F172A),
-                          height: 1.25,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        child: Image.asset(
+          'assets/images/partner_showcase_card.png',
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Image.asset(
+            'assets/images/service_electrician.jpg',
+            fit: BoxFit.cover,
+          ),
         ),
       ),
     );
@@ -848,37 +748,6 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
     );
   }
 
-  Widget _buildFloatingPill({required IconData icon, required String label}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: const Color(0xFFEA580C), size: 11),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 9.5,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF0F172A),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // FOOTER VALUE PROPS (3 Columns)
