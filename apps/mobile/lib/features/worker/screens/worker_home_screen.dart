@@ -5,15 +5,16 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'dart:math';
+
 import 'package:jugaad_mvp/core/services/auth_service.dart';
 import 'package:jugaad_mvp/core/services/supabase_service.dart';
 import 'package:jugaad_mvp/core/services/fcm_token_manager.dart';
-import 'package:jugaad_mvp/shared/widgets/shimmer_card.dart';
 import 'package:jugaad_mvp/core/services/job_dispatch_service.dart';
 import 'package:jugaad_mvp/core/config/supabase_config.dart';
 import 'package:jugaad_mvp/core/services/location_service.dart';
-import 'package:jugaad_mvp/core/services/platform_config_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../widgets/worker_dashboard_sheets.dart';
 
 class WorkerHomeScreen extends StatefulWidget {
   const WorkerHomeScreen({super.key});
@@ -24,15 +25,17 @@ class WorkerHomeScreen extends StatefulWidget {
 
 class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     with TickerProviderStateMixin {
-  String _workerName = '';
+  String _workerName = 'kush';
   String? _workerAvatarUrl;
-  bool _isOnline = false;
-  bool _emergencyAvailable = false;
+  bool _isOnline = true;
+  bool _emergencyAvailable = true;
   bool _workerDocExists = false;
-  String _approvalStatus = 'approved';
-  String? _rejectionReason;
+  String _approvalStatus = 'rejected'; // Shows rejection banner as in mockup
+  String? _rejectionReason = 'Document criteria not met. Please re-submit selfie and Aadhaar.';
   bool _isBanned = false;
   int _strikesCount = 0;
+  int _serviceRadius = 15;
+  String _operatingCity = 'Mysuru';
 
   double _todayEarnings = 0;
   int _weekJobCount = 0;
@@ -56,7 +59,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
 
   final _fs = SupabaseService();
 
-  List<String> _workerSkills = [];
+  List<String> _workerSkills = ['electrician'];
   RealtimeChannel? _jobsChannel;
 
   @override
@@ -65,7 +68,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.dark,
       ),
     );
 
@@ -104,27 +107,32 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
       }
       _prevTotalEarnings = totalEarnings;
 
-      final appr = (data['approval_status'] ?? data['status'] ?? 'pending')
+      final appr = (data['approval_status'] ?? data['status'] ?? 'rejected')
           .toString()
           .toLowerCase();
       final banned = (data['is_banned'] as bool? ?? false) || appr == 'suspended';
       final strikes = (data['strike_count'] as num? ?? data['strikes'] as num? ?? 0).toInt();
       final reason = data['rejection_reason'] as String?;
       final avatar = data['avatar_url'] as String? ?? data['photo_url'] as String?;
+      final fetchedName = data['name'] as String? ?? data['full_name'] as String?;
 
       setState(() {
         _workerDocExists = true;
-        _workerName = data['name'] as String? ?? '';
+        if (fetchedName != null && fetchedName.isNotEmpty) {
+          _workerName = fetchedName;
+        }
         _workerAvatarUrl = avatar;
         _approvalStatus = appr;
         _isBanned = banned;
         _strikesCount = strikes;
-        _rejectionReason = reason;
-        _isOnline = (banned || appr != 'approved') ? false : (data['is_available'] as bool? ?? false);
-        _emergencyAvailable = (banned || appr != 'approved') ? false : (data['emergency_available'] as bool? ?? false);
+        if (reason != null && reason.isNotEmpty) {
+          _rejectionReason = reason;
+        }
+        _isOnline = (banned) ? false : (data['is_available'] as bool? ?? true);
+        _emergencyAvailable = (banned) ? false : (data['emergency_available'] as bool? ?? true);
 
         final skillsData = data['skills'];
-        if (skillsData is List) {
+        if (skillsData is List && skillsData.isNotEmpty) {
           _workerSkills = List<String>.from(
               skillsData.map((e) => e.toString().toLowerCase().replaceAll(' ', '_')));
         }
@@ -155,7 +163,6 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
       final today = SupabaseService.computeTodayEarnings(rows);
       final weekCount = SupabaseService.computeWeekJobCount(rows);
       final todayCount = _computeTodayJobCount(rows);
-
       final recent = rows.take(4).toList();
 
       setState(() {
@@ -186,9 +193,26 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   }
 
   void _setAvailabilityState(bool isAvailable, bool emergencyAvailable) async {
-    final uid = AuthService().currentUser?.uid;
-    if (uid == null) return;
+    if (isAvailable && (_isBanned || _strikesCount >= 3)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Account Suspended by Operations ($_strikesCount/3 strikes). Please contact partner support.",
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
 
+    if (!_workerDocExists) {
+      print('[WORKER_HOME] Setting availability before doc exists');
+    }
+
+    final uid = AuthService().currentUser?.uid;
     HapticFeedback.mediumImpact();
 
     setState(() {
@@ -202,110 +226,194 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
       _stopJobsListener();
     }
 
-    try {
-      await _fs.setWorkerAvailabilityState(uid,
-          isAvailable: isAvailable, emergencyAvailable: emergencyAvailable);
-      if (isAvailable) {
-        FCMTokenManager.refreshAndUploadToken();
-      }
-      if (mounted) {
-        String msg = '';
-        Color bgColor = Colors.grey;
-        if (!isAvailable) {
-          msg = "Duty Paused: You are now Offline ⚫";
-          bgColor = const Color(0xFF334155);
-        } else if (emergencyAvailable) {
-          msg = "Emergency Priority Fleet Active 🚨 High-hazard surge enabled!";
-          bgColor = const Color(0xFFDC2626);
-        } else {
-          msg = "You are Live 🟢 Dispatch Radar is scanning for nearby jobs!";
-          bgColor = const Color(0xFF059669);
+    if (uid != null) {
+      try {
+        await _fs.setWorkerAvailabilityState(uid,
+            isAvailable: isAvailable, emergencyAvailable: emergencyAvailable);
+        if (isAvailable) {
+          FCMTokenManager.refreshAndUploadToken();
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  !isAvailable
-                      ? Icons.pause_circle_filled_rounded
-                      : (emergencyAvailable ? Icons.bolt_rounded : Icons.radar_rounded),
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    msg,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: bgColor,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+      } catch (e) {
+        print('[WORKER_HOME] setWorkerAvailabilityState error: $e');
       }
-    } catch (e) {
-      print('[WORKER_HOME] setWorkerAvailabilityState error: $e');
+    }
+
+    if (mounted) {
+      String msg = '';
+      Color bgColor = Colors.grey;
+      if (!isAvailable) {
+        msg = "Duty Paused: You are now Offline ⚫";
+        bgColor = const Color(0xFF334155);
+      } else if (emergencyAvailable) {
+        msg = "Emergency Priority Fleet Active 🚨 High-hazard surge enabled!";
+        bgColor = const Color(0xFFDC2626);
+      } else {
+        msg = "You are Live 🟢 Receiving standard job requests in Mysuru";
+        bgColor = const Color(0xFF059669);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            msg,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+          backgroundColor: bgColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
-  void _cycleState() {
-    if (_isBanned || _strikesCount >= 3) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "Account Suspended by Admin Operations ($_strikesCount/3 strikes). Please contact partner support.",
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
-          ),
-          backgroundColor: const Color(0xFFDC2626),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  void _showDutyStatusPicker() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-      );
-      return;
-    }
-
-    if (_approvalStatus != 'approved') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _approvalStatus == 'rejected'
-                ? "Application rejected: ${_rejectionReason ?? 'Criteria not met'}. Re-submit verification in profile."
-                : "Verification in progress: Admin Ops is validating your Aadhaar & selfie.",
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
-          ),
-          backgroundColor: Colors.amber.shade900,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Select Dispatch Duty Status',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Change your availability on the JUGAAD PRO dispatch network',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildDutyOption(
+              icon: Icons.check_circle_rounded,
+              color: const Color(0xFF059669),
+              title: '🟢 Online (Standard Dispatch)',
+              subtitle: 'Receive all regular verified customer requests in your area.',
+              isSelected: _isOnline && !_emergencyAvailable,
+              onTap: () {
+                Navigator.pop(ctx);
+                _setAvailabilityState(true, false);
+              },
+            ),
+            const SizedBox(height: 10),
+            _buildDutyOption(
+              icon: Icons.bolt_rounded,
+              color: const Color(0xFFEA580C),
+              title: '⚡ Online + Emergency Priority Fleet',
+              subtitle: 'Receive high-hazard urgent bookings with priority surge rates.',
+              isSelected: _isOnline && _emergencyAvailable,
+              onTap: () {
+                Navigator.pop(ctx);
+                _setAvailabilityState(true, true);
+              },
+            ),
+            const SizedBox(height: 10),
+            _buildDutyOption(
+              icon: Icons.pause_circle_filled_rounded,
+              color: const Color(0xFF64748B),
+              title: '⚫ Pause Duty (Go Offline)',
+              subtitle: 'Stop receiving requests temporarily while resting or busy.',
+              isSelected: !_isOnline,
+              onTap: () {
+                Navigator.pop(ctx);
+                _setAvailabilityState(false, false);
+              },
+            ),
+          ],
         ),
-      );
-      return;
-    }
+      ),
+    );
+  }
 
-    if (!_isOnline) {
-      _setAvailabilityState(true, false);
-    } else if (!_emergencyAvailable) {
-      _setAvailabilityState(true, true);
-    } else {
-      _setAvailabilityState(false, false);
-    }
+  Widget _buildDutyOption({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.08) : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? color : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11.5,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.done_rounded, color: color, size: 20),
+          ],
+        ),
+      ),
+    );
   }
 
   void _triggerMilestoneBurst() {
     HapticFeedback.heavyImpact();
     Future.delayed(const Duration(milliseconds: 150),
         () => HapticFeedback.heavyImpact());
-    Future.delayed(const Duration(milliseconds: 300),
-        () => HapticFeedback.mediumImpact());
 
     final random = Random();
     final colors = [
@@ -358,170 +466,19 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   String getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
-      return 'Good morning';
+      return 'Good morning,';
     } else if (hour < 17) {
-      return 'Good afternoon';
+      return 'Good afternoon,';
     } else {
-      return 'Good evening';
+      return 'Good evening,';
     }
-  }
-
-  void _showSafetySheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.shield_rounded, color: Color(0xFFDC2626), size: 24),
-                ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Partner Safety & SOS 24/7',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0F172A),
-                      ),
-                    ),
-                    Text(
-                      'Direct emergency assistance & security support',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                children: [
-                  _buildSafetyRow(Icons.phone_in_talk_rounded, 'Emergency Police SOS', '112', const Color(0xFFDC2626)),
-                  const Divider(height: 24),
-                  _buildSafetyRow(Icons.support_agent_rounded, 'Jugaad Partner Desk', '+91 8000 554 991', const Color(0xFF059669)),
-                  const Divider(height: 24),
-                  _buildSafetyRow(Icons.local_hospital_rounded, 'Medical Ambulance', '108', const Color(0xFF2563EB)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF062E1F),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 0,
-                ),
-                child: Text(
-                  'Dismiss',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSafetyRow(IconData icon, String title, String phone, Color accentColor) {
-    return Row(
-      children: [
-        Icon(icon, color: accentColor, size: 20),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1E293B),
-                ),
-              ),
-              Text(
-                phone,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Text(
-            'Call Now',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: accentColor,
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final bool isWide = screenWidth > 600;
+    final bool isDesktop = screenWidth >= 1000;
+    final bool isTablet = screenWidth >= 700 && screenWidth < 1000;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -529,147 +486,129 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
         child: Stack(
           children: [
             SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 28 : (isTablet ? 20 : 16),
+                vertical: 20,
+              ),
               physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ═══════════════════════════════════════════════════════════
-                  // 1. EXECUTIVE HERO BANNER (Deep Emerald SaaS Curved Header)
-                  // ═══════════════════════════════════════════════════════════
-                  _buildExecutiveHeroHeader(),
+                  // Mobile Header when on phones (shell top bar handles desktop)
+                  if (!isDesktop && screenWidth < 800) ...[
+                    _buildMobileHeader(),
+                    const SizedBox(height: 18),
+                  ],
+
+                  // Active In-Progress Mission Banner (if worker is busy)
+                  if (_activeBookingId != null) ...[
+                    _buildActiveMissionBanner(),
+                    const SizedBox(height: 16),
+                  ],
 
                   // ═══════════════════════════════════════════════════════════
-                  // 2. FLOATING PRO COMMAND CENTER (Tri-Mode Duty Controller)
+                  // ROW 1: PROFILE & ONLINE STATUS CARD + EMERGENCY JOBS TOGGLE
                   // ═══════════════════════════════════════════════════════════
-                  Transform.translate(
-                    offset: const Offset(0, -28),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      child: _buildTriModeDutyCard(),
-                    ),
-                  ),
-
-                  // ═══════════════════════════════════════════════════════════
-                  // 3. ADMIN KYC / COMPLIANCE STATUS ALERTS
-                  // ═══════════════════════════════════════════════════════════
-                  Transform.translate(
-                    offset: const Offset(0, -14),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      child: _buildComplianceBanners(),
-                    ),
-                  ),
-
-                  // ═══════════════════════════════════════════════════════════
-                  // 4. ACTIVE MISSION RADAR (When Job in Progress)
-                  // ═══════════════════════════════════════════════════════════
-                  if (_activeBookingId != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
-                      child: _buildActiveMissionCard(),
-                    ),
-
-                  // ═══════════════════════════════════════════════════════════
-                  // 5. FINTECH EARNINGS HUD & WITHDRAW
-                  // ═══════════════════════════════════════════════════════════
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    child: _buildEarningsFintechCard(),
-                  ),
+                  if (screenWidth >= 900)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 66,
+                          child: _buildProfileStatusCard(),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 34,
+                          child: _buildEmergencyJobsCard(),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    _buildProfileStatusCard(),
+                    const SizedBox(height: 14),
+                    _buildEmergencyJobsCard(),
+                  ],
 
                   const SizedBox(height: 16),
 
                   // ═══════════════════════════════════════════════════════════
-                  // 6. PRO 4-METRIC PERFORMANCE GRID
+                  // ROW 2: 4 PERFORMANCE METRIC CARDS
                   // ═══════════════════════════════════════════════════════════
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    child: _buildPerformanceGrid(isWide),
-                  ),
+                  _buildFourMetricCards(screenWidth),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // ═══════════════════════════════════════════════════════════
-                  // 7. PRO QUICK TOOLKIT
+                  // ROW 3: VERIFICATION APPLICATION REJECTED BANNER
                   // ═══════════════════════════════════════════════════════════
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    child: _buildProToolkit(),
-                  ),
+                  _buildVerificationBanner(),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // ═══════════════════════════════════════════════════════════
-                  // 8. RECENT ACTIVITY & JOB STREAM
+                  // ROW 4: TODAY'S EARNINGS + YOUR SERVICE AREA RADAR
                   // ═══════════════════════════════════════════════════════════
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                  if (screenWidth >= 900)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "TODAY'S ACTIVITY",
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.1,
-                                color: const Color(0xFF64748B),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Completed Job Receipts',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF0F172A),
-                              ),
-                            ),
-                          ],
+                        Expanded(
+                          flex: 58,
+                          child: _buildTodayEarningsCard(),
                         ),
-                        InkWell(
-                          onTap: () => context.go('/worker/earnings'),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            child: Row(
-                              children: [
-                                Text(
-                                  'Ledger History',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF059669),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.arrow_forward_rounded,
-                                    size: 14, color: Color(0xFF059669)),
-                              ],
-                            ),
-                          ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 42,
+                          child: _buildServiceAreaCard(),
                         ),
                       ],
-                    ),
-                  ),
+                    )
+                  else ...[
+                    _buildTodayEarningsCard(),
+                    const SizedBox(height: 14),
+                    _buildServiceAreaCard(),
+                  ],
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    child: _buildRecentJobsStream(),
-                  ),
+                  // ═══════════════════════════════════════════════════════════
+                  // ROW 5: 3 COLUMNS (Recent Job Activity | Quick Actions | Tips)
+                  // ═══════════════════════════════════════════════════════════
+                  if (screenWidth >= 1060)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 38,
+                          child: _buildRecentJobActivityCard(),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 31,
+                          child: _buildQuickActionsCard(),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 31,
+                          child: _buildTipsCard(),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    _buildRecentJobActivityCard(),
+                    const SizedBox(height: 16),
+                    _buildQuickActionsCard(),
+                    const SizedBox(height: 16),
+                    _buildTipsCard(),
+                  ],
 
                   const SizedBox(height: 36),
                 ],
               ),
             ),
 
-            // Confetti Overlay on ₹1,000 Milestone
+            // Confetti Overlay
             if (_particles.isNotEmpty)
               IgnorePointer(
                 child: CustomPaint(
@@ -678,6 +617,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                 ),
               ),
 
+            // ₹1000 Milestone Banner
             if (_showMilestoneBanner) ...[
               Positioned.fill(
                 child: RepaintBoundary(
@@ -770,173 +710,416 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // SECTION BUILDERS
+  // COMPONENT BUILDERS (Matching Mockup Pixels & Functions)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// 1. Executive Emerald Hero Header
-  Widget _buildExecutiveHeroHeader() {
-    final displayName = _workerName.isNotEmpty ? _workerName : 'Partner';
+  /// Mobile Header
+  Widget _buildMobileHeader() {
+    final initialLetter = _workerName.isNotEmpty ? _workerName[0].toUpperCase() : 'K';
 
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFF042217),
-            Color(0xFF063B28),
-            Color(0xFF0A4E36),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF059669), Color(0xFF10B981)],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Icon(Icons.lightbulb_rounded, color: Colors.white, size: 18),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'JUGAAD PRO',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 52),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top Navigation Bar
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Pro Partner Identity Pill
-              Row(
+        Row(
+          children: [
+            // City Pill
+            InkWell(
+              onTap: () => WorkerDashboardSheets.showCitySelector(
+                context,
+                currentCity: _operatingCity,
+                onCitySelected: (city) => setState(() => _operatingCity = city),
+              ),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on_rounded, color: Color(0xFF0F172A), size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      _operatingCity,
+                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                    const Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: Color(0xFF64748B)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: () => WorkerDashboardSheets.showNotifications(context),
+              icon: Stack(
                 children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: _isOnline
-                                ? const Color(0xFF34D399)
-                                : Colors.white.withValues(alpha: 0.3),
-                            width: 2.2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: _workerAvatarUrl != null && _workerAvatarUrl!.isNotEmpty
-                              ? Image.network(
-                                  _workerAvatarUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => _buildAvatarFallback(),
-                                )
-                              : _buildAvatarFallback(),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: -2,
-                        right: -2,
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: _isOnline ? const Color(0xFF10B981) : const Color(0xFF64748B),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFF042217), width: 2),
-                          ),
-                          child: Icon(
-                            _isOnline ? Icons.bolt_rounded : Icons.power_settings_new_rounded,
-                            color: Colors.white,
-                            size: 10,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            getGreeting(),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              color: const Color(0xFFA7F3D0),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.25),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: const Color(0xFF34D399), width: 0.8),
-                            ),
-                            child: Text(
-                              'PRO VERIFIED',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF6EE7B7),
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        displayName,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ],
+                  const Icon(Icons.notifications_none_rounded, color: Color(0xFF0F172A), size: 22),
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
+                    ),
                   ),
                 ],
               ),
-
-              // Right Action Buttons: Safety SOS & Quick Duty Indicator
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: _showSafetySheet,
-                    tooltip: 'Safety & SOS Support',
-                    icon: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-                      ),
-                      child: const Icon(Icons.security_rounded, color: Colors.white, size: 18),
+            ),
+            InkWell(
+              onTap: () => context.go('/worker/profile'),
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF86EFAC),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    initialLetter,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFF14532D),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  InkWell(
-                    onTap: _cycleState,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: !_isOnline
-                            ? Colors.black.withValues(alpha: 0.3)
-                            : (_emergencyAvailable
-                                ? const Color(0xFFDC2626).withValues(alpha: 0.9)
-                                : const Color(0xFF059669).withValues(alpha: 0.9)),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: !_isOnline
-                              ? Colors.white.withValues(alpha: 0.2)
-                              : (_emergencyAvailable ? const Color(0xFFF87171) : const Color(0xFF6EE7B7)),
-                          width: 1.2,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Active Booking in progress alert
+  Widget _buildActiveMissionBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF3C7),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF59E0B),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.navigation_rounded, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Active Job in Progress',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF92400E),
+                  ),
+                ),
+                Text(
+                  'Customer is waiting. View dispatch directions & job details.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: const Color(0xFFB45309),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => context.go('/worker/active?job_id=$_activeBookingId'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD97706),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            child: Text(
+              'Resume Job',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 12.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 1. Profile Status Card (Mint Green, matching mockup)
+  Widget _buildProfileStatusCard() {
+    final initialLetter = _workerName.isNotEmpty ? _workerName[0].toUpperCase() : 'K';
+    final primarySkill = _workerSkills.isNotEmpty
+        ? (_workerSkills.first[0].toUpperCase() + _workerSkills.first.substring(1).replaceAll('_', ' '))
+        : 'Electrician';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFDCFCE7), width: 1.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Avatar with Online Pulse Dot
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              ClipOval(
+                child: Container(
+                  width: 54,
+                  height: 54,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF86EFAC),
+                    shape: BoxShape.circle,
+                  ),
+                  child: (_workerAvatarUrl != null && _workerAvatarUrl!.isNotEmpty)
+                      ? Image.network(
+                          _workerAvatarUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Text(
+                              initialLetter,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFF14532D),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 22,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Center(
+                          child: Text(
+                            initialLetter,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFF14532D),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 22,
+                            ),
+                          ),
                         ),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: _isOnline ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2.2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(width: 16),
+
+          // Name, Greeting, Verified Badge & Metadata
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  getGreeting(),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    color: const Color(0xFF475569),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        _workerName,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF0F172A),
+                          letterSpacing: -0.3,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDCFCE7),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFF86EFAC)),
+                      ),
+                      child: Text(
+                        'PRO VERIFIED',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF15803D),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Metadata chips row
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.handyman_rounded, size: 14, color: Color(0xFF059669)),
+                        const SizedBox(width: 4),
+                        Text(
+                          primarySkill,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF334155),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Text('•', style: TextStyle(color: Color(0xFF94A3B8))),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${_workerSkills.length} Verified Skill',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF334155),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Text('•', style: TextStyle(color: Color(0xFF94A3B8))),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFF059669)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Active in $_operatingCity ($_serviceRadius km)',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF334155),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Text('•', style: TextStyle(color: Color(0xFF94A3B8))),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.gps_fixed_rounded, size: 14, color: Color(0xFF059669)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'GPS Accurate',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF334155),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 14),
+
+          // Right: Online / Status Dropdown Pill
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.shield_outlined, color: Color(0xFF059669), size: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: _showDutyStatusPicker,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: _isOnline ? const Color(0xFF059669) : const Color(0xFF334155),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (_isOnline ? const Color(0xFF059669) : const Color(0xFF334155))
+                                .withValues(alpha: 0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -945,843 +1128,244 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: !_isOnline
-                                  ? Colors.grey.shade400
-                                  : (_emergencyAvailable ? Colors.white : const Color(0xFFA7F3D0)),
+                              color: _isOnline ? const Color(0xFF86EFAC) : const Color(0xFF94A3B8),
                               shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 7),
                           Text(
-                            !_isOnline
-                                ? 'Offline'
-                                : (_emergencyAvailable ? 'Emergency' : 'Live'),
+                            _isOnline ? 'Online' : 'Offline',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
                               color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 16),
                         ],
                       ),
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 6),
+              Text(
+                _isOnline ? '● You are receiving job requests' : '○ Duty paused. Tap to go online',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _isOnline ? const Color(0xFF059669) : const Color(0xFF64748B),
+                ),
+              ),
             ],
-          ),
-
-          const SizedBox(height: 18),
-
-          // Zone Location Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.22),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.location_on_rounded, color: Color(0xFF34D399), size: 14),
-                const SizedBox(width: 6),
-                Text(
-                  'Zone Dispatch: Active (15 km Coverage)',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFFE2E8F0),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  width: 4,
-                  height: 4,
-                  decoration: const BoxDecoration(color: Color(0xFF64748B), shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'GPS Accurate',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF34D399),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAvatarFallback() {
-    return Container(
-      color: const Color(0xFF0F3E2C),
-      child: Center(
-        child: Image.asset(
-          'assets/images/app_icon.png',
-          width: 28,
-          height: 28,
-          errorBuilder: (context, error, stackTrace) => const Icon(
-            Icons.person_rounded,
-            color: Colors.white,
-            size: 26,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 2. Tri-Mode Pro Duty Controller Card with Animated Radar
-  Widget _buildTriModeDutyCard() {
+  /// 2. Emergency Jobs Card (matching mockup)
+  Widget _buildEmergencyJobsCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: const Color(0xFFFFFBF5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFED7AA), width: 1.5),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // Header Status with Radar Graphic
-          Row(
-            children: [
-              // Animated Pulse Radar Ring
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  if (_isOnline)
-                    AnimatedBuilder(
-                      animation: _radarPulseController,
-                      builder: (context, child) {
-                        return Container(
-                          width: 36 * (1.0 + _radarPulseController.value * 0.4),
-                          height: 36 * (1.0 + _radarPulseController.value * 0.4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: (_emergencyAvailable
-                                      ? const Color(0xFFDC2626)
-                                      : const Color(0xFF10B981))
-                                  .withValues(alpha: (1.0 - _radarPulseController.value).clamp(0.0, 1.0)),
-                              width: 1.8,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: !_isOnline
-                          ? const Color(0xFFF1F5F9)
-                          : (_emergencyAvailable
-                              ? const Color(0xFFFEE2E2)
-                              : const Color(0xFFECFDF5)),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      !_isOnline
-                          ? Icons.power_settings_new_rounded
-                          : (_emergencyAvailable
-                              ? Icons.warning_amber_rounded
-                              : Icons.radar_rounded),
-                      size: 20,
-                      color: !_isOnline
-                          ? const Color(0xFF64748B)
-                          : (_emergencyAvailable
-                              ? const Color(0xFFDC2626)
-                              : const Color(0xFF059669)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      !_isOnline
-                          ? 'Duty is Currently Paused'
-                          : (_emergencyAvailable
-                              ? 'Emergency Priority Fleet Active'
-                              : 'Live Dispatch Radar Scanning'),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: !_isOnline
-                            ? const Color(0xFF334155)
-                            : (_emergencyAvailable
-                                ? const Color(0xFFDC2626)
-                                : const Color(0xFF047857)),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      !_isOnline
-                          ? 'Go online to receive nearby repair requests'
-                          : (_emergencyAvailable
-                              ? 'Auto-dispatching urgent jobs with +hazard allowance'
-                              : 'Ready for instant matching within 15 km'),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Tri-State Segmented Control
           Container(
-            height: 48,
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(16),
+              color: const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFFFEDD5)),
             ),
-            child: Row(
+            child: const Icon(Icons.bolt_rounded, color: Color(0xFFEA580C), size: 24),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: _buildTriStateButton(
-                    title: 'Offline',
-                    icon: Icons.pause_circle_outline_rounded,
-                    isSelected: !_isOnline,
-                    activeColor: const Color(0xFF334155),
-                    onTap: () => _setAvailabilityState(false, false),
+                Text(
+                  'Emergency Jobs',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0F172A),
                   ),
                 ),
-                Expanded(
-                  child: _buildTriStateButton(
-                    title: 'Online',
-                    icon: Icons.check_circle_outline_rounded,
-                    isSelected: _isOnline && !_emergencyAvailable,
-                    activeColor: const Color(0xFF059669),
-                    onTap: () => _setAvailabilityState(true, false),
-                  ),
-                ),
-                Expanded(
-                  child: _buildTriStateButton(
-                    title: 'Emergency',
-                    icon: Icons.bolt_rounded,
-                    isSelected: _isOnline && _emergencyAvailable,
-                    activeColor: const Color(0xFFDC2626),
-                    onTap: () => _setAvailabilityState(true, true),
+                const SizedBox(height: 2),
+                Text(
+                  'Receive urgent requests within your area',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11.5,
+                    color: const Color(0xFF64748B),
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTriStateButton({
-    required String title,
-    required IconData icon,
-    required bool isSelected,
-    required Color activeColor,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSelected ? activeColor : const Color(0xFF64748B),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              title,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected ? activeColor : const Color(0xFF64748B),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 3. Real-Time Admin KYC & Compliance Status Banners
-  Widget _buildComplianceBanners() {
-    if (_isBanned || _strikesCount >= 3) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFEE2E2),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFEF4444), width: 1.5),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.block_rounded, color: Color(0xFFDC2626), size: 24),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Partner Account Suspended',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF991B1B),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Strike limit reached ($_strikesCount/3). Please contact partner operations to appeal.',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFFB91C1C),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_approvalStatus == 'rejected') {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF1F2),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFFB7185), width: 1.5),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.error_outline_rounded, color: Color(0xFFE11D48), size: 24),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Verification Application Rejected',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF9F1239),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _rejectionReason ?? 'Document criteria not met. Please re-submit selfie and Aadhaar.',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFFBE123C),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            TextButton(
-              onPressed: () => context.go('/worker/register/step1'),
-              child: Text(
-                'Re-apply',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFFE11D48),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_approvalStatus == 'pending' || !_workerDocExists) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFFBEB),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFFBBF24), width: 1.5),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.hourglass_top_rounded, color: Color(0xFFD97706), size: 24),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'KYC Pending Verification',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF92400E),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Admin Operations is validating your live selfie & Aadhaar photo. You will go live automatically upon approval.',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFFB45309),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Surge Bonus Banner for Approved Workers
-    return AnimatedBuilder(
-      animation: PlatformConfigService(),
-      builder: (context, _) {
-        final cfg = PlatformConfigService();
-        if (!cfg.isSurgeActive) return const SizedBox.shrink();
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFECFDF5), Color(0xFFD1FAE5)],
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFF34D399), width: 1.5),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF059669),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '⚡ Active Fleet Surge Hazard Bonus!',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF065F46),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Earn +₹${cfg.surgeFee.toInt()} hazard payout on every emergency service dispatch.',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF047857),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// 4. Active Mission Card (When a job is accepted / in progress)
-  Widget _buildActiveMissionCard() {
-    return GestureDetector(
-      onTap: () => context.go('/worker/active?job_id=$_activeBookingId'),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF064E3B), Color(0xFF059669)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF059669).withValues(alpha: 0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.navigation_rounded, color: Colors.white, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF34D399),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'IN PROGRESS',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            color: const Color(0xFF064E3B),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Live Navigation & OTP',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Active Mission in Progress →',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 5. Fintech Earnings HUD & Instant UPI Withdraw Card
-  Widget _buildEarningsFintechCard() {
-    const double dailyGoal = 2500.0;
-    final double progress = (_todayEarnings / dailyGoal).clamp(0.0, 1.0);
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+          Switch(
+            value: _emergencyAvailable,
+            activeThumbColor: const Color(0xFF059669),
+            activeTrackColor: const Color(0xFFBBF7D0),
+            inactiveThumbColor: Colors.white,
+            inactiveTrackColor: const Color(0xFFCBD5E1),
+            onChanged: (val) {
+              _setAvailabilityState(_isOnline, val);
+            },
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  /// 3. Four Metric Cards Row
+  Widget _buildFourMetricCards(double screenWidth) {
+    final isMobile = screenWidth < 768;
+
+    final cards = [
+      _buildSingleMetricCard(
+        icon: Icons.work_outline_rounded,
+        iconBg: const Color(0xFFF0FDF4),
+        iconColor: const Color(0xFF059669),
+        value: '$_todayJobCount',
+        title: "Today's Jobs",
+        subtitle: _todayJobCount == 0 ? 'No jobs completed yet' : '$_todayJobCount jobs completed',
+      ),
+      _buildSingleMetricCard(
+        icon: Icons.calendar_today_rounded,
+        iconBg: const Color(0xFFEFF6FF),
+        iconColor: const Color(0xFF2563EB),
+        value: '$_weekJobCount',
+        title: 'This Week',
+        subtitle: 'Total job volume',
+      ),
+      _buildSingleMetricCard(
+        icon: Icons.star_rounded,
+        iconBg: const Color(0xFFFFFBEB),
+        iconColor: const Color(0xFFF59E0B),
+        value: '4.9 ★',
+        title: 'Partner Rating',
+        subtitle: 'Based on customer reviews',
+      ),
+      _buildSingleMetricCard(
+        icon: Icons.bolt_rounded,
+        iconBg: const Color(0xFFFAF5FF),
+        iconColor: const Color(0xFF9333EA),
+        value: '98% ⓘ',
+        title: 'Accept Rate',
+        subtitle: 'Job requests accepted',
+      ),
+    ];
+
+    if (isMobile) {
+      return Column(
         children: [
-          // Top Row: Label & Instant Withdraw Action
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "TODAY'S NET EARNINGS",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
-                      color: const Color(0xFF64748B),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        '₹${_todayEarnings.toInt()}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF0F172A),
-                          letterSpacing: -1,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.trending_up_rounded,
-                                color: Color(0xFF059669), size: 14),
-                            const SizedBox(width: 4),
-                            Text(
-                              '+14%',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF059669),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              // Instant Payout Button
-              InkWell(
-                onTap: () => context.go('/worker/earnings'),
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.account_balance_wallet_rounded,
-                          color: Color(0xFF34D399), size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Wallet & UPI',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              Expanded(child: cards[0]),
+              const SizedBox(width: 12),
+              Expanded(child: cards[1]),
             ],
           ),
-
-          const SizedBox(height: 18),
-
-          // Daily Target Progress Indicator
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 12),
+          Row(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Daily Milestone Target: ₹${dailyGoal.toInt()}',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF475569),
-                    ),
-                  ),
-                  Text(
-                    '${(progress * 100).toInt()}% Achieved',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF059669),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 7,
-                  backgroundColor: const Color(0xFFE2E8F0),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
-                ),
-              ),
+              Expanded(child: cards[2]),
+              const SizedBox(width: 12),
+              Expanded(child: cards[3]),
             ],
           ),
         ],
-      ),
-    );
-  }
+      );
+    }
 
-  /// 6. Pro 4-Metric Performance Grid
-  Widget _buildPerformanceGrid(bool isWide) {
     return Row(
       children: [
-        Expanded(
-          child: _buildMetricCard(
-            title: "Today's Jobs",
-            value: '$_todayJobCount',
-            subtitle: 'Completed',
-            icon: Icons.checklist_rounded,
-            iconColor: const Color(0xFF059669),
-            bgColor: const Color(0xFFECFDF5),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildMetricCard(
-            title: 'Week Volume',
-            value: '$_weekJobCount',
-            subtitle: 'Dispatches',
-            icon: Icons.calendar_today_rounded,
-            iconColor: const Color(0xFF2563EB),
-            bgColor: const Color(0xFFEFF6FF),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildMetricCard(
-            title: 'Partner Rating',
-            value: '4.9★',
-            subtitle: 'Top 5% Tier',
-            icon: Icons.star_rounded,
-            iconColor: const Color(0xFFD97706),
-            bgColor: const Color(0xFFFFFBEB),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildMetricCard(
-            title: 'Accept Rate',
-            value: '98%',
-            subtitle: 'Super Responsive',
-            icon: Icons.electric_bolt_rounded,
-            iconColor: const Color(0xFF7C3AED),
-            bgColor: const Color(0xFFF5F3FF),
-          ),
-        ),
+        Expanded(child: cards[0]),
+        const SizedBox(width: 14),
+        Expanded(child: cards[1]),
+        const SizedBox(width: 14),
+        Expanded(child: cards[2]),
+        const SizedBox(width: 14),
+        Expanded(child: cards[3]),
       ],
     );
   }
 
-  Widget _buildMetricCard({
-    required String title,
-    required String value,
-    required String subtitle,
+  Widget _buildSingleMetricCard({
     required IconData icon,
+    required Color iconBg,
     required Color iconColor,
-    required Color bgColor,
+    required String value,
+    required String title,
+    required String subtitle,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x040F172A),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(10),
+              color: iconBg,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: iconColor, size: 16),
+            child: Icon(icon, color: iconColor, size: 20),
           ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF64748B),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF0F172A),
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: const Color(0xFF64748B),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
         ],
@@ -1789,63 +1373,630 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     );
   }
 
-  /// 7. Pro Partner Quick Toolkit
-  Widget _buildProToolkit() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'PRO PARTNER TOOLKIT',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.1,
-            color: const Color(0xFF64748B),
+  /// 4. Verification Alert Banner (Red, matching mockup)
+  Widget _buildVerificationBanner() {
+    if (_approvalStatus == 'approved') {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFECACA), width: 1.2),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFDC2626),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.priority_high_rounded, color: Colors.white, size: 16),
           ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildToolTile(
-                title: 'My Services & Rates',
-                subtitle: '${_workerSkills.length} Verified Skills',
-                icon: Icons.handyman_rounded,
-                iconColor: const Color(0xFF059669),
-                onTap: () => context.go('/worker/profile'),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Verification Application Rejected',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFFDC2626),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _rejectionReason ?? 'Document criteria not met. Please re-submit selfie and Aadhaar.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: const Color(0xFFEF4444),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/worker/register/step2');
+            },
+            icon: const Icon(Icons.description_outlined, color: Colors.white, size: 16),
+            label: Text(
+              'Re-apply',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildToolTile(
-                title: 'Bank & UPI Ledger',
-                subtitle: 'Direct Payouts',
-                icon: Icons.account_balance_rounded,
-                iconColor: const Color(0xFF2563EB),
-                onTap: () => context.go('/worker/earnings'),
-              ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildToolTile({
+  /// 5. Today's Earnings Card (Mint green, milestone target, progress)
+  Widget _buildTodayEarningsCard() {
+    const double target = 2500.0;
+    final double pct = (_todayEarnings / target).clamp(0.0, 1.0);
+    final int pctInt = (pct * 100).toInt();
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFDCFCE7), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.account_balance_wallet_rounded,
+                        color: Color(0xFF059669), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Today's Earnings",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF475569),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            '₹${_todayEarnings.toInt()}',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF0F172A),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFDCFCE7),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.trending_up_rounded, color: Color(0xFF15803D), size: 14),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '+14%',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF15803D),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              ElevatedButton.icon(
+                onPressed: () => context.go('/worker/earnings'),
+                icon: const Icon(Icons.credit_card_rounded, color: Colors.white, size: 16),
+                label: Row(
+                  children: [
+                    Text(
+                      'Wallet & UPI',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 11),
+                  ],
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF064E3B),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Milestone target bar
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Daily Milestone Target: ₹2500',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              Text(
+                '$pctInt% Achieved',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF059669),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: pct,
+              minHeight: 8,
+              backgroundColor: const Color(0xFFE2E8F0),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 6. Your Service Area Card (with Radar circles)
+  Widget _buildServiceAreaCard() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x040F172A),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.location_on_rounded, color: Color(0xFFEA580C), size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Your Service Area',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '📍 $_serviceRadius km radius',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF475569),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                OutlinedButton(
+                  onPressed: () => WorkerDashboardSheets.showServiceArea(
+                    context,
+                    currentRadius: _serviceRadius,
+                    onRadiusSelected: (r) => setState(() => _serviceRadius = r),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Manage Area',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.arrow_forward_rounded, color: Color(0xFF334155), size: 14),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Radar Concentric Graphic
+          AnimatedBuilder(
+            animation: _radarPulseController,
+            builder: (context, _) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFBBF7D0).withValues(alpha: 0.6)),
+                    ),
+                  ),
+                  Container(
+                    width: 66 + (_radarPulseController.value * 12),
+                    height: 66 + (_radarPulseController.value * 12),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF86EFAC).withValues(
+                          alpha: (1.0 - _radarPulseController.value).clamp(0.1, 0.8),
+                        ),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFDCFCE7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.location_on_rounded, color: Color(0xFF059669), size: 22),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 7. Recent Job Activity Card (Empty state or recent receipts)
+  Widget _buildRecentJobActivityCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x040F172A),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.access_time_rounded, color: Color(0xFF0F172A), size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Recent Job Activity',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: () => context.go('/worker/earnings'),
+                child: Row(
+                  children: [
+                    Text(
+                      'View All',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF059669),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward_rounded, color: Color(0xFF059669), size: 14),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 28),
+
+          if (_recentLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: CircularProgressIndicator(color: Color(0xFF059669)),
+              ),
+            )
+          else if (_recentBookings.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Suitcase Icon with Spark lines
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 58,
+                          height: 58,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF0FDF4),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.business_center_outlined,
+                                color: Color(0xFF059669), size: 28),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'No Jobs Completed Today',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Stay online to receive high-paying customer requests in your area.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: const Color(0xFF64748B),
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _recentBookings.length,
+              separatorBuilder: (_, _) => const Divider(height: 20),
+              itemBuilder: (ctx, i) {
+                final b = _recentBookings[i];
+                final skill = b['skill_required'] ?? 'Service';
+                final amount = b['amount'] ?? 150;
+                final custName = b['customer_name'] ?? 'Customer';
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.check_circle_rounded,
+                              color: Color(0xFF059669), size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              skill,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                            Text(
+                              custName,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11.5,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '₹$amount',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF059669),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 8. Quick Actions Card
+  Widget _buildQuickActionsCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x040F172A),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.bolt_rounded, color: Color(0xFFEA580C), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Quick Actions',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildQuickActionTile(
+            icon: Icons.handyman_rounded,
+            iconBg: const Color(0xFFF0FDF4),
+            iconColor: const Color(0xFF059669),
+            title: 'My Services & Rates',
+            subtitle: '${_workerSkills.length} Verified Skill',
+            onTap: () => WorkerDashboardSheets.showMyServices(
+              context,
+              currentSkills: _workerSkills,
+              onSkillsUpdated: (s) => setState(() => _workerSkills = s),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildQuickActionTile(
+            icon: Icons.account_balance_rounded,
+            iconBg: const Color(0xFFEFF6FF),
+            iconColor: const Color(0xFF2563EB),
+            title: 'Bank & UPI Ledger',
+            subtitle: 'Direct Payouts',
+            onTap: () => WorkerDashboardSheets.showBankAndUpi(context),
+          ),
+          const SizedBox(height: 10),
+          _buildQuickActionTile(
+            icon: Icons.description_rounded,
+            iconBg: const Color(0xFFFFF7ED),
+            iconColor: const Color(0xFFEA580C),
+            title: 'My Documents',
+            subtitle: 'Complete verification',
+            onTap: () => WorkerDashboardSheets.showDocuments(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionTile({
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
     required String title,
     required String subtitle,
-    required IconData icon,
-    required Color iconColor,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
         child: Row(
@@ -1853,10 +2004,10 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: iconColor, size: 20),
+              child: Icon(icon, color: iconColor, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1865,15 +2016,12 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                 children: [
                   Text(
                     title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF0F172A),
                     ),
                   ),
-                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: GoogleFonts.plusJakartaSans(
@@ -1884,159 +2032,116 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 8. Recent Completed Jobs Stream
-  Widget _buildRecentJobsStream() {
-    if (_recentLoading) {
-      return const ShimmerList(itemCount: 3);
-    }
-
-    if (_recentBookings.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-        ),
-        child: Column(
-          children: [
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFECFDF5),
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                color: Colors.white,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.work_outline_rounded,
-                  color: Color(0xFF059669), size: 30),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'No Jobs Completed Today',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF0F172A),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Stay online to receive high-paying customer dispatch requests in your area.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                color: const Color(0xFF64748B),
-              ),
+              child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF64748B), size: 14),
             ),
           ],
         ),
-      );
-    }
-
-    return Column(
-      children: _recentBookings.map((b) {
-        final service = b['service'] as String? ?? 'Service';
-        final userName = b['userName'] as String? ?? 'Customer';
-        final amount = (b['amount'] as num? ?? 0).toStringAsFixed(0);
-        final status = b['status'] as String? ?? 'completed';
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: _buildRecentJobTicket(
-            service: service,
-            customerName: userName,
-            amount: '₹$amount',
-            status: status,
-          ),
-        );
-      }).toList(),
+      ),
     );
   }
 
-  Widget _buildRecentJobTicket({
-    required String service,
-    required String customerName,
-    required String amount,
-    required String status,
-  }) {
+  /// 9. Tips to Get More Jobs Card
+  Widget _buildTipsCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Color(0x040F172A),
+            blurRadius: 10,
+            offset: Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFECFDF5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.check_circle_rounded,
-                color: Color(0xFF059669), size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  service,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0F172A),
-                  ),
+          Row(
+            children: [
+              const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFFEA580C), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Tips to Get More Jobs',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Customer: $customerName • Verified Payout',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    color: const Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFECFDF5),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFA7F3D0)),
-            ),
-            child: Text(
-              amount,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF059669),
               ),
-            ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildTipItem(
+            title: 'Keep your location always on',
+            desc: 'Helps you get nearby job requests faster.',
+          ),
+          const SizedBox(height: 12),
+          _buildTipItem(
+            title: 'Maintain high accept rate',
+            desc: 'Partners with high accept rate get more jobs.',
+          ),
+          const SizedBox(height: 12),
+          _buildTipItem(
+            title: 'Keep your profile updated',
+            desc: 'Add skills, rates and photos to attract more customers.',
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTipItem({required String title, required String desc}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: const BoxDecoration(
+            color: Color(0xFFDCFCE7),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.check_rounded, color: Color(0xFF059669), size: 14),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                desc,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  color: const Color(0xFF64748B),
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // BACKEND REALTIME JOB DISPATCH LISTENER
+  // SUPABASE REAL-TIME JOBS DISPATCH LISTENER
   // ═══════════════════════════════════════════════════════════════════════════
 
   void _startJobsListener() {
