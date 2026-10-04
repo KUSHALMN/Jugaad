@@ -11,10 +11,11 @@ import 'package:jugaad_mvp/core/services/api_service.dart';
 import 'package:jugaad_mvp/core/services/supabase_service.dart';
 import 'package:jugaad_mvp/shared/widgets/animated_counter.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
-import 'package:shimmer/shimmer.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jugaad_mvp/features/user/screens/user_home_screen.dart';
 import 'package:jugaad_mvp/core/theme/user_app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ─── MATCHING STATES ────────────────────────────────────────
 enum MatchingState { searching, expanding, assigned, noWorkersFound }
@@ -1543,505 +1544,942 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
     );
   }
 
-  // ─── STATE B: WORKER ASSIGNED ────────────────────────────
+  // ─── STATE B: WORKER ASSIGNED (REDESIGNED) ───────────────────
   Widget _buildAssigned() {
     final worker = _workerData ?? {};
-    final name = worker['name'] as String? ?? 'Worker';
-    final specialty = worker['specialty'] as String? ?? _jobData['skill'] ?? 'Helper';
-    final rating = worker['rating']?.toString() ?? '4.8';
-    final jobsDone = worker['jobs_done']?.toString() ?? '14';
-    final distance = worker['distance_km']?.toString() ?? '1.8';
-    final eta = worker['eta_mins']?.toString() ?? '10';
-    final initials = worker['initials'] as String? ?? (name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'W');
+    final name = (worker['name'] as String? ?? 'SAN TECHNOLOGIES').trim();
+    final rawCategory = worker['specialty'] as String? ?? 
+                        _jobData['skill_required'] as String? ?? 
+                        _jobData['skill'] as String? ?? 
+                        _jobData['title'] as String? ?? 
+                        'ro_service';
+    final customImage = _jobData['image_url'] as String? ?? 
+                        _jobData['category_image'] as String? ?? 
+                        worker['image_url'] as String? ?? 
+                        worker['service_image'] as String?;
 
-    return Stack(
-      alignment: Alignment.topCenter,
-      children: [
-        Column(
-          children: [
-            // Success Header Banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: const BoxDecoration(
-                gradient: UserAppTheme.successGradient,
-              ),
-              alignment: Alignment.center,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 72,
-                    height: 72,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned(
-                          width: 300,
-                          height: 300,
-                          child: AnimatedBuilder(
-                            animation: CurvedAnimation(
-                              parent: _celebrationController,
-                              curve: const Interval(0.0, 0.6),
-                            ),
-                            builder: (context, _) {
-                              return RepaintBoundary(
-                                child: CustomPaint(
-                                  size: const Size(300, 300),
-                                  painter: ParticlePainter(
-                                    progress: CurvedAnimation(
-                                      parent: _celebrationController,
-                                      curve: const Interval(0.0, 0.6),
-                                    ).value,
+    final categoryMeta = CategoryMetadata.resolve(
+      rawCategory: rawCategory,
+      customImageUrl: customImage,
+    );
+
+    final rating = worker['rating']?.toString() ?? '5.0';
+    final jobsDone = worker['jobs_done']?.toString() ?? worker['total_jobs']?.toString() ?? '440';
+    final distance = worker['distance_km']?.toString() ?? '2.5';
+    final eta = worker['eta_mins']?.toString() ?? '15';
+    final initials = worker['initials'] as String? ?? (name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'S');
+    final amount = int.tryParse(_jobData['payment_amount']?.toString() ?? _jobData['amount']?.toString() ?? '350') ?? 350;
+
+    return Container(
+      color: const Color(0xFF0F172A), // Dark slate page background
+      width: double.infinity,
+      height: double.infinity,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1040),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 1. Top Mint-Green Header Card
+                _buildTopMatchHeaderCard(),
+                const SizedBox(height: 14),
+
+                // 2. Main White Presentation Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth >= 720;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── TOP PROFILE / SHOWCASE / MAP ROW ──
+                          if (isWide)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Left: Worker Profile Info
+                                Expanded(
+                                  flex: 5,
+                                  child: _buildWorkerProfileInfo(
+                                    name: name,
+                                    initials: initials,
+                                    categoryTitle: categoryMeta.title,
+                                    serviceKey: categoryMeta.serviceKey,
                                   ),
                                 ),
-                              );
-                            },
+                                const SizedBox(width: 14),
+
+                                // Center: Category Showcase Photo
+                                Expanded(
+                                  flex: 3,
+                                  child: _buildCategoryShowcaseImage(categoryMeta),
+                                ),
+                                const SizedBox(width: 14),
+
+                                // Right: Mini Live Map Card
+                                Expanded(
+                                  flex: 4,
+                                  child: _buildMiniMapCard(distance: distance),
+                                ),
+                              ],
+                            )
+                          else ...[
+                            // Mobile stacked layout
+                            _buildWorkerProfileInfo(
+                              name: name,
+                              initials: initials,
+                              categoryTitle: categoryMeta.title,
+                              serviceKey: categoryMeta.serviceKey,
+                            ),
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildCategoryShowcaseImage(categoryMeta),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _buildMiniMapCard(distance: distance),
+                                ),
+                              ],
+                            ),
+                          ],
+
+                          const SizedBox(height: 18),
+
+                          // ── 4 METRIC CARDS ROW ──
+                          if (isWide)
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildMetricCard(
+                                    icon: Icons.star_rounded,
+                                    iconBg: const Color(0xFFFEF3C7),
+                                    iconColor: const Color(0xFFF59E0B),
+                                    title: rating,
+                                    subtitle: 'Rating (128+ reviews)',
+                                    showStars: true,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _buildMetricCard(
+                                    icon: Icons.work_rounded,
+                                    iconBg: const Color(0xFFEFF6FF),
+                                    iconColor: const Color(0xFF3B82F6),
+                                    title: '$jobsDone+',
+                                    subtitle: 'Jobs Done',
+                                    chipLabel: 'Experienced',
+                                    chipBg: const Color(0xFFEFF6FF),
+                                    chipColor: const Color(0xFF2563EB),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _buildMetricCard(
+                                    icon: Icons.location_on_rounded,
+                                    iconBg: const Color(0xFFFEE2E2),
+                                    iconColor: const Color(0xFFEF4444),
+                                    title: '$distance km',
+                                    subtitle: 'Distance from you',
+                                    chipLabel: 'Nearby',
+                                    chipBg: const Color(0xFFFEE2E2),
+                                    chipColor: const Color(0xFFDC2626),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _buildMetricCard(
+                                    icon: Icons.currency_rupee_rounded,
+                                    iconBg: const Color(0xFFDCFCE7),
+                                    iconColor: const Color(0xFF16A34A),
+                                    title: '₹$amount',
+                                    subtitle: 'Service Price',
+                                    chipLabel: 'Transparent pricing',
+                                    chipBg: const Color(0xFFDCFCE7),
+                                    chipColor: const Color(0xFF15803D),
+                                    isPrice: true,
+                                    numericPrice: amount,
+                                  ),
+                                ),
+                              ],
+                            )
+                          else ...[
+                            // 2x2 Grid on Mobile
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildMetricCard(
+                                    icon: Icons.star_rounded,
+                                    iconBg: const Color(0xFFFEF3C7),
+                                    iconColor: const Color(0xFFF59E0B),
+                                    title: rating,
+                                    subtitle: 'Rating (128+ reviews)',
+                                    showStars: true,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _buildMetricCard(
+                                    icon: Icons.work_rounded,
+                                    iconBg: const Color(0xFFEFF6FF),
+                                    iconColor: const Color(0xFF3B82F6),
+                                    title: '$jobsDone+',
+                                    subtitle: 'Jobs Done',
+                                    chipLabel: 'Experienced',
+                                    chipBg: const Color(0xFFEFF6FF),
+                                    chipColor: const Color(0xFF2563EB),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildMetricCard(
+                                    icon: Icons.location_on_rounded,
+                                    iconBg: const Color(0xFFFEE2E2),
+                                    iconColor: const Color(0xFFEF4444),
+                                    title: '$distance km',
+                                    subtitle: 'Distance from you',
+                                    chipLabel: 'Nearby',
+                                    chipBg: const Color(0xFFFEE2E2),
+                                    chipColor: const Color(0xFFDC2626),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _buildMetricCard(
+                                    icon: Icons.currency_rupee_rounded,
+                                    iconBg: const Color(0xFFDCFCE7),
+                                    iconColor: const Color(0xFF16A34A),
+                                    title: '₹$amount',
+                                    subtitle: 'Service Price',
+                                    chipLabel: 'Transparent pricing',
+                                    chipBg: const Color(0xFFDCFCE7),
+                                    chipColor: const Color(0xFF15803D),
+                                    isPrice: true,
+                                    numericPrice: amount,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+
+                          const SizedBox(height: 16),
+
+                          // ── ESTIMATED ARRIVAL BAR ──
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEFF6FF),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.local_shipping_rounded,
+                                    color: Color(0xFF2563EB),
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Estimated Arrival',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    Text(
+                                      'Worker will reach your location in',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        color: const Color(0xFF64748B),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Spacer(),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.access_time_rounded,
+                                      size: 19,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '~ $eta mins',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 20,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        AnimatedBuilder(
-                          animation: CurvedAnimation(
-                            parent: _celebrationController,
-                            curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
+
+                          const SizedBox(height: 18),
+
+                          // ── ACTION BUTTONS ROW ──
+                          Row(
+                            children: [
+                              // Accept & Call Worker (Dark Slate/Black Button)
+                              Expanded(
+                                flex: isWide ? 4 : 2,
+                                child: GestureDetector(
+                                  onTap: _isActioning ? null : _acceptWorker,
+                                  child: Container(
+                                    height: 52,
+                                    decoration: BoxDecoration(
+                                      color: _isActioning ? const Color(0xFF94A3B8) : const Color(0xFF0F172A),
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF0F172A).withValues(alpha: 0.25),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                                    child: _isActioning
+                                        ? const Center(
+                                            child: SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.2),
+                                            ),
+                                          )
+                                        : Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(Icons.call_rounded, color: Colors.white, size: 18),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Accept & Call Worker',
+                                                style: GoogleFonts.plusJakartaSans(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 14,
+                                                  letterSpacing: 0.2,
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              const Icon(Icons.chevron_right_rounded, color: Colors.white70, size: 20),
+                                            ],
+                                          ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+
+                              // Decline (Clean White Button with Grey Border)
+                              Expanded(
+                                flex: 1,
+                                child: GestureDetector(
+                                  onTap: _isActioning ? null : _declineWorker,
+                                  child: Container(
+                                    height: 52,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'Decline',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: const Color(0xFF0F172A),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          builder: (context, child) {
-                            return Transform.scale(
-                              scale: CurvedAnimation(
-                                parent: _celebrationController,
-                                curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
-                              ).value,
-                              child: child,
-                            );
-                          },
-                          child: RepaintBoundary(
-                            child: SizedBox(
-                              width: 64,
-                              height: 64,
-                              child: Lottie.asset(
-                                'assets/lottie/checkmark_success.json',
-                                repeat: false,
-                                frameRate: const FrameRate(60),
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.check_circle, color: Colors.white, size: 48),
+
+                          const SizedBox(height: 12),
+                          Center(
+                            child: Text(
+                              'Declining will put you back in search automatically.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                color: const Color(0xFF94A3B8),
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(width: 12),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── TOP MINT GREEN STATUS CARD ───────────────────────────────
+  Widget _buildTopMatchHeaderCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCFCE7), width: 1.5),
+      ),
+      child: AnimatedBuilder(
+        animation: _acceptCountdown,
+        builder: (context, _) {
+          final secs = ((1.0 - _acceptCountdown.value) * 60).round();
+          final progress = (1.0 - _acceptCountdown.value).clamp(0.0, 1.0);
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 600;
+
+              final leftSection = Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF16A34A),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(width: 14),
                   Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Shimmer.fromColors(
-                        baseColor: Colors.white,
-                        highlightColor: UserAppTheme.skyAccent,
-                        period: const Duration(milliseconds: 1500),
-                        child: Text(
-                          'Expert matched & ready!',
-                          style: UserAppTheme.heading(
-                            size: 16,
-                            weight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                      Text(
+                        'Expert matched & ready!',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F172A),
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Review and accept below',
-                        style: UserAppTheme.body(
-                          size: 12,
-                          color: Colors.white70,
+                        'Review the details below and accept to connect.',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ],
-              ),
-            ),
+              );
 
-            // Elegant Countdown Progress Bar
-            AnimatedBuilder(
-              animation: _acceptCountdown,
-              builder: (context, _) {
-                final secs = ((1.0 - _acceptCountdown.value) * 60).round();
-                Color barColor = UserAppTheme.successGreen;
-                if (secs <= 30) barColor = Colors.orange;
-                if (secs <= 10) barColor = UserAppTheme.urgentRed;
-                return Column(
-                  children: [
-                    LinearProgressIndicator(
-                      value: 1.0 - _acceptCountdown.value,
-                      minHeight: 6,
-                      backgroundColor: UserAppTheme.divider,
-                      valueColor: AlwaysStoppedAnimation<Color>(barColor),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      color: barColor.withValues(alpha: 0.08),
-                      width: double.infinity,
-                      alignment: Alignment.center,
-                      child: Text(
-                        'Accept within $secs seconds',
-                        style: UserAppTheme.label(
-                          size: 12,
-                          weight: FontWeight.bold,
-                          color: barColor,
+              final rightSection = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.access_time_rounded,
+                    color: Color(0xFF0F172A),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Accept within',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
                         ),
                       ),
-                    ),
+                      Text(
+                        '$secs seconds',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        width: 120,
+                        height: 5,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: const Color(0xFFE2E8F0),
+                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0F172A)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+
+              if (isWide) {
+                return Row(
+                  children: [
+                    Expanded(child: leftSection),
+                    Container(height: 38, width: 1, color: const Color(0xFFE2E8F0)),
+                    const SizedBox(width: 16),
+                    rightSection,
                   ],
                 );
-              },
-            ),
-
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
+              } else {
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    leftSection,
                     const SizedBox(height: 12),
-                    // Worker card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: UserAppTheme.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: UserAppTheme.divider, width: 1),
-                        boxShadow: UserAppTheme.cardShadow,
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              // Avatar
-                              Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  AnimatedBuilder(
-                                    animation: _avatarRippleController,
-                                    builder: (context, child) {
-                                      final progress = _avatarRippleController.value;
-                                      final scale = 1.0 + (progress * 1.2);
-                                      final opacity = (1.0 - progress).clamp(0.0, 1.0);
-                                      return Opacity(
-                                        opacity: opacity,
-                                        child: Transform.scale(
-                                          scale: scale,
-                                          child: Container(
-                                            width: 72,
-                                            height: 72,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: const Color(0xFFFFD700).withValues(alpha: 0.5),
-                                                width: 1.5,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  AnimatedBuilder(
-                                    animation: _avatarRippleController,
-                                    builder: (context, child) {
-                                      final progress = (_avatarRippleController.value + 0.33) % 1.0;
-                                      final scale = 1.0 + (progress * 1.2);
-                                      final opacity = (1.0 - progress).clamp(0.0, 1.0);
-                                      return Opacity(
-                                        opacity: opacity,
-                                        child: Transform.scale(
-                                          scale: scale,
-                                          child: Container(
-                                            width: 72,
-                                            height: 72,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: UserAppTheme.successGreen.withValues(alpha: 0.4),
-                                                width: 1.5,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  Container(
-                                    width: 72,
-                                    height: 72,
-                                    decoration: BoxDecoration(
-                                      color: UserAppTheme.primaryBlue.withValues(alpha: 0.08),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: UserAppTheme.primaryBlue.withValues(alpha: 0.2), width: 2),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: UserAppTheme.primaryBlue.withValues(alpha: 0.15),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      initials,
-                                      style: UserAppTheme.heading(
-                                        size: 24,
-                                        weight: FontWeight.bold,
-                                        color: UserAppTheme.primaryBlue,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: UserAppTheme.heading(
-                                        size: 18,
-                                        weight: FontWeight.bold,
-                                        color: UserAppTheme.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      specialty,
-                                      style: UserAppTheme.body(
-                                        size: 12,
-                                        color: UserAppTheme.textSecondary,
-                                        weight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    // Shimmer gold badge
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFEF08A),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: const Color(0xFFFACC15), width: 1.0),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.workspace_premium_rounded, color: Color(0xFFCA8A04), size: 12),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Top 10% Partner',
-                                            style: UserAppTheme.label(
-                                              size: 10,
-                                              color: const Color(0xFF854D0E),
-                                              weight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          const Divider(color: UserAppTheme.divider, height: 1),
-                          const SizedBox(height: 20),
+                    const Divider(color: Color(0xFFE2E8F0), height: 1),
+                    const SizedBox(height: 10),
+                    rightSection,
+                  ],
+                );
+              }
+            },
+          );
+        },
+      ),
+    );
+  }
 
-                          // Stats Row (Modern Metric Cards)
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _statCard(
-                                  icon: Icons.star_rounded,
-                                  value: rating,
-                                  label: 'Rating',
-                                  color: const Color(0xFFF59E0B),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _statCard(
-                                  icon: Icons.check_circle_outline_rounded,
-                                  value: jobsDone,
-                                  label: 'Jobs Done',
-                                  color: UserAppTheme.successGreen,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _statCard(
-                                  icon: Icons.radar_rounded,
-                                  value: '$distance km',
-                                  label: 'Distance',
-                                  color: UserAppTheme.primaryBlue,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
+  // ── WORKER PROFILE INFO WIDGET ──────────────────────────────
+  Widget _buildWorkerProfileInfo({
+    required String name,
+    required String initials,
+    required String categoryTitle,
+    required String serviceKey,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Avatar with verified badge
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: const Color(0xFFDBEAFE),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFBFDBFE), width: 1.5),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                initials,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF2563EB),
+                ),
+              ),
+            ),
+            Positioned(
+              right: -1,
+              bottom: 0,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF16A34A),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const Icon(Icons.check_rounded, color: Colors.white, size: 13),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(width: 14),
 
-                          // ETA Row Card
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: UserAppTheme.background,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.directions_run_outlined, color: UserAppTheme.textSecondary, size: 18),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'Estimated Arrival',
-                                  style: UserAppTheme.body(
-                                    size: 13,
-                                    color: UserAppTheme.textSecondary,
-                                    weight: FontWeight.w600,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  '~$eta mins',
-                                  style: UserAppTheme.body(
-                                    size: 14,
-                                    weight: FontWeight.bold,
-                                    color: UserAppTheme.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Price counter
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              color: UserAppTheme.background,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.currency_rupee_rounded, color: UserAppTheme.successGreen, size: 18),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'Service Price',
-                                  style: UserAppTheme.body(
-                                    size: 13,
-                                    color: UserAppTheme.textSecondary,
-                                    weight: FontWeight.w600,
-                                  ),
-                                ),
-                                const Spacer(),
-                                AnimatedCounter(
-                                  value: int.tryParse(_jobData['payment_amount']?.toString() ?? _jobData['amount']?.toString() ?? '350') ?? 350,
-                                  prefix: '₹',
-                                  fontSize: 15,
-                                  color: UserAppTheme.successGreen,
-                                  duration: const Duration(milliseconds: 700),
-                                  curve: Curves.easeOutCubic,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                    .animate(controller: _celebrationController)
-                    .fadeIn(delay: 560.ms, duration: 400.ms)
-                    .slideY(begin: 0.15, end: 0, delay: 560.ms, duration: 500.ms, curve: Curves.easeOutCubic),
-                    const SizedBox(height: 32),
+        // Text details & badges
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                categoryTitle,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF475569),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                serviceKey,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  color: const Color(0xFF94A3B8),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
 
-                    // Button CTA row (Accept Green Gradient, Decline Red Outline)
-                    Row(
+              // Badges row
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  // Top 10% Partner
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF9C3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFFEF08A), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          flex: 2,
-                          child: GestureDetector(
-                            onTap: _isActioning ? null : _acceptWorker,
-                            child: Container(
-                              height: UserAppTheme.buttonHeight,
-                              decoration: BoxDecoration(
-                                gradient: _isActioning ? null : UserAppTheme.successGradient,
-                                color: _isActioning ? const Color(0xFFE2E8F0) : null,
-                                borderRadius: UserAppTheme.buttonBorderRadius,
-                                boxShadow: _isActioning
-                                    ? []
-                                    : [
-                                        BoxShadow(
-                                          color: UserAppTheme.successGreen.withValues(alpha: 0.25),
-                                          blurRadius: 15,
-                                          offset: const Offset(0, 4),
-                                        )
-                                      ],
-                              ),
-                              alignment: Alignment.center,
-                              child: _isActioning
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                                    )
-                                  : Text(
-                                      'Accept & Call Worker',
-                                      style: UserAppTheme.body(
-                                        color: Colors.white,
-                                        weight: FontWeight.bold,
-                                        size: 15,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 1,
-                          child: GestureDetector(
-                            onTap: _isActioning ? null : _declineWorker,
-                            child: Container(
-                              height: UserAppTheme.buttonHeight,
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: UserAppTheme.buttonBorderRadius,
-                                border: Border.all(color: UserAppTheme.urgentRed, width: 1.5),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                'Decline',
-                                style: UserAppTheme.body(
-                                  color: UserAppTheme.urgentRed,
-                                  weight: FontWeight.bold,
-                                  size: 15,
-                                ),
-                              ),
-                            ),
+                        const Icon(Icons.workspace_premium_rounded, color: Color(0xFFCA8A04), size: 12),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Top 10% Partner',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF854D0E),
                           ),
                         ),
                       ],
-                    ).animate().fadeIn(delay: 150.ms),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: Text(
-                        'Declining will put you back in search automatically.',
-                        style: UserAppTheme.label(
-                          size: 12,
-                          color: Colors.white70,
+                    ),
+                  ),
+
+                  // Verified Partner
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 12),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Verified Partner',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF15803D),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── CATEGORY SHOWCASE IMAGE ─────────────────────────────────
+  Widget _buildCategoryShowcaseImage(CategoryMetadata meta) {
+    return Container(
+      height: 108,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(13),
+        child: Image.network(
+          meta.imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Container(
+            color: const Color(0xFFF1F5F9),
+            alignment: Alignment.center,
+            child: const Icon(Icons.build_circle_rounded, color: Color(0xFF94A3B8), size: 36),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── MINI LIVE MAP CARD ──────────────────────────────────────
+  Widget _buildMiniMapCard({required String distance}) {
+    return Container(
+      height: 108,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(13),
+        child: Stack(
+          children: [
+            // Custom vector street lines painter
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _MiniMapPainter(),
+              ),
+            ),
+
+            // Top-left Distance chip
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '$distance km away',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+
+            // Bottom-right "View on map >" pill button
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/user/tracking?job_id=${widget.jobId}');
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.location_on_rounded, size: 11, color: Color(0xFF0F172A)),
+                      const SizedBox(width: 3),
+                      Text(
+                        'View on map',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF0F172A),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 2),
+                      const Icon(Icons.chevron_right_rounded, size: 13, color: Color(0xFF0F172A)),
+                    ],
+                  ),
                 ),
               ),
             ),
           ],
         ),
-      ],
+      ),
+    );
+  }
+
+  // ── METRIC CARD WIDGET ──────────────────────────────────────
+  Widget _buildMetricCard({
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    String? chipLabel,
+    Color? chipBg,
+    Color? chipColor,
+    bool showStars = false,
+    bool isPrice = false,
+    int? numericPrice,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Icon Box
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 18),
+          ),
+          const SizedBox(height: 10),
+
+          // Main Value
+          if (isPrice && numericPrice != null)
+            AnimatedCounter(
+              value: numericPrice,
+              prefix: '₹',
+              fontSize: 17,
+              color: const Color(0xFF0F172A),
+              duration: const Duration(milliseconds: 700),
+              curve: Curves.easeOutCubic,
+            )
+          else
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+
+          const SizedBox(height: 4),
+
+          // Optional Star Rating Row
+          if (showStars) ...[
+            Row(
+              children: List.generate(
+                5,
+                (index) => const Padding(
+                  padding: EdgeInsets.only(right: 2),
+                  child: Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 13),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+          ],
+
+          // Subtitle
+          Text(
+            subtitle,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              color: const Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          // Optional Badge Chip
+          if (chipLabel != null && chipBg != null && chipColor != null) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+              decoration: BoxDecoration(
+                color: chipBg,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                chipLabel,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: chipColor,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -2069,45 +2507,6 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
           ),
         ),
       ],
-    );
-  }
-
-  Widget _statCard({
-    required IconData icon,
-    required String value,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.12), width: 1),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: UserAppTheme.heading(
-              size: 15,
-              weight: FontWeight.bold,
-              color: UserAppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: UserAppTheme.label(
-              size: 10,
-              color: UserAppTheme.textSecondary,
-              weight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -2496,3 +2895,210 @@ class ParticlePainter extends CustomPainter {
   @override
   bool shouldRepaint(ParticlePainter old) => old.progress != progress;
 }
+
+// ─────────────────────────────────────────────────────────────
+// DYNAMIC CATEGORY METADATA RESOLVER
+// Supports all present services and automatically formats/resolves
+// any new categories added in the future!
+// ─────────────────────────────────────────────────────────────
+class CategoryMetadata {
+  final String title;
+  final String serviceKey;
+  final String imageUrl;
+
+  const CategoryMetadata({
+    required this.title,
+    required this.serviceKey,
+    required this.imageUrl,
+  });
+
+  /// Dynamically resolves category title, specialty display name, and preview image.
+  /// Works for both existing categories and ANY future categories added to Supabase.
+  factory CategoryMetadata.resolve({
+    required String? rawCategory,
+    String? customImageUrl,
+    String? customTitle,
+  }) {
+    final raw = (rawCategory ?? '').trim().toLowerCase();
+
+    // 1. Dynamic Title formatting:
+    // If custom title provided, use it; otherwise convert snake_case/kebab-case into Title Case.
+    String resolvedTitle = customTitle?.trim() ?? '';
+    if (resolvedTitle.isEmpty) {
+      if (raw.contains('ro') || raw.contains('water') || raw.contains('purifier')) {
+        resolvedTitle = 'Water Purifier Services';
+      } else if (raw.contains('electric')) {
+        resolvedTitle = 'Electrician & Power';
+      } else if (raw.contains('plumb')) {
+        resolvedTitle = 'Plumbing & Pipe Repair';
+      } else if (raw.contains('ac') || raw.contains('air_cond') || raw.contains('cool')) {
+        resolvedTitle = 'AC Service & Repair';
+      } else if (raw.contains('carpent')) {
+        resolvedTitle = 'Carpentry & Woodwork';
+      } else if (raw.contains('clean')) {
+        resolvedTitle = 'Deep Cleaning & Sanitization';
+      } else if (raw.contains('paint')) {
+        resolvedTitle = 'Painting & Waterproofing';
+      } else if (raw.contains('pest')) {
+        resolvedTitle = 'Pest Control Services';
+      } else if (raw.contains('salon') || raw.contains('beauty') || raw.contains('hair')) {
+        resolvedTitle = 'Salon & Grooming';
+      } else if (raw.contains('appliance') || raw.contains('fridge') || raw.contains('washing')) {
+        resolvedTitle = 'Appliance Repair';
+      } else if (raw.contains('cctv') || raw.contains('security')) {
+        resolvedTitle = 'CCTV & Security Systems';
+      } else if (raw.contains('solar')) {
+        resolvedTitle = 'Solar Installation & Service';
+      } else if (raw.contains('mechanic') || raw.contains('vehicle') || raw.contains('bike') || raw.contains('car')) {
+        resolvedTitle = 'Automobile Mechanic';
+      } else if (raw.isNotEmpty) {
+        // Automatically convert any new/future category slug to Title Case
+        resolvedTitle = raw
+            .replaceAll(RegExp(r'[_\-]+'), ' ')
+            .split(' ')
+            .where((w) => w.isNotEmpty)
+            .map((w) => w[0].toUpperCase() + w.substring(1))
+            .join(' ');
+      } else {
+        resolvedTitle = 'Home & Technical Services';
+      }
+    }
+
+    final resolvedServiceKey = '• $resolvedTitle Specialist';
+
+    // 2. Dynamic Image Resolution:
+    // A) If the backend has a custom image (from Supabase category/job table), use it directly!
+    if (customImageUrl != null && customImageUrl.trim().isNotEmpty && customImageUrl.startsWith('http')) {
+      return CategoryMetadata(
+        title: resolvedTitle,
+        serviceKey: resolvedServiceKey,
+        imageUrl: customImageUrl.trim(),
+      );
+    }
+
+    // B) Curated high-res imagery for known services
+    String resolvedImage = 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80'; // Clean fallback tools/technician
+
+    if (raw.contains('ro') || raw.contains('water') || raw.contains('purifier')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&auto=format&fit=crop&q=80'; // Water purifier / filter service
+    } else if (raw.contains('electric')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=600&auto=format&fit=crop&q=80'; // Electrician tools & board
+    } else if (raw.contains('plumb')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&auto=format&fit=crop&q=80'; // Plumbing faucet & wrench
+    } else if (raw.contains('ac') || raw.contains('air_cond') || raw.contains('cool')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=600&auto=format&fit=crop&q=80'; // AC servicing
+    } else if (raw.contains('carpent')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=600&auto=format&fit=crop&q=80'; // Carpentry wood workshop
+    } else if (raw.contains('clean')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80'; // Cleaning
+    } else if (raw.contains('paint')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80'; // Painting roller & wall
+    } else if (raw.contains('pest')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=600&auto=format&fit=crop&q=80'; // Disinfection / pest control
+    } else if (raw.contains('salon') || raw.contains('beauty') || raw.contains('hair')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&auto=format&fit=crop&q=80'; // Salon grooming
+    } else if (raw.contains('appliance') || raw.contains('fridge') || raw.contains('washing')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80'; // Appliance repair
+    } else if (raw.contains('cctv') || raw.contains('security')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600&auto=format&fit=crop&q=80'; // CCTV camera
+    } else if (raw.contains('solar')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=600&auto=format&fit=crop&q=80'; // Solar panels
+    } else if (raw.contains('mechanic') || raw.contains('vehicle') || raw.contains('bike') || raw.contains('car')) {
+      resolvedImage = 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=600&auto=format&fit=crop&q=80'; // Car & bike mechanic
+    }
+
+    return CategoryMetadata(
+      title: resolvedTitle,
+      serviceKey: resolvedServiceKey,
+      imageUrl: resolvedImage,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// MINI LIVE MAP PREVIEW PAINTER
+// ─────────────────────────────────────────────────────────────
+class _MiniMapPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 1. Soft map background
+    final bgPaint = Paint()..color = const Color(0xFFF1F5F9);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
+
+    // 2. Road grid lines
+    final roadPaint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 6.0
+      ..style = PaintingStyle.stroke;
+
+    final subRoadPaint = Paint()
+      ..color = const Color(0xFFE2E8F0)
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke;
+
+    // Subtle background sub-grid
+    canvas.drawLine(Offset(0, size.height * 0.15), Offset(size.width, size.height * 0.15), subRoadPaint);
+    canvas.drawLine(Offset(0, size.height * 0.52), Offset(size.width, size.height * 0.52), subRoadPaint);
+    canvas.drawLine(Offset(0, size.height * 0.88), Offset(size.width, size.height * 0.88), subRoadPaint);
+
+    // Main horizontal roads
+    canvas.drawLine(Offset(0, size.height * 0.35), Offset(size.width, size.height * 0.35), roadPaint);
+    canvas.drawLine(Offset(0, size.height * 0.70), Offset(size.width, size.height * 0.70), roadPaint);
+
+    // Main vertical roads
+    canvas.drawLine(Offset(size.width * 0.25, 0), Offset(size.width * 0.25, size.height), roadPaint);
+    canvas.drawLine(Offset(size.width * 0.65, 0), Offset(size.width * 0.65, size.height), roadPaint);
+
+    // Diagonal route line
+    final routePaint = Paint()
+      ..color = const Color(0xFF3B82F6)
+      ..strokeWidth = 3.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    path.moveTo(size.width * 0.25, size.height * 0.35);
+    path.quadraticBezierTo(
+      size.width * 0.45,
+      size.height * 0.50,
+      size.width * 0.65,
+      size.height * 0.70,
+    );
+    canvas.drawPath(path, routePaint);
+
+    // Start point: Worker pulse circle
+    final workerDot = Offset(size.width * 0.25, size.height * 0.35);
+    canvas.drawCircle(
+      workerDot,
+      7,
+      Paint()..color = const Color(0xFF3B82F6).withValues(alpha: 0.25),
+    );
+    canvas.drawCircle(
+      workerDot,
+      4.5,
+      Paint()..color = const Color(0xFF2563EB),
+    );
+    canvas.drawCircle(
+      workerDot,
+      2,
+      Paint()..color = Colors.white,
+    );
+
+    // Destination point: Destination pin
+    final destDot = Offset(size.width * 0.65, size.height * 0.70);
+    canvas.drawCircle(
+      destDot,
+      6,
+      Paint()..color = const Color(0xFF0F172A),
+    );
+    canvas.drawCircle(
+      destDot,
+      2.5,
+      Paint()..color = Colors.white,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
