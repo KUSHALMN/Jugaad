@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:camera/camera.dart';
 import 'package:jugaad_mvp/core/theme/app_colors.dart';
 import 'package:jugaad_mvp/core/widgets/jugaad_step_header.dart';
+import 'package:jugaad_mvp/core/widgets/live_selfie_camera_modal.dart';
 import 'worker_registration_state.dart';
 
 class WorkerRegistrationStep2 extends ConsumerStatefulWidget {
@@ -15,6 +17,17 @@ class WorkerRegistrationStep2 extends ConsumerStatefulWidget {
 
 class _WorkerRegistrationStep2State extends ConsumerState<WorkerRegistrationStep2> {
   final ImagePicker _picker = ImagePicker();
+
+  Future<void> _takeLiveSelfie() async {
+    final result = await LiveSelfieCameraModal.show(
+      context,
+      preferredLensDirection: CameraLensDirection.front,
+    );
+
+    if (result != null) {
+      ref.read(workerRegistrationProvider.notifier).setProfilePhoto(result.bytes, result.name);
+    }
+  }
 
   Future<void> _pickImage(bool isProfile, ImageSource source, {CameraDevice preferredCamera = CameraDevice.rear}) async {
     try {
@@ -37,15 +50,10 @@ class _WorkerRegistrationStep2State extends ConsumerState<WorkerRegistrationStep
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
-      if (source == ImageSource.camera) {
-        // Fallback to gallery if camera fails
-        _pickImage(isProfile, ImageSource.gallery);
-        return;
-      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to capture photo: $e'),
+            content: Text('Failed to pick photo: $e'),
             backgroundColor: AppColors.kDanger,
           ),
         );
@@ -103,11 +111,15 @@ class _WorkerRegistrationStep2State extends ConsumerState<WorkerRegistrationStep
                   ),
                   onTap: () {
                     context.pop();
-                    _pickImage(
-                      isProfile,
-                      ImageSource.camera,
-                      preferredCamera: isProfile ? CameraDevice.front : CameraDevice.rear,
-                    );
+                    if (isProfile) {
+                      _takeLiveSelfie();
+                    } else {
+                      _pickImage(
+                        false,
+                        ImageSource.camera,
+                        preferredCamera: CameraDevice.rear,
+                      );
+                    }
                   },
                 ),
                 ListTile(
@@ -267,7 +279,7 @@ class _WorkerRegistrationStep2State extends ConsumerState<WorkerRegistrationStep
                       children: [
                         // Circular Face Preview
                         GestureDetector(
-                          onTap: () => _pickImage(true, ImageSource.camera, preferredCamera: CameraDevice.front),
+                          onTap: _takeLiveSelfie,
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
@@ -329,7 +341,7 @@ class _WorkerRegistrationStep2State extends ConsumerState<WorkerRegistrationStep
                             Expanded(
                               flex: 3,
                               child: ElevatedButton.icon(
-                                onPressed: () => _pickImage(true, ImageSource.camera, preferredCamera: CameraDevice.front),
+                                onPressed: _takeLiveSelfie,
                                 icon: const Icon(Icons.camera_front_rounded, size: 18, color: Colors.white),
                                 label: Text(
                                   state.profilePhotoBytes == null ? 'Take Live Selfie' : 'Retake Selfie',
