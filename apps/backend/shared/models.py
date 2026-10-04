@@ -16,6 +16,7 @@ def now_ist() -> datetime:
 VALID_SKILLS = [
     "electrician", "plumber", "laptop_repair", "phone_repair",
     "carpenter", "painter", "ac_service", "cleaning",
+    "home_repair", "home_repairs", "stove_repair", "gas_stove_repair", "handyman",
     "car_wash", "bike_mechanic", "hair_salon", "spa_massage",
     "water_leakage", "power_outage", "locked_out_of_home",
     "blocked_toilet_drain", "water_pump_failure", "ac_breakdown",
@@ -43,9 +44,20 @@ class CreateJobRequest(BaseModel):
     @field_validator("skill")
     @classmethod
     def validate_skill(cls, v: str) -> str:
-        if v not in VALID_SKILLS:
+        clean = v.strip().lower().replace("-", "_").replace(" ", "_")
+        skill_aliases = {
+            "home_repairs": "home_repair",
+            "home_maintenance": "home_repair",
+            "gas_stove_repair": "stove_repair",
+            "gas_stove": "stove_repair",
+        }
+        clean = skill_aliases.get(clean, clean)
+        if clean not in VALID_SKILLS:
+            # Allow clean alphanumeric skill identifiers (supports dynamic future categories)
+            if re.match(r"^[a-z0-9_]{2,50}$", clean):
+                return clean
             raise ValueError(f"Skill '{v}' is not in valid skills list: {VALID_SKILLS}")
-        return v
+        return clean
 
     @field_validator("scheduled_at", mode="before")
     @classmethod
@@ -152,10 +164,13 @@ class WorkerRegistrationRequest(BaseModel):
     @field_validator("skills")
     @classmethod
     def validate_skills(cls, v: list[str]) -> list[str]:
-        for skill in v:
-            if skill not in VALID_SKILLS:
-                raise ValueError(f"Skill '{skill}' is not in valid skills list: {VALID_SKILLS}")
-        return v
+        cleaned_skills = []
+        for raw_skill in v:
+            clean = raw_skill.strip().lower().replace("-", "_").replace(" ", "_")
+            if clean not in VALID_SKILLS and not re.match(r"^[a-z0-9_]{2,50}$", clean):
+                raise ValueError(f"Skill '{raw_skill}' is not in valid skills list: {VALID_SKILLS}")
+            cleaned_skills.append(clean)
+        return cleaned_skills
 
 
 # ─── User / Profile Models (backward-compat) ────────────────────

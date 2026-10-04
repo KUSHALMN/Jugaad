@@ -75,7 +75,7 @@ _STATS_CACHE = {"data": None, "timestamp": 0.0, "ttl": 15.0}
 
 _ALLOWED_SERVICE_IDS = {
     "electrician", "plumber", "phone_repair", "laptop_repair",
-    "ac_service", "carpenter", "stove_repair"
+    "ac_service", "carpenter", "stove_repair", "home_repair"
 }
 
 @app.get("/v1/services")

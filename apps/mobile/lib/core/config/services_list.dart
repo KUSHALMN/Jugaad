@@ -132,4 +132,14 @@ const List<ServiceDef> kAllServices = [
     priceMin: 199.0,
     priceMax: 449.0,
   ),
+  ServiceDef(
+    id: 'home_repair',
+    title: 'Home Repair',
+    icon: Icons.home_repair_service_rounded,
+    imageUrl: 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?auto=format&fit=crop&w=600&q=80',
+    category: 'Home',
+    rating: 4.88,
+    priceMin: 99.0,
+    priceMax: 299.0,
+  ),
 ];

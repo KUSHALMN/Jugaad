@@ -65,7 +65,7 @@ JOB_TIMEOUT_SECONDS = int(os.getenv("JOB_TIMEOUT_SECONDS", "120"))
 
 _ALLOWED_SERVICE_IDS = {
     "electrician", "plumber", "phone_repair", "laptop_repair",
-    "ac_service", "carpenter", "stove_repair"
+    "ac_service", "carpenter", "stove_repair", "home_repair"
 }
 
 _FALLBACK_SERVICES = [

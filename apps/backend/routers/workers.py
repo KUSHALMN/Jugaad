@@ -505,6 +505,8 @@ SERVICE_KEYWORD_MAP = {
     "cleaning": ["clean", "deep clean", "house clean", "sanitiz", "maid", "mop", "wash", "sofa clean"],
     "ro_service": ["ro", "water purifier", "filter", "candle", "aquaguard", "kent", "pureit"],
     "refrigerator_service": ["fridge", "refrigerator", "deep freeze", "freezer", "defrost"],
+    "home_repair": ["home", "repair", "handyman", "maintenance", "fix", "fitting", "general", "carpenter"],
+    "stove_repair": ["stove", "gas", "burner", "cylinder", "flame", "hob", "gas stove"],
 }
 
 def resolve_search_category(query: Optional[str]) -> tuple[str, bool]:

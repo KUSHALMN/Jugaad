@@ -96,8 +96,11 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
     print('[POST_JOB] Posting job to API...');
 
     try {
+      final cleanSkill = jobState.skill.trim().toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
+      final normalizedSkill = (cleanSkill == 'home_repairs') ? 'home_repair' : cleanSkill;
+
       final res = await ApiService().createJob({
-        'skill': jobState.skill.toLowerCase().replaceAll(' ', '_'),
+        'skill': normalizedSkill,
         'description': jobState.description,
         'lat': jobState.lat,
         'lng': jobState.lng,
@@ -167,7 +170,14 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
         if (data is Map && data.containsKey('detail')) {
           final detail = data['detail'];
           if (detail is String) return detail;
-          if (detail is List) return detail.map((e) => e.toString()).join('\n');
+          if (detail is List) {
+            return detail.map((e) {
+              if (e is Map && e.containsKey('msg')) {
+                return e['msg'].toString().replaceFirst('Value error, ', '');
+              }
+              return e.toString();
+            }).join('\n');
+          }
         }
       }
     } catch (_) {
