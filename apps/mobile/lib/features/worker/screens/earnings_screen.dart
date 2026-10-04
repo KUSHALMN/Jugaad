@@ -1269,7 +1269,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: completedBookings.length,
-                  separatorBuilder: (_, _) => const Divider(height: 20),
+                  separatorBuilder: (context, index) => const Divider(height: 20),
                   itemBuilder: (ctx, i) {
                     final b = completedBookings[i];
                     final skill = b['skill_required'] ?? 'Service';

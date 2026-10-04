@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jugaad_mvp/core/config/supabase_config.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -238,7 +239,7 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
             elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => context.go('/worker/home'),
             ),
             title: Text(
               'Worker Portal',

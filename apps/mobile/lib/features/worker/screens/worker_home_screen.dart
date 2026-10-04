@@ -2176,7 +2176,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _recentBookings.length,
-              separatorBuilder: (_, _) => const Divider(height: 20),
+              separatorBuilder: (context, index) => const Divider(height: 20),
               itemBuilder: (ctx, i) {
                 final b = _recentBookings[i];
                 final skill = b['skill_required'] ?? 'Service';
