@@ -40,6 +40,34 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
 
   // ── UI State ─────────────────────────────────────────────
   MatchingState _matchingState = MatchingState.searching;
+  bool _showAdvisory = true;
+  String _selectedSort = 'Highest Rated';
+  final Set<String> _favoriteWorkerIds = {};
+
+  void _sortTopRatedWorkers(String sortType) {
+    setState(() {
+      _selectedSort = sortType;
+      if (sortType == 'Highest Rated') {
+        _topRatedWorkers.sort((a, b) {
+          final double rA = double.tryParse(a['rating']?.toString() ?? '0') ?? 0;
+          final double rB = double.tryParse(b['rating']?.toString() ?? '0') ?? 0;
+          return rB.compareTo(rA);
+        });
+      } else if (sortType == 'Most Jobs') {
+        _topRatedWorkers.sort((a, b) {
+          final int jA = int.tryParse((a['total_jobs'] ?? a['totalJobsCompleted'])?.toString() ?? '0') ?? 0;
+          final int jB = int.tryParse((b['total_jobs'] ?? b['totalJobsCompleted'])?.toString() ?? '0') ?? 0;
+          return jB.compareTo(jA);
+        });
+      } else if (sortType == 'Nearest') {
+        _topRatedWorkers.sort((a, b) {
+          final double dA = double.tryParse(a['distance_km']?.toString() ?? '2.0') ?? 2.0;
+          final double dB = double.tryParse(b['distance_km']?.toString() ?? '2.0') ?? 2.0;
+          return dA.compareTo(dB);
+        });
+      }
+    });
+  }
 
   // ── 90s Fallback Timer ───────────────────────────────────
   Timer? _fallbackTimer;
@@ -623,36 +651,40 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
     return AnimatedBuilder(
       animation: _assignedBgController,
       builder: (context, child) {
+        final isNoWorkers = _matchingState == MatchingState.noWorkersFound;
         return Container(
           decoration: BoxDecoration(
-            color: ColorTween(
-              begin: UserAppTheme.background,
-              end: const Color(0xFF0F172A), // Premium Dark Slate
-            ).evaluate(_assignedBgController),
+            color: isNoWorkers
+                ? const Color(0xFFF8FAFC)
+                : ColorTween(
+                    begin: UserAppTheme.background,
+                    end: const Color(0xFF0F172A), // Premium Dark Slate
+                  ).evaluate(_assignedBgController),
           ),
           child: Scaffold(
             backgroundColor: Colors.transparent,
             body: Stack(
               children: [
                 // Radial Gradient Base Layer
-                Positioned.fill(
-                  child: Opacity(
-                    opacity: 1.0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          center: const Alignment(0, 0.15),
-                          colors: _matchingState == MatchingState.assigned
-                              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-                              : (_jobData['job_type'] == 'emergency'
-                                  ? [const Color(0xFF7F1D1D), const Color(0xFF450A0A)]
-                                  : [const Color(0xFF1E3A8A), const Color(0xFF0F172A)]),
-                          radius: 1.5,
+                if (!isNoWorkers)
+                  Positioned.fill(
+                    child: Opacity(
+                      opacity: 1.0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: RadialGradient(
+                            center: const Alignment(0, 0.15),
+                            colors: _matchingState == MatchingState.assigned
+                                ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                                : (_jobData['job_type'] == 'emergency'
+                                    ? [const Color(0xFF7F1D1D), const Color(0xFF450A0A)]
+                                    : [const Color(0xFF1E3A8A), const Color(0xFF0F172A)]),
+                            radius: 1.5,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
                 
                 // Content
                 SafeArea(
@@ -1114,435 +1146,1141 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
     );
   }
 
-  // ─── STATE C: NO WORKERS FOUND ───────────────────────────
+  // ─── STATE C: NO WORKERS FOUND (REDESIGNED) ───────────────
   Widget _buildNoWorkersFound() {
     final skill = _jobData['skill_required'] as String? ??
         _jobData['skill'] as String? ??
         _jobData['title'] as String? ??
         'Service';
 
-    final jobArea = _jobData['area'] as String? ?? _jobData['address'] as String? ?? 'your area';
     final jobCity = _jobData['city'] as String? ?? 'Mysuru';
 
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            color: Colors.transparent,
-          ),
-          child: Row(
+    return Container(
+      color: const Color(0xFFF8FAFC), // Crisp light page background matching mockup
+      width: double.infinity,
+      height: double.infinity,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1040),
+          child: Column(
             children: [
-              IconButton(
-                onPressed: () => context.go('/user/home'),
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // 1. Top App Bar (Back Button + Title + Location Dropdown)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                child: Row(
                   children: [
-                    Text(
-                      'Available $skill Specialists',
-                      style: UserAppTheme.heading(
-                        size: 16,
-                        weight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Top-rated specialists across $jobCity',
-                      style: UserAppTheme.body(
-                        size: 11,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Alert / Status Info Banner
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7).withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: const Color(0xFFFACC15).withValues(alpha: 0.4),
-                      width: 1.2,
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.bolt_rounded, color: Color(0xFFFBBF24), size: 22),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Region Busy Advisory',
-                              style: UserAppTheme.heading(
-                                size: 12.5,
-                                weight: FontWeight.bold,
-                                color: const Color(0xFFFBBF24),
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'Workers in your region ($jobArea) are currently busy. You can book these high-rated $skill specialists across $jobCity for immediate direct dispatch:',
-                              style: UserAppTheme.body(
-                                size: 12,
-                                color: Colors.white,
-                                weight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05),
-
-                const SizedBox(height: 18),
-
-                // Top Rated Section Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Top-Rated $skill Pros',
-                      style: UserAppTheme.heading(
-                        size: 15,
-                        weight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    // Circular Back Button
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      width: 42,
+                      height: 42,
                       decoration: BoxDecoration(
-                        color: UserAppTheme.primaryBlue.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: UserAppTheme.primaryBlue.withValues(alpha: 0.4),
-                        ),
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      child: IconButton(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          context.go('/user/home');
+                        },
+                        icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A), size: 20),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+
+                    // Title & Subtitle
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.sort_rounded, color: Colors.white, size: 12),
-                          const SizedBox(width: 4),
                           Text(
-                            'Highest Rated',
-                            style: UserAppTheme.label(
-                              size: 10,
-                              color: Colors.white,
-                              weight: FontWeight.bold,
+                            'Available Service Specialists',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0F172A),
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Top-rated specialists across $jobCity',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF64748B),
                             ),
                           ),
                         ],
                       ),
                     ),
+
+                    // Location Pill (Mysuru ∨)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.location_on_rounded, color: Color(0xFF059669), size: 16),
+                          const SizedBox(width: 5),
+                          Text(
+                            jobCity,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 18),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
+              ),
 
-                const SizedBox(height: 12),
-
-                // List of Top Rated Available Workers
-                if (_isLoadingTopRated) ...[
-                  const SizedBox(height: 40),
-                  const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                  const SizedBox(height: 40),
-                ] else if (_topRatedWorkers.isEmpty) ...[
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white12),
-                    ),
-                    alignment: Alignment.center,
-                    child: Column(
-                      children: [
-                        const Icon(Icons.person_search_rounded, size: 36, color: Colors.white70),
-                        const SizedBox(height: 10),
-                        Text(
-                          'No available workers in this category right now',
-                          style: UserAppTheme.body(color: Colors.white, weight: FontWeight.bold),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else ...[
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _topRatedWorkers.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final worker = _topRatedWorkers[index];
-                      final name = worker['name']?.toString() ?? 'Verified Worker';
-                      final rating = double.tryParse(worker['rating']?.toString() ?? '4.9') ?? 4.9;
-                      final totalJobs = worker['total_jobs'] ?? worker['totalJobsCompleted'] ?? 50;
-                      final hourlyRate = worker['hourly_rate'] ?? worker['rate_per_hour'] ?? 200;
-                      final area = worker['area']?.toString() ?? 'Mysuru';
-                      final initial = name.isNotEmpty ? name[0].toUpperCase() : 'W';
-
-                      return Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: const Color(0xFF334155),
-                            width: 1,
+              // 2. Scrollable Body
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // High demand in your area Advisory Banner (Dismissable)
+                      if (_showAdvisory) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFFBEB), // Soft Amber Cream
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                // Avatar with rating badge
-                                Stack(
-                                  clipBehavior: Clip.none,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFFEF3C7),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.bolt_rounded, color: Color(0xFFD97706), size: 22),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Container(
-                                      width: 46,
-                                      height: 46,
-                                      decoration: BoxDecoration(
-                                        color: UserAppTheme.primaryBlue.withValues(alpha: 0.2),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: UserAppTheme.primaryBlue.withValues(alpha: 0.5),
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        initial,
-                                        style: UserAppTheme.heading(
-                                          size: 18,
-                                          weight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
+                                    Text(
+                                      'High demand in your area',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFFB45309),
                                       ),
                                     ),
-                                    Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: Container(
-                                        width: 12,
-                                        height: 12,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF10B981),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(color: const Color(0xFF1E293B), width: 2),
-                                        ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Nearby specialists are busy. These top-rated pros are available across $jobCity for quick service.',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12,
+                                        color: const Color(0xFF475569),
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.25,
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              name,
-                                              style: UserAppTheme.heading(
-                                                size: 14.5,
-                                                weight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          const Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 16),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        area.isNotEmpty ? '$skill • $area' : skill,
-                                        style: UserAppTheme.body(
-                                          size: 11.5,
-                                          color: const Color(0xFF94A3B8),
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
+                              ),
+                              GestureDetector(
+                                onTap: () => setState(() => _showAdvisory = false),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: const Color(0xFFFDE68A)),
                                   ),
+                                  child: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8), size: 16),
                                 ),
-                              ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Top-Rated Section Header & Sort Menu
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Top-Rated Service Pros',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF0F172A),
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                width: 36,
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF059669),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Sort Button
+                          PopupMenuButton<String>(
+                            onSelected: _sortTopRatedWorkers,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(value: 'Highest Rated', child: Text('Highest Rated')),
+                              const PopupMenuItem(value: 'Most Jobs', child: Text('Most Experienced')),
+                              const PopupMenuItem(value: 'Nearest', child: Text('Nearest to Me')),
+                            ],
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.03),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.tune_rounded, color: Color(0xFF0F172A), size: 14),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _selectedSort,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 16),
+                                ],
+                              ),
                             ),
+                          ),
+                        ],
+                      ),
 
-                            const SizedBox(height: 12),
-                            const Divider(height: 1, color: Color(0xFF334155)),
-                            const SizedBox(height: 10),
+                      const SizedBox(height: 14),
 
-                            // Metrics: Rating, Completed Jobs, Rate
+                      // Workers List
+                      if (_isLoadingTopRated) ...[
+                        const SizedBox(height: 60),
+                        const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF059669)),
+                          ),
+                        ),
+                        const SizedBox(height: 60),
+                      ] else if (_topRatedWorkers.isEmpty) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(28),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          alignment: Alignment.center,
+                          child: Column(
+                            children: [
+                              const Icon(Icons.person_search_rounded, size: 44, color: Color(0xFF94A3B8)),
+                              const SizedBox(height: 12),
+                              Text(
+                                'No available specialists in this category right now',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF0F172A),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Try expanding search or scheduling a booking slot for later.',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  color: const Color(0xFF64748B),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _topRatedWorkers.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            final worker = _topRatedWorkers[index];
+                            return _buildSpecialistCard(worker, index, skill);
+                          },
+                        ),
+                      ],
+
+                      const SizedBox(height: 20),
+
+                      // Retry Live Radar Search Button (Clean light styled)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            setState(() => _matchingState = MatchingState.searching);
+                            _startFallbackTimer();
+                          },
+                          icon: const Icon(Icons.refresh_rounded, color: Color(0xFF0F172A), size: 18),
+                          label: Text(
+                            'Retry Live Radar Search',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFF0F172A),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+                      _buildScheduleCard(),
+                      const SizedBox(height: 12),
+                      _buildCallbackCard(),
+                      const SizedBox(height: 18),
+
+                      Center(
+                        child: TextButton(
+                          onPressed: _cancelJob,
+                          child: Text(
+                            'Cancel & Go Home',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              color: const Color(0xFFEF4444),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── SPECIALIST CARD COMPONENT (MOCKUP DESIGN) ───────────────
+  Widget _buildSpecialistCard(Map<String, dynamic> worker, int index, String fallbackSkill) {
+    final workerId = worker['id']?.toString() ?? '$index';
+    final name = worker['name']?.toString() ?? 'Specialist';
+    final rating = double.tryParse(worker['rating']?.toString() ?? '4.9') ?? 4.9;
+    final totalJobs = worker['total_jobs'] ?? worker['totalJobsCompleted'] ?? 50;
+    final hourlyRate = worker['hourly_rate'] ?? worker['rate_per_hour'] ?? 200;
+    final rawCategory = worker['category'] as String? ?? 
+                        worker['work_category'] as String? ?? 
+                        worker['specialty'] as String? ?? 
+                        fallbackSkill;
+    final customImage = worker['image_url'] as String? ?? worker['service_image'] as String?;
+
+    final categoryMeta = CategoryMetadata.resolve(
+      rawCategory: rawCategory,
+      customImageUrl: customImage,
+    );
+
+    final distanceKm = worker['distance_km']?.toString() ?? 
+        (index == 0 ? '2.3' : (index == 1 ? '3.1' : (index == 2 ? '1.8' : '2.5')));
+    final responseTime = (index == 0 ? 2 : (index == 1 ? 3 : 4));
+    final initial = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'S';
+    final isFav = _favoriteWorkerIds.contains(workerId);
+
+    // Dynamic avatar color based on index
+    final avatarColors = [
+      const Color(0xFF0F172A), // Dark Slate
+      const Color(0xFF064E3B), // Dark Forest
+      const Color(0xFFC2410C), // Dark Orange
+      const Color(0xFF1D4ED8), // Deep Blue
+    ];
+    final avatarBg = avatarColors[index % avatarColors.length];
+
+    final iconData = _getCategoryIcon(rawCategory);
+    final iconBg = _getCategoryIconBg(rawCategory);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 680;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: isWide
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 1. Left Category Showcase Photo with floating badge
+                    _buildCardShowcasePhoto(
+                      meta: categoryMeta,
+                      iconData: iconData,
+                      iconBg: iconBg,
+                      width: 150,
+                      height: 100,
+                    ),
+                    const SizedBox(width: 16),
+
+                    // 2. Middle Pro Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (index == 0) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.emoji_events_rounded, color: Color(0xFFD97706), size: 12),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Best Match',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFFB45309),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+
+                          // Avatar + Name + Subtitle
+                          Row(
+                            children: [
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      color: avatarBg,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      initial,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF10B981),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF0F172A),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      categoryMeta.title,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFF64748B),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Badges Row
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              _buildPillBadge(
+                                icon: Icons.star_rounded,
+                                iconColor: const Color(0xFFF59E0B),
+                                label: rating.toStringAsFixed(1),
+                                bgColor: const Color(0xFFFEF9C3),
+                                textColor: const Color(0xFF854D0E),
+                              ),
+                              _buildPillBadge(
+                                icon: Icons.business_center_rounded,
+                                iconColor: const Color(0xFF64748B),
+                                label: '$totalJobs jobs',
+                                bgColor: const Color(0xFFF1F5F9),
+                                textColor: const Color(0xFF334155),
+                              ),
+                              _buildPillBadge(
+                                icon: Icons.location_on_rounded,
+                                iconColor: const Color(0xFF64748B),
+                                label: '$distanceKm km away',
+                                bgColor: const Color(0xFFF1F5F9),
+                                textColor: const Color(0xFF334155),
+                              ),
+                              if (index == 0)
+                                _buildPillBadge(
+                                  icon: Icons.bolt_rounded,
+                                  iconColor: const Color(0xFF16A34A),
+                                  label: 'Available now',
+                                  bgColor: const Color(0xFFDCFCE7),
+                                  textColor: const Color(0xFF15803D),
+                                )
+                              else
+                                _buildPillBadge(
+                                  icon: Icons.access_time_rounded,
+                                  iconColor: const Color(0xFF16A34A),
+                                  label: 'Usually responds in ~$responseTime min',
+                                  bgColor: const Color(0xFFDCFCE7),
+                                  textColor: const Color(0xFF15803D),
+                                ),
+                            ],
+                          ),
+
+                          if (index == 0) ...[
+                            const SizedBox(height: 5),
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFEF3C7).withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFBBF24)),
-                                      const SizedBox(width: 3),
-                                      Text(
-                                        rating.toStringAsFixed(1),
-                                        style: UserAppTheme.label(
-                                          size: 11.5,
-                                          color: const Color(0xFFFBBF24),
-                                          weight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF16A34A),
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 5),
                                 Text(
-                                  '$totalJobs jobs completed',
-                                  style: UserAppTheme.body(
-                                    size: 11.5,
-                                    color: const Color(0xFFCBD5E1),
-                                    weight: FontWeight.w500,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  '₹$hourlyRate/hr',
-                                  style: UserAppTheme.body(
-                                    size: 12.5,
-                                    weight: FontWeight.bold,
-                                    color: const Color(0xFF34D399),
+                                  'Usually responds in ~$responseTime min',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF16A34A),
                                   ),
                                 ),
                               ],
                             ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
 
-                            const SizedBox(height: 12),
-
-                            // Request / Direct Book Button
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _isActioning
-                                    ? null
-                                    : () => _directAssignWorker(worker),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: UserAppTheme.primaryBlue,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  elevation: 0,
+                    // 3. Right Column: Verified Badge + Price + Book This Pro & Heart
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Verified Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDCFCE7),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0xFFBBF7D0)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 12),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Verified',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF15803D),
                                 ),
-                                child: Text(
-                                  'Request This Pro',
-                                  style: UserAppTheme.body(
-                                    color: Colors.white,
-                                    weight: FontWeight.bold,
-                                    size: 13,
-                                  ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Price
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '₹$hourlyRate',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFF047857),
+                              ),
+                            ),
+                            Text(
+                              '/hr',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          'Fair & transparent pricing',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Actions: Book This Pro + Heart
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: _isActioning ? null : () => _directAssignWorker(worker),
+                              child: Container(
+                                height: 40,
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                decoration: BoxDecoration(
+                                  color: _isActioning ? const Color(0xFF94A3B8) : const Color(0xFF059669),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF059669).withValues(alpha: 0.25),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                alignment: Alignment.center,
+                                child: _isActioning
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                      )
+                                    : Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Book This Pro',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 15),
+                                        ],
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // Heart button
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                setState(() {
+                                  if (isFav) {
+                                    _favoriteWorkerIds.remove(workerId);
+                                  } else {
+                                    _favoriteWorkerIds.add(workerId);
+                                  }
+                                });
+                              },
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                  color: isFav ? const Color(0xFFEF4444) : const Color(0xFF64748B),
+                                  size: 18,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ).animate().fadeIn(delay: (index * 80).ms).slideY(begin: 0.05);
-                    },
-                  ),
-                ],
-
-                const SizedBox(height: 24),
-
-                // Retry Search Button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      setState(() => _matchingState = MatchingState.searching);
-                      _startFallbackTimer();
-                    },
-                    icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
-                    label: Text(
-                      'Retry Live Radar Search',
-                      style: UserAppTheme.body(
-                        color: Colors.white,
-                        weight: FontWeight.bold,
-                        size: 14,
-                      ),
+                      ],
                     ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.white30),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ],
+                )
+              : Column(
+                  // Mobile stacked layout
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildCardShowcasePhoto(
+                          meta: categoryMeta,
+                          iconData: iconData,
+                          iconBg: iconBg,
+                          width: 100,
+                          height: 80,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  if (index == 0) ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFEF3C7),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Text(
+                                        '🏆 Best Match',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: const Color(0xFFB45309),
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                  ] else
+                                    const Spacer(),
+
+                                  // Verified
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 10),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          'Verified',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF15803D),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                name,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF0F172A),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                categoryMeta.title,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF64748B),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+
+                    const SizedBox(height: 10),
+                    // Metrics Wrap
+                    Wrap(
+                      spacing: 5,
+                      runSpacing: 4,
+                      children: [
+                        _buildPillBadge(
+                          icon: Icons.star_rounded,
+                          iconColor: const Color(0xFFF59E0B),
+                          label: rating.toStringAsFixed(1),
+                          bgColor: const Color(0xFFFEF9C3),
+                          textColor: const Color(0xFF854D0E),
+                        ),
+                        _buildPillBadge(
+                          icon: Icons.business_center_rounded,
+                          iconColor: const Color(0xFF64748B),
+                          label: '$totalJobs jobs',
+                          bgColor: const Color(0xFFF1F5F9),
+                          textColor: const Color(0xFF334155),
+                        ),
+                        _buildPillBadge(
+                          icon: Icons.location_on_rounded,
+                          iconColor: const Color(0xFF64748B),
+                          label: '$distanceKm km',
+                          bgColor: const Color(0xFFF1F5F9),
+                          textColor: const Color(0xFF334155),
+                        ),
+                        _buildPillBadge(
+                          icon: Icons.access_time_rounded,
+                          iconColor: const Color(0xFF16A34A),
+                          label: '~$responseTime min',
+                          bgColor: const Color(0xFFDCFCE7),
+                          textColor: const Color(0xFF15803D),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 12),
+                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    const SizedBox(height: 10),
+
+                    // Bottom Row: Price + Book button + Heart
+                    Row(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  '₹$hourlyRate',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w900,
+                                    color: const Color(0xFF047857),
+                                  ),
+                                ),
+                                Text(
+                                  '/hr',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'Fair & transparent',
+                              style: GoogleFonts.plusJakartaSans(fontSize: 9.5, color: const Color(0xFF94A3B8)),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: _isActioning ? null : () => _directAssignWorker(worker),
+                          child: Container(
+                            height: 38,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: _isActioning ? const Color(0xFF94A3B8) : const Color(0xFF059669),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: _isActioning
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 1.8),
+                                  )
+                                : Row(
+                                    children: [
+                                      Text(
+                                        'Book This Pro',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            setState(() {
+                              if (isFav) {
+                                _favoriteWorkerIds.remove(workerId);
+                              } else {
+                                _favoriteWorkerIds.add(workerId);
+                              }
+                            });
+                          },
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                              color: isFav ? const Color(0xFFEF4444) : const Color(0xFF64748B),
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-
-                const SizedBox(height: 14),
-                _buildScheduleCard(),
-                const SizedBox(height: 12),
-                _buildCallbackCard(),
-                const SizedBox(height: 20),
-
-                Center(
-                  child: TextButton(
-                    onPressed: _cancelJob,
-                    child: Text(
-                      'Cancel & Go Home',
-                      style: UserAppTheme.body(
-                        size: 13,
-                        color: UserAppTheme.urgentRed,
-                        weight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
+
+  Widget _buildCardShowcasePhoto({
+    required CategoryMetadata meta,
+    required IconData iconData,
+    required Color iconBg,
+    required double width,
+    required double height,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(13),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              meta.imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Container(
+                color: const Color(0xFFF1F5F9),
+                alignment: Alignment.center,
+                child: const Icon(Icons.build_circle_rounded, color: Color(0xFF94A3B8), size: 32),
+              ),
+            ),
+            // Bottom-left circular floating category badge
+            Positioned(
+              bottom: 6,
+              left: 6,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(iconData, color: Colors.white, size: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPillBadge({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required Color bgColor,
+    required Color textColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: iconColor, size: 11),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getCategoryIcon(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('ro') || lower.contains('water') || lower.contains('purifier')) {
+      return Icons.water_drop_rounded;
+    } else if (lower.contains('ac') || lower.contains('cool')) {
+      return Icons.ac_unit_rounded;
+    } else if (lower.contains('electric')) {
+      return Icons.bolt_rounded;
+    } else if (lower.contains('plumb')) {
+      return Icons.plumbing_rounded;
+    } else if (lower.contains('carpent')) {
+      return Icons.carpenter_rounded;
+    } else if (lower.contains('laptop') || lower.contains('phone')) {
+      return Icons.devices_rounded;
+    }
+    return Icons.build_rounded;
+  }
+
+  Color _getCategoryIconBg(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('ro') || lower.contains('water')) {
+      return const Color(0xFF2563EB); // Royal Blue
+    } else if (lower.contains('ac') || lower.contains('cool')) {
+      return const Color(0xFF0284C7); // Sky Blue
+    } else if (lower.contains('electric')) {
+      return const Color(0xFFF59E0B); // Amber / Yellow
+    } else if (lower.contains('plumb')) {
+      return const Color(0xFF0891B2); // Cyan
+    } else if (lower.contains('carpent')) {
+      return const Color(0xFFD97706); // Warm Amber
+    } else if (lower.contains('laptop') || lower.contains('phone')) {
+      return const Color(0xFF7C3AED); // Violet
+    }
+    return const Color(0xFF10B981); // Emerald
+  }
+
 
   // ─── STATE B: WORKER ASSIGNED (REDESIGNED) ───────────────────
   Widget _buildAssigned() {
