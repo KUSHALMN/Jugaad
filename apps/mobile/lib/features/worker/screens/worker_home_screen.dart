@@ -477,8 +477,9 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final bool isDesktop = screenWidth >= 1000;
-    final bool isTablet = screenWidth >= 700 && screenWidth < 1000;
+    final bool isDesktop = screenWidth >= 1024;
+    final bool isTablet = screenWidth >= 768 && screenWidth < 1024;
+    final bool isMobile = screenWidth < 768;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -487,23 +488,23 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
           children: [
             SingleChildScrollView(
               padding: EdgeInsets.symmetric(
-                horizontal: isDesktop ? 28 : (isTablet ? 20 : 16),
-                vertical: 20,
+                horizontal: isDesktop ? 28 : (isTablet ? 20 : 14),
+                vertical: isMobile ? 14 : 20,
               ),
               physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Mobile Header when on phones (shell top bar handles desktop)
-                  if (!isDesktop && screenWidth < 800) ...[
+                  if (isMobile) ...[
                     _buildMobileHeader(),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
                   ],
 
                   // Active In-Progress Mission Banner (if worker is busy)
                   if (_activeBookingId != null) ...[
                     _buildActiveMissionBanner(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                   ],
 
                   // ═══════════════════════════════════════════════════════════
@@ -515,7 +516,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                       children: [
                         Expanded(
                           flex: 66,
-                          child: _buildProfileStatusCard(),
+                          child: _buildProfileStatusCard(isMobile: false),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -525,26 +526,34 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                       ],
                     )
                   else ...[
-                    _buildProfileStatusCard(),
-                    const SizedBox(height: 14),
+                    _buildProfileStatusCard(isMobile: isMobile),
+                    const SizedBox(height: 12),
                     _buildEmergencyJobsCard(),
                   ],
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   // ═══════════════════════════════════════════════════════════
                   // ROW 2: 4 PERFORMANCE METRIC CARDS
                   // ═══════════════════════════════════════════════════════════
                   _buildFourMetricCards(screenWidth),
 
-                  const SizedBox(height: 16),
+                  // ═══════════════════════════════════════════════════════════
+                  // ROW 2.5: MOBILE FEATURES LAUNCHPAD (Relocated Feature Icons)
+                  // ═══════════════════════════════════════════════════════════
+                  if (isMobile) ...[
+                    const SizedBox(height: 14),
+                    _buildMobileFeatureLaunchpad(),
+                  ],
+
+                  const SizedBox(height: 14),
 
                   // ═══════════════════════════════════════════════════════════
                   // ROW 3: VERIFICATION APPLICATION REJECTED BANNER
                   // ═══════════════════════════════════════════════════════════
                   _buildVerificationBanner(),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   // ═══════════════════════════════════════════════════════════
                   // ROW 4: TODAY'S EARNINGS + YOUR SERVICE AREA RADAR
@@ -555,7 +564,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                       children: [
                         Expanded(
                           flex: 58,
-                          child: _buildTodayEarningsCard(),
+                          child: _buildTodayEarningsCard(isMobile: false),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -565,12 +574,12 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                       ],
                     )
                   else ...[
-                    _buildTodayEarningsCard(),
-                    const SizedBox(height: 14),
+                    _buildTodayEarningsCard(isMobile: isMobile),
+                    const SizedBox(height: 12),
                     _buildServiceAreaCard(),
                   ],
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
                   // ═══════════════════════════════════════════════════════════
                   // ROW 5: 3 COLUMNS (Recent Job Activity | Quick Actions | Tips)
@@ -595,11 +604,26 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                         ),
                       ],
                     )
-                  else ...[
+                  else if (isTablet) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 55,
+                          child: _buildRecentJobActivityCard(),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 45,
+                          child: _buildQuickActionsCard(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTipsCard(),
+                  ] else ...[
                     _buildRecentJobActivityCard(),
-                    const SizedBox(height: 16),
-                    _buildQuickActionsCard(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     _buildTipsCard(),
                   ],
 
@@ -886,11 +910,218 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   }
 
   /// 1. Profile Status Card (Mint Green, matching mockup)
-  Widget _buildProfileStatusCard() {
+  Widget _buildProfileStatusCard({required bool isMobile}) {
     final initialLetter = _workerName.isNotEmpty ? _workerName[0].toUpperCase() : 'K';
     final primarySkill = _workerSkills.isNotEmpty
         ? (_workerSkills.first[0].toUpperCase() + _workerSkills.first.substring(1).replaceAll('_', ' '))
         : 'Electrician';
+
+    if (isMobile) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFDCFCE7), width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row: Avatar + Name + PRO VERIFIED + Shield
+            Row(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ClipOval(
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF86EFAC),
+                          shape: BoxShape.circle,
+                        ),
+                        child: (_workerAvatarUrl != null && _workerAvatarUrl!.isNotEmpty)
+                            ? Image.network(
+                                _workerAvatarUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Center(
+                                  child: Text(
+                                    initialLetter,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: const Color(0xFF14532D),
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Center(
+                                child: Text(
+                                  initialLetter,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: const Color(0xFF14532D),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 13,
+                        height: 13,
+                        decoration: BoxDecoration(
+                          color: _isOnline ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        getGreeting(),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: const Color(0xFF475569),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _workerName,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFF0F172A),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFDCFCE7),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFF86EFAC)),
+                            ),
+                            child: Text(
+                              'PRO VERIFIED',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF15803D),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.shield_outlined, color: Color(0xFF059669), size: 18),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Chips Row
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                _buildInfoChip(Icons.handyman_rounded, primarySkill),
+                _buildInfoChip(Icons.location_on_rounded, '$_operatingCity ($_serviceRadius km)'),
+                _buildInfoChip(Icons.gps_fixed_rounded, 'GPS Live'),
+              ],
+            ),
+
+            const SizedBox(height: 14),
+
+            // Full-Width Mobile Duty Action Bar (ergonomic thumb touch-target)
+            InkWell(
+              onTap: _showDutyStatusPicker,
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                decoration: BoxDecoration(
+                  color: _isOnline ? const Color(0xFF059669) : const Color(0xFF334155),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_isOnline ? const Color(0xFF059669) : const Color(0xFF334155))
+                          .withValues(alpha: 0.22),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: _isOnline ? const Color(0xFF86EFAC) : const Color(0xFF94A3B8),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isOnline ? 'Online · Receiving Requests' : 'Duty Paused · Offline',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          'Change',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white70,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 16),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1165,6 +1396,32 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     );
   }
 
+  Widget _buildInfoChip(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFFDCFCE7)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: const Color(0xFF059669)),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF334155),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 2. Emergency Jobs Card (matching mockup)
   Widget _buildEmergencyJobsCard() {
     return Container(
@@ -1236,7 +1493,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
         iconColor: const Color(0xFF059669),
         value: '$_todayJobCount',
         title: "Today's Jobs",
-        subtitle: _todayJobCount == 0 ? 'No jobs completed yet' : '$_todayJobCount jobs completed',
+        subtitle: _todayJobCount == 0 ? 'No jobs yet' : '$_todayJobCount done',
+        isMobile: isMobile,
       ),
       _buildSingleMetricCard(
         icon: Icons.calendar_today_rounded,
@@ -1244,15 +1502,17 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
         iconColor: const Color(0xFF2563EB),
         value: '$_weekJobCount',
         title: 'This Week',
-        subtitle: 'Total job volume',
+        subtitle: 'Job volume',
+        isMobile: isMobile,
       ),
       _buildSingleMetricCard(
         icon: Icons.star_rounded,
         iconBg: const Color(0xFFFFFBEB),
         iconColor: const Color(0xFFF59E0B),
         value: '4.9 ★',
-        title: 'Partner Rating',
-        subtitle: 'Based on customer reviews',
+        title: 'Rating',
+        subtitle: 'Top rated',
+        isMobile: isMobile,
       ),
       _buildSingleMetricCard(
         icon: Icons.bolt_rounded,
@@ -1260,7 +1520,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
         iconColor: const Color(0xFF9333EA),
         value: '98% ⓘ',
         title: 'Accept Rate',
-        subtitle: 'Job requests accepted',
+        subtitle: 'High speed',
+        isMobile: isMobile,
       ),
     ];
 
@@ -1270,15 +1531,15 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
           Row(
             children: [
               Expanded(child: cards[0]),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(child: cards[1]),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(child: cards[2]),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(child: cards[3]),
             ],
           ),
@@ -1306,7 +1567,71 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     required String value,
     required String title,
     required String subtitle,
+    bool isMobile = false,
   }) {
+    if (isMobile) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x040F172A),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 18),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 19,
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF0F172A),
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1E293B),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 1),
+            Text(
+              subtitle,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10.5,
+                color: const Color(0xFF64748B),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -1449,13 +1774,13 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   }
 
   /// 5. Today's Earnings Card (Mint green, milestone target, progress)
-  Widget _buildTodayEarningsCard() {
+  Widget _buildTodayEarningsCard({bool isMobile = false}) {
     const double target = 2500.0;
     final double pct = (_todayEarnings / target).clamp(0.0, 1.0);
     final int pctInt = (pct * 100).toInt();
 
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: EdgeInsets.all(isMobile ? 16 : 22),
       decoration: BoxDecoration(
         color: const Color(0xFFF0FDF4),
         borderRadius: BorderRadius.circular(20),
@@ -1466,7 +1791,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Row(
                 children: [
@@ -1486,7 +1811,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                       Text(
                         "Today's Earnings",
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
+                          fontSize: isMobile ? 12 : 13,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF475569),
                         ),
@@ -1497,7 +1822,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                           Text(
                             '₹${_todayEarnings.toInt()}',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 30,
+                              fontSize: isMobile ? 24 : 30,
                               fontWeight: FontWeight.w900,
                               color: const Color(0xFF0F172A),
                               letterSpacing: -0.5,
@@ -1531,28 +1856,28 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                   ),
                 ],
               ),
-              ElevatedButton.icon(
+              ElevatedButton(
                 onPressed: () => context.go('/worker/earnings'),
-                icon: const Icon(Icons.credit_card_rounded, color: Colors.white, size: 16),
-                label: Row(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF064E3B),
+                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 14, vertical: isMobile ? 8 : 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Wallet & UPI',
+                      isMobile ? 'Wallet' : 'Wallet & UPI',
                       style: GoogleFonts.plusJakartaSans(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
-                        fontSize: 12.5,
+                        fontSize: 12,
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 11),
+                    const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 10),
                   ],
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF064E3B),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
                 ),
               ),
             ],
@@ -1908,6 +2233,182 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
               },
             ),
         ],
+      ),
+    );
+  }
+
+  /// 7.5 Mobile Feature Launchpad (Senior UX Relocation: Key utilities in direct thumb reach)
+  Widget _buildMobileFeatureLaunchpad() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x040F172A),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.bolt_rounded, color: Color(0xFFEA580C), size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Quick Feature Hub',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '4 Tools',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _buildMobileFeatureTile(
+                  icon: Icons.handyman_rounded,
+                  label: 'Services',
+                  sublabel: '${_workerSkills.length} active',
+                  iconColor: const Color(0xFF059669),
+                  iconBg: const Color(0xFFF0FDF4),
+                  onTap: () => WorkerDashboardSheets.showMyServices(
+                    context,
+                    currentSkills: _workerSkills,
+                    onSkillsUpdated: (s) => setState(() => _workerSkills = s),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildMobileFeatureTile(
+                  icon: Icons.account_balance_wallet_rounded,
+                  label: 'UPI Ledger',
+                  sublabel: 'Payouts',
+                  iconColor: const Color(0xFF2563EB),
+                  iconBg: const Color(0xFFEFF6FF),
+                  onTap: () => WorkerDashboardSheets.showBankAndUpi(context),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildMobileFeatureTile(
+                  icon: Icons.description_rounded,
+                  label: 'KYC Docs',
+                  sublabel: 'Badges',
+                  iconColor: const Color(0xFFEA580C),
+                  iconBg: const Color(0xFFFFF7ED),
+                  onTap: () => WorkerDashboardSheets.showDocuments(context),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildMobileFeatureTile(
+                  icon: Icons.radar_rounded,
+                  label: 'Radius',
+                  sublabel: '${_serviceRadius}km range',
+                  iconColor: const Color(0xFF7C3AED),
+                  iconBg: const Color(0xFFF5F3FF),
+                  onTap: () => WorkerDashboardSheets.showServiceArea(
+                    context,
+                    currentRadius: _serviceRadius,
+                    onRadiusSelected: (r) => setState(() => _serviceRadius = r),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileFeatureTile({
+    required IconData icon,
+    required String label,
+    required String sublabel,
+    required Color iconColor,
+    required Color iconBg,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0F172A),
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              sublabel,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF64748B),
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

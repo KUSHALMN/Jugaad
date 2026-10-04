@@ -578,19 +578,19 @@ class _EarningsScreenState extends State<EarningsScreen> {
                           children: [
                             Expanded(
                               flex: 65,
-                              child: _buildMainEarningsGaugeCard(displayEarnings),
+                              child: _buildMainEarningsGaugeCard(displayEarnings, isMobile: false),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
                               flex: 35,
-                              child: _buildTargetStatsColumn(pctAchieved.toInt()),
+                              child: _buildTargetStatsColumn(pctAchieved.toInt(), isMobile: false),
                             ),
                           ],
                         )
                       else ...[
-                        _buildMainEarningsGaugeCard(displayEarnings),
+                        _buildMainEarningsGaugeCard(displayEarnings, isMobile: screenWidth < 700),
                         const SizedBox(height: 14),
-                        _buildTargetStatsColumn(pctAchieved.toInt()),
+                        _buildTargetStatsColumn(pctAchieved.toInt(), isMobile: screenWidth < 700),
                       ],
 
                       const SizedBox(height: 16),
@@ -798,9 +798,9 @@ class _EarningsScreenState extends State<EarningsScreen> {
   }
 
   /// 1. Main Earnings Card with Half-Circle Arc Gauge
-  Widget _buildMainEarningsGaugeCard(double displayEarnings) {
+  Widget _buildMainEarningsGaugeCard(double displayEarnings, {bool isMobile = false}) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(26, 24, 26, 24),
+      padding: EdgeInsets.fromLTRB(isMobile ? 18 : 26, isMobile ? 18 : 24, isMobile ? 18 : 26, isMobile ? 18 : 24),
       decoration: BoxDecoration(
         color: const Color(0xFFF0FDF4),
         borderRadius: BorderRadius.circular(22),
@@ -820,31 +820,31 @@ class _EarningsScreenState extends State<EarningsScreen> {
                       ? "TODAY'S EARNINGS"
                       : "${_selectedFilter.toUpperCase()} EARNINGS",
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
+                    fontSize: isMobile ? 11 : 12,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
                     color: const Color(0xFF059669),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   '₹${displayEarnings.toInt()}',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 40,
+                    fontSize: isMobile ? 32 : 40,
                     fontWeight: FontWeight.w900,
                     color: const Color(0xFF0F172A),
                     letterSpacing: -1.0,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.access_time_rounded, size: 14, color: Color(0xFF64748B)),
-                    const SizedBox(width: 5),
+                    const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF64748B)),
+                    const SizedBox(width: 4),
                     Text(
                       displayEarnings == 0 ? 'No earnings yet' : '+14% vs yesterday',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
+                        fontSize: isMobile ? 11 : 12,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF64748B),
                       ),
@@ -857,8 +857,8 @@ class _EarningsScreenState extends State<EarningsScreen> {
 
           // Center / Right: Half-circle Arc Gauge
           SizedBox(
-            width: 170,
-            height: 95,
+            width: isMobile ? 135 : 170,
+            height: isMobile ? 80 : 95,
             child: CustomPaint(
               painter: _DailyTargetArcPainter(
                 current: displayEarnings,
@@ -867,14 +867,14 @@ class _EarningsScreenState extends State<EarningsScreen> {
               child: Align(
                 alignment: Alignment.bottomCenter,
                 child: Padding(
-                  padding: const EdgeInsets.only(bottom: 6.0),
+                  padding: const EdgeInsets.only(bottom: 4.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         '₹${displayEarnings.toInt()} / ₹${_dailyTarget.toInt()}',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14.5,
+                          fontSize: isMobile ? 12 : 14.5,
                           fontWeight: FontWeight.w900,
                           color: const Color(0xFF0F172A),
                         ),
@@ -882,7 +882,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                       Text(
                         'Daily target',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w500,
                           color: const Color(0xFF64748B),
                         ),
@@ -899,7 +899,35 @@ class _EarningsScreenState extends State<EarningsScreen> {
   }
 
   /// 2. Target Stats Cards Column (₹2500 Daily target | 0% Target completed)
-  Widget _buildTargetStatsColumn(int pctAchieved) {
+  Widget _buildTargetStatsColumn(int pctAchieved, {bool isMobile = false}) {
+    if (isMobile) {
+      return Row(
+        children: [
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.track_changes_rounded,
+              iconBg: const Color(0xFFFFF7ED),
+              iconColor: const Color(0xFFEA580C),
+              value: '₹${_dailyTarget.toInt()}',
+              title: 'Daily target',
+              onTap: _showTargetConfigDialog,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.bar_chart_rounded,
+              iconBg: const Color(0xFFF0FDF4),
+              iconColor: const Color(0xFF059669),
+              value: '$pctAchieved%',
+              title: 'Target completed',
+              onTap: _showTargetConfigDialog,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
         _buildStatCard(
