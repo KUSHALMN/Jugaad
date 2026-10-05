@@ -87,25 +87,40 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   }
 
   void _startListeners() {
-    final uid = AuthService().currentUser?.uid;
-    if (uid == null) return;
-
-    _workerSub = _fs.workerStream(uid).listen((rows) {
-      if (!mounted) return;
-      if (rows.isEmpty) {
-        setState(() => _workerDocExists = false);
+    try {
+      String? uid;
+      try {
+        uid = AuthService().currentUser?.uid;
+      } catch (_) {}
+      if (uid == null) {
+        try {
+          uid = SupabaseConfig.client.auth.currentUser?.id;
+        } catch (_) {}
+      }
+      debugPrint('[WORKER_HOME] Initializing worker listeners for uid: $uid');
+      if (uid == null) {
+        debugPrint('[WORKER_HOME] Notice: No active worker uid found during listener initialization.');
+        if (mounted) setState(() => _recentLoading = false);
         return;
       }
-      final data = rows.first;
-      final totalEarnings =
-          (data['total_earnings'] as num? ?? 0).toDouble();
 
-      if (_prevTotalEarnings >= 0 &&
-          _prevTotalEarnings < 1000 &&
-          totalEarnings >= 1000) {
-        _triggerMilestoneBurst();
-      }
-      _prevTotalEarnings = totalEarnings;
+      _workerSub = _fs.workerStream(uid).listen((rows) {
+        if (!mounted) return;
+        if (rows.isEmpty) {
+          debugPrint('[WORKER_HOME] workerStream returned empty rows for uid: $uid');
+          setState(() => _workerDocExists = false);
+          return;
+        }
+        final data = rows.first;
+        final totalEarnings =
+            (data['total_earnings'] as num? ?? 0).toDouble();
+
+        if (_prevTotalEarnings >= 0 &&
+            _prevTotalEarnings < 1000 &&
+            totalEarnings >= 1000) {
+          _triggerMilestoneBurst();
+        }
+        _prevTotalEarnings = totalEarnings;
 
       final appr = (data['approval_status'] ?? data['status'] ?? 'rejected')
           .toString()
@@ -180,7 +195,11 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
       print('[WORKER_HOME] recentBookingsStream error: $e');
       if (mounted) setState(() => _recentLoading = false);
     });
+  } catch (e, st) {
+    debugPrint('[WORKER_HOME] Exception during listener setup: $e\n$st');
+    if (mounted) setState(() => _recentLoading = false);
   }
+}
 
   int _computeTodayJobCount(List<Map<String, dynamic>> completedBookings) {
     final today = DateTime.now();
@@ -483,6 +502,15 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    try {
+      return _buildDashboardContent(context);
+    } catch (e, st) {
+      debugPrint('[WORKER_DASHBOARD] Fatal exception caught in build(): $e\n$st');
+      return _buildErrorFallback(context, e);
+    }
+  }
+
+  Widget _buildDashboardContent(BuildContext context) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth >= 1024;
     final bool isTablet = screenWidth >= 768 && screenWidth < 1024;
@@ -641,10 +669,11 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
 
             // Confetti Overlay
             if (_particles.isNotEmpty)
-              IgnorePointer(
-                child: CustomPaint(
-                  painter: _ConfettiPainter(_particles),
-                  size: Size.infinite,
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _ConfettiPainter(_particles),
+                  ),
                 ),
               ),
 
@@ -745,6 +774,88 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     return ColoredBox(
       color: const Color(0xFFF8FAFC),
       child: content,
+    );
+  }
+
+  Widget _buildErrorFallback(BuildContext context, Object error) {
+    return ColoredBox(
+      color: const Color(0xFFF8FAFC),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x060F172A),
+                    blurRadius: 16,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFEF2F2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 36),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Unable to Load Dashboard',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Something unexpected occurred while displaying your partner dashboard.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {});
+                      _startListeners();
+                    },
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: Text(
+                      'Retry Dashboard',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1220,22 +1331,21 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                   ),
                 ),
                 const SizedBox(height: 2),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
-                    Flexible(
-                      child: Text(
-                        _workerName,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF0F172A),
-                          letterSpacing: -0.3,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      _workerName,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF0F172A),
+                        letterSpacing: -0.3,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                       decoration: BoxDecoration(
@@ -1255,76 +1365,16 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 // Metadata chips row
                 Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 4,
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.handyman_rounded, size: 14, color: Color(0xFF059669)),
-                        const SizedBox(width: 4),
-                        Text(
-                          primarySkill,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF334155),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Text('•', style: TextStyle(color: Color(0xFF94A3B8))),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${_workerSkills.length} Verified Skill',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF334155),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Text('•', style: TextStyle(color: Color(0xFF94A3B8))),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFF059669)),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Active in $_operatingCity ($_serviceRadius km)',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF334155),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Text('•', style: TextStyle(color: Color(0xFF94A3B8))),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.gps_fixed_rounded, size: 14, color: Color(0xFF059669)),
-                        const SizedBox(width: 4),
-                        Text(
-                          'GPS Accurate',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF334155),
-                          ),
-                        ),
-                      ],
-                    ),
+                    _buildInfoChip(Icons.handyman_rounded, primarySkill),
+                    _buildInfoChip(Icons.star_rounded, '${_workerSkills.length} Verified Skill'),
+                    _buildInfoChip(Icons.location_on_rounded, '$_operatingCity ($_serviceRadius km)'),
+                    _buildInfoChip(Icons.gps_fixed_rounded, 'GPS Accurate'),
                   ],
                 ),
               ],
@@ -1424,12 +1474,16 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
         children: [
           Icon(icon, size: 12, color: const Color(0xFF059669)),
           const SizedBox(width: 4),
-          Text(
-            text,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF334155),
+          Flexible(
+            child: Text(
+              text,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF334155),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -1977,12 +2031,16 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                       child: const Icon(Icons.location_on_rounded, color: Color(0xFFEA580C), size: 18),
                     ),
                     const SizedBox(width: 10),
-                    Text(
-                      'Your Service Area',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0F172A),
+                    Expanded(
+                      child: Text(
+                        'Your Service Area',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F172A),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -2099,20 +2157,27 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.access_time_rounded, color: Color(0xFF0F172A), size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Recent Job Activity',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF0F172A),
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.access_time_rounded, color: Color(0xFF0F172A), size: 18),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Recent Job Activity',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F172A),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               InkWell(
                 onTap: () => context.go('/worker/earnings'),
                 child: Row(
@@ -2598,12 +2663,16 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
             children: [
               const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFFEA580C), size: 20),
               const SizedBox(width: 8),
-              Text(
-                'Tips to Get More Jobs',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0F172A),
+              Expanded(
+                child: Text(
+                  'Tips to Get More Jobs',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0F172A),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -2691,7 +2760,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
             if (data.isEmpty) return;
 
             final status = data['status'] as String? ?? '';
-            if (status == 'searching') {
+            if (status == 'searching' && payload.eventType == PostgresChangeEvent.insert) {
               _checkAndShowJobOffer(data);
             }
           },
@@ -2718,14 +2787,11 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     try {
       final response = await SupabaseConfig.client
           .from('jobs')
-          .select()
+          .select('id')
           .eq('status', 'searching');
-      for (var job in response) {
-        if (!mounted || !_isOnline) return;
-        _checkAndShowJobOffer(job);
-      }
+      debugPrint('[WORKER_HOME] Checked searching jobs: ${response.length} active in pool');
     } catch (e) {
-      print('[WORKER_HOME] Error checking existing searching jobs: $e');
+      debugPrint('[WORKER_HOME] Error checking existing searching jobs: $e');
     }
   }
 
@@ -2739,6 +2805,10 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   }
 
   void _checkAndShowJobOffer(Map<String, dynamic> data) {
+    if (!mounted) return;
+    final currentLoc = GoRouterState.of(context).uri.toString();
+    if (currentLoc.startsWith('/worker/incoming')) return;
+
     final jobId = data['id'] as String? ?? '';
     if (jobId.isEmpty) return;
 
