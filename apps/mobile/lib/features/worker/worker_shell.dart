@@ -26,7 +26,7 @@ class _WorkerShellState extends State<WorkerShell> {
 
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).uri.toString();
-    if (location.startsWith('/worker/home')) return 0;
+    if (location.startsWith('/worker/home') || location.startsWith('/worker/dashboard')) return 0;
     if (location.startsWith('/worker/active')) return 1;
     if (location.startsWith('/worker/earnings')) return 2;
     if (location.startsWith('/worker/profile')) return 3;
@@ -81,7 +81,7 @@ class _WorkerShellState extends State<WorkerShell> {
           : null,
       body: isDesktop
           ? Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Left SaaS Sidebar matching mockup
                 _DesktopWorkerSidebar(
@@ -272,66 +272,73 @@ class _DesktopWorkerNavBar extends StatelessWidget {
           ),
 
           // ─── CENTER: NAV TABS (Dashboard, Jobs [3], Earnings, Profile) ───
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(navItems.length, (idx) {
-              final item = navItems[idx];
-              final isSelected = idx == selectedIndex;
-              final bool hasJobBadge = idx == 1; // Jobs tab badge 3
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(navItems.length, (idx) {
+                    final item = navItems[idx];
+                    final isSelected = idx == selectedIndex;
+                    final bool hasJobBadge = idx == 1; // Jobs tab badge 3
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: InkWell(
-                  onTap: () => onItemTapped(idx),
-                  borderRadius: BorderRadius.circular(24),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFE8F8F0) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          item.$1,
-                          size: 18,
-                          color: isSelected ? const Color(0xFF059669) : const Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 7),
-                        Text(
-                          item.$2,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13.5,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                            color: isSelected ? const Color(0xFF059669) : const Color(0xFF475569),
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: InkWell(
+                        onTap: () => onItemTapped(idx),
+                        borderRadius: BorderRadius.circular(24),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFFE8F8F0) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                        ),
-                        if (hasJobBadge) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFEF4444),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              '3',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                item.$1,
+                                size: 18,
+                                color: isSelected ? const Color(0xFF059669) : const Color(0xFF64748B),
                               ),
-                            ),
+                              const SizedBox(width: 7),
+                              Text(
+                                item.$2,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13.5,
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  color: isSelected ? const Color(0xFF059669) : const Color(0xFF475569),
+                                ),
+                              ),
+                              if (hasJobBadge) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFEF4444),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    '3',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
-                      ],
-                    ),
-                  ),
+                        ),
+                      ),
+                    );
+                  }),
                 ),
-              );
-            }),
+              ),
+            ),
           ),
 
           // ─── RIGHT: NOTIFICATION BELL + USER AVATAR & DROPDOWN ───────────
