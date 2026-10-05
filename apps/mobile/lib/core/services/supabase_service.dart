@@ -17,7 +17,7 @@ class SupabaseService {
   factory SupabaseService() => _instance;
   SupabaseService._internal();
 
-  final SupabaseClient _client = Supabase.instance.client;
+  SupabaseClient get _client => Supabase.instance.client;
 
   // In-memory TTL caches
   Map<String, int>? _cachedWorkerCounts;

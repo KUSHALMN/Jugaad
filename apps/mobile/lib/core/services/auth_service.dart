@@ -14,7 +14,7 @@ class AuthService {
   factory AuthService() => _instance;
   AuthService._internal();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
   static const String _webClientId = '745766971944-p6e287vftbuha15938lrcnis87eoaq46.apps.googleusercontent.com';
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -23,9 +23,21 @@ class AuthService {
   );
 
   // ─── Current state ───────────────────────────────────────
-  User? get currentUser => _auth.currentUser;
-  bool get isLoggedIn => _auth.currentUser != null;
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  User? get currentUser {
+    try {
+      return FirebaseAuth.instance.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }
+  bool get isLoggedIn => currentUser != null;
+  Stream<User?> get authStateChanges {
+    try {
+      return FirebaseAuth.instance.authStateChanges();
+    } catch (_) {
+      return const Stream.empty();
+    }
+  }
 
   String? _userRole;
   String? get userRole => _userRole;
