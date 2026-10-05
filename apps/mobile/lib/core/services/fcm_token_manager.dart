@@ -13,8 +13,20 @@ import 'api_service.dart';
 /// 2. Cancels previous onTokenRefresh listener to prevent leak.
 /// 3. Removed broken workers table write (no fcm_token column in schema).
 class FCMTokenManager {
-  static final FirebaseMessaging _fcm = FirebaseMessaging.instance;
-  static final FirebaseAuth _auth = FirebaseAuth.instance;
+  static FirebaseMessaging? get _fcm {
+    try {
+      return FirebaseMessaging.instance;
+    } catch (_) {
+      return null;
+    }
+  }
+  static FirebaseAuth? get _auth {
+    try {
+      return FirebaseAuth.instance;
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Prevent listener leak — cancel previous before adding new one.
   static StreamSubscription<String>? _tokenRefreshSub;
@@ -22,14 +34,14 @@ class FCMTokenManager {
   /// Refresh and upload the FCM token for the current user.
   /// Safe to call multiple times (idempotent).
   static Future<void> refreshAndUploadToken() async {
-    final user = _auth.currentUser;
+    final user = _auth?.currentUser;
     if (user == null) {
       debugPrint('[FCM_TOKEN] No user logged in, skipping token upload');
       return;
     }
 
     try {
-      final token = await _fcm.getToken();
+      final token = await _fcm?.getToken();
       debugPrint('[FCM_TOKEN] Got token: ${token != null ? "${token.substring(0, 20)}..." : "null"}');
 
       if (token != null) {
@@ -38,7 +50,7 @@ class FCMTokenManager {
 
       // Cancel previous listener to prevent stacking duplicates
       await _tokenRefreshSub?.cancel();
-      _tokenRefreshSub = _fcm.onTokenRefresh.listen((newToken) {
+      _tokenRefreshSub = _fcm?.onTokenRefresh.listen((newToken) {
         debugPrint('[FCM_TOKEN] Token refreshed, uploading new token...');
         _uploadToken(newToken);
       });
