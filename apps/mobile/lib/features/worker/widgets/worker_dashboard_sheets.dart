@@ -813,25 +813,27 @@ class WorkerDashboardSheets {
                     child: const Icon(Icons.handyman_rounded, color: Color(0xFF059669), size: 22),
                   ),
                   const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'My Services & Rate Cards',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0F172A),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'My Services & Rate Cards',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F172A),
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Toggle which job requests you are certified to handle',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
+                        Text(
+                          'Toggle which job requests you are certified to handle',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -841,14 +843,15 @@ class WorkerDashboardSheets {
                 final isChecked = selected.contains(key);
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
+                  child: Material(
                     color: isChecked ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isChecked ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(
+                        color: isChecked ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+                      ),
                     ),
-                  ),
-                  child: CheckboxListTile(
+                    child: CheckboxListTile(
                     value: isChecked,
                     activeColor: const Color(0xFF059669),
                     title: Text(
@@ -877,8 +880,9 @@ class WorkerDashboardSheets {
                       });
                     },
                   ),
-                );
-              }),
+                ),
+              );
+            }),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
