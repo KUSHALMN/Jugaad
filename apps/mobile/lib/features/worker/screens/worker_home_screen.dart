@@ -1536,21 +1536,23 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
       ),
     ];
 
-    if (isMobile) {
+    final bool useGrid = screenWidth < 1180;
+
+    if (useGrid) {
       return Column(
         children: [
           Row(
             children: [
               Expanded(child: cards[0]),
-              const SizedBox(width: 10),
+              SizedBox(width: isMobile ? 10 : 14),
               Expanded(child: cards[1]),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: isMobile ? 10 : 14),
           Row(
             children: [
               Expanded(child: cards[2]),
-              const SizedBox(width: 10),
+              SizedBox(width: isMobile ? 10 : 14),
               Expanded(child: cards[3]),
             ],
           ),
@@ -1691,6 +1693,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF1E293B),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 1),
                 Text(
@@ -2197,40 +2201,49 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF0FDF4),
-                            borderRadius: BorderRadius.circular(10),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF0FDF4),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.check_circle_rounded,
+                                color: Color(0xFF059669), size: 18),
                           ),
-                          child: const Icon(Icons.check_circle_rounded,
-                              color: Color(0xFF059669), size: 18),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              skill,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF0F172A),
-                              ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  skill,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF0F172A),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  custName,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11.5,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                            Text(
-                              custName,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11.5,
-                                color: const Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 12),
                     Text(
                       '₹$amount',
                       style: GoogleFonts.plusJakartaSans(
