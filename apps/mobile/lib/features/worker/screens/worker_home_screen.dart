@@ -486,12 +486,9 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     final bool isTablet = screenWidth >= 768 && screenWidth < 1024;
     final bool isMobile = screenWidth < 768;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
+    Widget content = Stack(
+      children: [
+        SingleChildScrollView(
               padding: EdgeInsets.symmetric(
                 horizontal: isDesktop ? 28 : (isTablet ? 20 : 14),
                 vertical: isMobile ? 14 : 20,
@@ -733,8 +730,17 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
               ),
             ],
           ],
-        ),
+        ],
       ),
+    );
+
+    if (isMobile) {
+      content = SafeArea(child: content);
+    }
+
+    return ColoredBox(
+      color: const Color(0xFFF8FAFC),
+      child: content,
     );
   }
 
