@@ -455,7 +455,9 @@ class SupabaseService {
     for (final row in rows) {
       final dateStr = row['created_at'] as String?;
       if (dateStr == null) continue;
-      final date = DateTime.parse(dateStr).toLocal();
+      final parsed = DateTime.tryParse(dateStr);
+      if (parsed == null) continue;
+      final date = parsed.toLocal();
       if (!date.isBefore(todayStart)) {
         total += (row['amount'] as num? ?? 0).toDouble();
       }
@@ -472,7 +474,9 @@ class SupabaseService {
     for (final row in rows) {
       final dateStr = row['created_at'] as String?;
       if (dateStr == null) continue;
-      final date = DateTime.parse(dateStr).toLocal();
+      final parsed = DateTime.tryParse(dateStr);
+      if (parsed == null) continue;
+      final date = parsed.toLocal();
       if (!date.isBefore(weekStart)) {
         total += (row['amount'] as num? ?? 0).toDouble();
       }
@@ -489,7 +493,9 @@ class SupabaseService {
     for (final row in rows) {
       final dateStr = row['created_at'] as String?;
       if (dateStr == null) continue;
-      final date = DateTime.parse(dateStr).toLocal();
+      final parsed = DateTime.tryParse(dateStr);
+      if (parsed == null) continue;
+      final date = parsed.toLocal();
       if (!date.isBefore(weekStart)) count++;
     }
     return count;
