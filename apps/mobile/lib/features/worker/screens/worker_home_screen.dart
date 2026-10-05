@@ -732,9 +732,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
               ),
             ],
           ],
-        ],
-      ),
-    );
+        );
 
     if (isMobile) {
       content = SafeArea(child: content);

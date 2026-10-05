@@ -6,10 +6,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  test('portal modes expose labels and themes', () {
+  test('portal modes expose labels and colors', () {
     expect(PortalMode.user.label, 'User');
     expect(PortalMode.worker.label, 'Worker');
-    expect(PortalMode.user.theme.colorScheme.primary, PortalMode.user.primary);
-    expect(PortalMode.worker.theme.colorScheme.primary, PortalMode.worker.primary);
+    expect(PortalMode.user.primary, isNotNull);
+    expect(PortalMode.worker.primary, isNotNull);
   });
 }

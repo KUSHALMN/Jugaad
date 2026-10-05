@@ -1,11 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jugaad_mvp/core/services/supabase_service.dart';
 import 'package:jugaad_mvp/core/theme/portal_mode.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
+  SharedPreferences.setMockInitialValues({});
 
   group('SupabaseService Earnings & Booking Date Safety', () {
     test('computeTodayEarnings handles valid dates and sums correctly', () {
