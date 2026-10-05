@@ -313,14 +313,25 @@ class _IncomingRequestScreenState extends State<IncomingRequestScreen>
     final translateOffset = _dragOffset * 0.45;
 
     return PopScope(
-      canPop: false,
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          context.go('/worker/home');
+        }
+      },
       child: Scaffold(
         backgroundColor: widget.jobType == 'emergency'
-            ? const Color(0xFF7F1D1D).withValues(alpha: 0.8)
-            : Colors.black.withValues(alpha: 0.4),
+            ? const Color(0xFF7F1D1D).withValues(alpha: 0.85)
+            : Colors.black54,
         body: Column(
           children: [
-            Expanded(child: Container()),
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _passJob(),
+                child: Container(),
+              ),
+            ),
             GestureDetector(
               onVerticalDragStart: (details) {
                 if (!_isActioning) {
