@@ -143,6 +143,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
       } else {
         _stopJobsListener();
       }
+    }, onError: (e) {
+      print('[WORKER_HOME] workerStream error: $e');
     });
 
     _activeBookingSub = _fs
@@ -153,6 +155,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
         _activeBookingId =
             rows.isNotEmpty ? rows.first['job_id']?.toString() : null;
       });
+    }, onError: (e) {
+      print('[WORKER_HOME] activeBookingStream error: $e');
     });
 
     _recentBookingsSub = _fs
@@ -172,7 +176,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
         _recentBookings = recent;
         _recentLoading = false;
       });
-    }, onError: (_) {
+    }, onError: (e) {
+      print('[WORKER_HOME] recentBookingsStream error: $e');
       if (mounted) setState(() => _recentLoading = false);
     });
   }
@@ -2668,7 +2673,11 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
             }
           },
         )
-        .subscribe();
+        .subscribe((status, [error]) {
+          if (error != null) {
+            print('[WORKER_HOME] Real-time jobs subscription error: $error');
+          }
+        });
 
     _checkExistingSearchingJobs();
   }
@@ -2689,6 +2698,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
           .select()
           .eq('status', 'searching');
       for (var job in response) {
+        if (!mounted || !_isOnline) return;
         _checkAndShowJobOffer(job);
       }
     } catch (e) {
