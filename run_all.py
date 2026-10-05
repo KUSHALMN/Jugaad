@@ -167,19 +167,21 @@ def main():
                 pass
 
         if run_mobile:
-            extra_flags = ""
-            if target_dev in ("chrome", "edge"):
-                extra_flags = ' --web-browser-flag "--remote-allow-origins=*"'
-            elif target_dev == "web-server":
+            is_web = target_dev in ("chrome", "edge", "web-server")
+            if is_web:
+                actual_dev = "web-server"
                 extra_flags = " --web-port 3000 --web-hostname localhost"
+            else:
+                actual_dev = target_dev
+                extra_flags = ""
 
             print(f"[2/2] Launching Flutter Mobile on '{target_dev}' in dedicated window...")
-            cmd_mobile = f'start "Jugaad Flutter Mobile" cmd /k "cd /d \"{MOBILE_DIR}\" && flutter run -d {target_dev}{extra_flags}"'
+            cmd_mobile = f'start "Jugaad Flutter Mobile" cmd /k "cd /d \"{MOBILE_DIR}\" && flutter run -d {actual_dev}{extra_flags}"'
             os.system(cmd_mobile)
 
-            if target_dev == "web-server":
+            if is_web:
                 def open_web():
-                    time.sleep(4)
+                    time.sleep(5)
                     try:
                         import webbrowser
                         webbrowser.open("http://localhost:3000")
@@ -191,7 +193,7 @@ def main():
         print("  [SUCCESS] Both Backend and Frontend are now RUNNING!")
         print("  - Backend API:    http://localhost:8000 (Swagger docs: http://localhost:8000/docs)")
         if run_mobile:
-            print(f"  - Flutter Mobile: Compiling on '{target_dev}' in dedicated window")
+            print(f"  - Flutter Mobile: http://localhost:3000 (Opening in {target_dev})...")
             print("                    (Press 'r' in Flutter window for instant Hot Reload)")
         if run_web:
             print("  - Admin Web:      http://localhost:5173")
@@ -233,11 +235,20 @@ def main():
     # 3. Start Flutter Mobile if requested
     if run_mobile:
         flutter_cmd = "flutter.bat" if sys.platform == "win32" else "flutter"
-        flutter_args = [flutter_cmd, "run", "-d", target_dev]
-        if target_dev in ("chrome", "edge"):
-            flutter_args += ["--web-browser-flag", "--remote-allow-origins=*"]
-        elif target_dev == "web-server":
-            flutter_args += ["--web-port", "3000", "--web-hostname", "localhost"]
+        is_web = target_dev in ("chrome", "edge", "web-server")
+        if is_web:
+            actual_dev = "web-server"
+            flutter_args = [flutter_cmd, "run", "-d", actual_dev, "--web-port", "3000", "--web-hostname", "localhost"]
+            def open_web_inline():
+                time.sleep(5)
+                try:
+                    import webbrowser
+                    webbrowser.open("http://localhost:3000")
+                except Exception:
+                    pass
+            threading.Thread(target=open_web_inline, daemon=True).start()
+        else:
+            flutter_args = [flutter_cmd, "run", "-d", target_dev]
 
         print(f"--> [Starting] Flutter Mobile ({' '.join(flutter_args)})...")
         mobile_proc = subprocess.Popen(
