@@ -203,10 +203,7 @@ class AppRouter {
         return null; // Allowed
       },
       routes: [
-        GoRoute(
-          path: '/worker/dashboard',
-          redirect: (context, state) => '/worker/home',
-        ),
+
         GoRoute(
           path: '/home',
           redirect: (context, state) => '/user/home',
@@ -338,10 +335,10 @@ class AppRouter {
             final timeout = int.tryParse(state.uri.queryParameters['timeout'] ?? '300') ?? 300;
             final jobType = state.uri.queryParameters['job_type'] ?? 'normal';
             final surcharge = double.tryParse(state.uri.queryParameters['surcharge'] ?? '0') ?? 0;
-            return CustomTransitionPage(
-              key: state.pageKey,
-              opaque: false, // Allows the black background overlay to be transparent
-              child: IncomingRequestScreen(
+            return _fadeTransition(
+              context,
+              state,
+              IncomingRequestScreen(
                 jobId: jobId,
                 skill: skill,
                 budget: budget,
@@ -351,13 +348,6 @@ class AppRouter {
                 jobType: jobType,
                 surchargeAmount: surcharge,
               ),
-              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return Row(
-                  children: [
-                    Expanded(child: FadeTransition(opacity: animation, child: child)),
-                  ],
-                );
-              },
             );
           },
         ),
@@ -417,6 +407,14 @@ class AppRouter {
             GoRoute(
               path: '/worker/home',
               pageBuilder: (context, state) => _fadeTransition(context, state, const WorkerHomeScreen()),
+            ),
+            GoRoute(
+              path: '/worker/dashboard',
+              pageBuilder: (context, state) => _fadeTransition(context, state, const WorkerHomeScreen()),
+            ),
+            GoRoute(
+              path: '/worker',
+              redirect: (context, state) => '/worker/home',
             ),
             GoRoute(
               path: '/worker/active',
