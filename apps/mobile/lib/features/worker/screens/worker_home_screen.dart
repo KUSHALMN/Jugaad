@@ -488,10 +488,13 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     final bool isTablet = screenWidth >= 768 && screenWidth < 1024;
     final bool isMobile = screenWidth < 768;
 
-    Widget content = Stack(
-      children: [
-        SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
+    Widget content = SizedBox.expand(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          SingleChildScrollView(
+            primary: true,
+            padding: EdgeInsets.symmetric(
                 horizontal: isDesktop ? 28 : (isTablet ? 20 : 14),
                 vertical: isMobile ? 14 : 20,
               ),
@@ -732,7 +735,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
               ),
             ],
           ],
-        );
+        ),
+      );
 
     if (isMobile) {
       content = SafeArea(child: content);

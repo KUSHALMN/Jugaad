@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:jugaad_mvp/core/config/supabase_config.dart';
 import 'package:jugaad_mvp/core/theme/app_colors.dart';
@@ -93,7 +94,15 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/worker/profile');
+            }
+          },
         ),
         title: Text(
           'Account Settings',

@@ -505,15 +505,29 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
     HapticFeedback.mediumImpact();
     setState(() => _isActioning = true);
     try {
-      await ApiService().declineJob(widget.jobId);
+      await ApiService().declineJob(widget.jobId).timeout(const Duration(seconds: 4));
     } catch (e) {
       print('[MATCHING] Error declining job: $e');
-      if (mounted) {
-        setState(() => _isActioning = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+    }
+    if (mounted) {
+      setState(() {
+        _isActioning = false;
+        _matchingState = MatchingState.searching;
+      });
+      _acceptCountdown.reset();
+      _startFallbackTimer();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Worker declined. Resuming radar search...',
+            style: UserAppTheme.body(color: Colors.white),
+          ),
+          backgroundColor: const Color(0xFF0F172A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -648,80 +662,90 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
   // ─── BUILD ───────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _assignedBgController,
-      builder: (context, child) {
-        final isNoWorkers = _matchingState == MatchingState.noWorkersFound;
-        return Container(
-          decoration: BoxDecoration(
-            color: isNoWorkers
-                ? const Color(0xFFF8FAFC)
-                : ColorTween(
-                    begin: UserAppTheme.background,
-                    end: const Color(0xFF0F172A), // Premium Dark Slate
-                  ).evaluate(_assignedBgController),
-          ),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            body: Stack(
-              children: [
-                // Radial Gradient Base Layer
-                if (!isNoWorkers)
-                  Positioned.fill(
-                    child: Opacity(
-                      opacity: 1.0,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: const Alignment(0, 0.15),
-                            colors: _matchingState == MatchingState.assigned
-                                ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-                                : (_jobData['job_type'] == 'emergency'
-                                    ? [const Color(0xFF7F1D1D), const Color(0xFF450A0A)]
-                                    : [const Color(0xFF1E3A8A), const Color(0xFF0F172A)]),
-                            radius: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                
-                // Content
-                SafeArea(
-                  child: switch (_matchingState) {
-                    MatchingState.searching      => _buildSearching(false),
-                    MatchingState.expanding      => _buildSearching(true),
-                    MatchingState.assigned       => _buildAssigned(),
-                    MatchingState.noWorkersFound => _buildNoWorkersFound(),
-                  },
-                ),
-                
-                // Celebration Burst
-                if (_matchingState == MatchingState.assigned)
-                  Positioned(
-                    top: 100,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: RepaintBoundary(
-                        child: SizedBox(
-                          width: 200,
-                          height: 200,
-                          child: Lottie.asset(
-                            'assets/lottie/celebration_burst.json',
-                            repeat: false,
-                            frameRate: const FrameRate(60),
-                            errorBuilder: (context, error, stackTrace) => const SizedBox(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_matchingState == MatchingState.assigned) {
+          _declineWorker();
+        } else {
+          _cancelJob();
+        }
       },
+      child: AnimatedBuilder(
+        animation: _assignedBgController,
+        builder: (context, child) {
+          final isNoWorkers = _matchingState == MatchingState.noWorkersFound;
+          final isAssigned = _matchingState == MatchingState.assigned;
+          return Container(
+            decoration: BoxDecoration(
+              color: (isNoWorkers || isAssigned)
+                  ? const Color(0xFFF8FAFC)
+                  : ColorTween(
+                      begin: UserAppTheme.background,
+                      end: const Color(0xFFF8FAFC),
+                    ).evaluate(_assignedBgController),
+            ),
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: Stack(
+                children: [
+                  // Radial Gradient Base Layer (only for radar search states)
+                  if (!isNoWorkers && !isAssigned)
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: 1.0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                              center: const Alignment(0, 0.15),
+                              colors: (_jobData['job_type'] == 'emergency'
+                                  ? [const Color(0xFF7F1D1D), const Color(0xFF450A0A)]
+                                  : [const Color(0xFF1E3A8A), const Color(0xFF0F172A)]),
+                              radius: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  
+                  // Content
+                  SafeArea(
+                    child: switch (_matchingState) {
+                      MatchingState.searching      => _buildSearching(false),
+                      MatchingState.expanding      => _buildSearching(true),
+                      MatchingState.assigned       => _buildAssigned(),
+                      MatchingState.noWorkersFound => _buildNoWorkersFound(),
+                    },
+                  ),
+                  
+                  // Celebration Burst
+                  if (_matchingState == MatchingState.assigned)
+                    Positioned(
+                      top: 100,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: RepaintBoundary(
+                          child: SizedBox(
+                            width: 200,
+                            height: 200,
+                            child: Lottie.asset(
+                              'assets/lottie/celebration_burst.json',
+                              repeat: false,
+                              frameRate: const FrameRate(60),
+                              errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -2309,7 +2333,7 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
     final amount = int.tryParse(_jobData['payment_amount']?.toString() ?? _jobData['amount']?.toString() ?? '350') ?? 350;
 
     return Container(
-      color: const Color(0xFF0F172A), // Dark slate page background
+      color: const Color(0xFFF8FAFC), // Clean white/light theme page background
       width: double.infinity,
       height: double.infinity,
       child: Center(
@@ -2320,6 +2344,44 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Top "Back to Search" Row
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          onPressed: _isActioning ? null : _declineWorker,
+                          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A), size: 20),
+                          tooltip: 'Back to Search',
+                          padding: const EdgeInsets.all(8),
+                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Back to Search',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF475569),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 // 1. Top Mint-Green Header Card
                 _buildTopMatchHeaderCard(),
                 const SizedBox(height: 14),
@@ -2658,6 +2720,7 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                                 flex: 1,
                                 child: GestureDetector(
                                   onTap: _isActioning ? null : _declineWorker,
+                                  behavior: HitTestBehavior.opaque,
                                   child: Container(
                                     height: 52,
                                     decoration: BoxDecoration(
@@ -2666,14 +2729,20 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                                       border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
                                     ),
                                     alignment: Alignment.center,
-                                    child: Text(
-                                      'Decline',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: const Color(0xFF0F172A),
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                      ),
-                                    ),
+                                    child: _isActioning
+                                        ? const SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF64748B)),
+                                          )
+                                        : Text(
+                                            'Decline',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              color: const Color(0xFF0F172A),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 14,
+                                            ),
+                                          ),
                                   ),
                                 ),
                               ),
@@ -2685,8 +2754,8 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                             child: Text(
                               'Declining will put you back in search automatically.',
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                color: const Color(0xFF94A3B8),
+                                fontSize: 12,
+                                color: const Color(0xFF64748B),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

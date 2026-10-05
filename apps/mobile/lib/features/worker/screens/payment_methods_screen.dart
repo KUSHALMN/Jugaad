@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jugaad_mvp/core/theme/app_colors.dart';
 import 'package:jugaad_mvp/core/theme/app_text_styles.dart';
 import 'package:jugaad_mvp/shared/widgets/jugaad_card.dart';
@@ -20,7 +21,15 @@ class PaymentMethodsScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/worker/profile');
+            }
+          },
         ),
         title: Text(
           'Payment Methods',

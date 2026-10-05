@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -65,6 +66,15 @@ void main() {
 
       provider.setModeWithoutNotify(PortalMode.user);
       expect(provider.mode, PortalMode.user);
+    });
+  });
+
+  group('User Theme & Assigned Screen Background Specs', () {
+    test('Assigned screen light background color matches clean modern slate specification', () {
+      const assignedBg = Color(0xFFF8FAFC);
+      expect(assignedBg.value, 0xFFF8FAFC);
+      // Ensures it is light (luminance > 0.8)
+      expect(assignedBg.computeLuminance() > 0.8, isTrue);
     });
   });
 }

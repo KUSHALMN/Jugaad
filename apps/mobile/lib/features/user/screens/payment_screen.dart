@@ -156,21 +156,37 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
     final serviceFee = widget.amount;
     final displayTotal = serviceFee + platformFee;
 
-    return Scaffold(
-      backgroundColor: UserAppTheme.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          'Payment Details',
-          style: UserAppTheme.heading(size: 16, weight: FontWeight.bold),
+    void handleBack() {
+      if (context.canPop()) {
+        context.pop();
+      } else if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        context.go('/user/home');
+      }
+    }
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        handleBack();
+      },
+      child: Scaffold(
+        backgroundColor: UserAppTheme.background,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          title: Text(
+            'Payment Details',
+            style: UserAppTheme.heading(size: 16, weight: FontWeight.bold),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: UserAppTheme.textPrimary, size: 20),
+            onPressed: handleBack,
+          ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: UserAppTheme.textPrimary, size: 20),
-          onPressed: () => context.pop(),
-        ),
-      ),
       body: Stack(
         children: [
           Column(
@@ -495,6 +511,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
             ),
         ],
       ),
+    ),
     );
   }
 
