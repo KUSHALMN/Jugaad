@@ -157,12 +157,18 @@ class AppRouter {
           return null;
         }
 
-        final isWorkerMode = modeProvider.mode == PortalMode.worker ||
-            state.uri.queryParameters['role'] == 'worker';
+        final isWorkerRoute = location.startsWith('/worker');
+        final isUserRoute = location.startsWith('/user');
 
-        if (isWorkerMode && modeProvider.mode != PortalMode.worker) {
-          modeProvider.setMode(PortalMode.worker);
+        if (isWorkerRoute && modeProvider.mode != PortalMode.worker) {
+          modeProvider.setModeWithoutNotify(PortalMode.worker);
+        } else if (isUserRoute && modeProvider.mode != PortalMode.user) {
+          modeProvider.setModeWithoutNotify(PortalMode.user);
         }
+
+        final isWorkerMode = modeProvider.mode == PortalMode.worker ||
+            isWorkerRoute ||
+            state.uri.queryParameters['role'] == 'worker';
 
         // Logged-in users on auth or onboarding screens should be sent to their portal home.
         // Note: We DO NOT redirect /splash here so that the SplashScreen can render and play its opening animation!
