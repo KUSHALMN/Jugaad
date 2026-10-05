@@ -26,6 +26,8 @@ class WorkerDashboardSheets {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         decoration: const BoxDecoration(
@@ -164,6 +166,8 @@ class WorkerDashboardSheets {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         decoration: const BoxDecoration(
@@ -308,6 +312,7 @@ class WorkerDashboardSheets {
     HapticFeedback.lightImpact();
     showDialog(
       context: context,
+      useRootNavigator: true,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Container(
@@ -460,6 +465,8 @@ class WorkerDashboardSheets {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         decoration: const BoxDecoration(
@@ -628,6 +635,8 @@ class WorkerDashboardSheets {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocalState) => Container(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
@@ -769,6 +778,8 @@ class WorkerDashboardSheets {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocalState) => Container(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
@@ -915,6 +926,8 @@ class WorkerDashboardSheets {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         decoration: const BoxDecoration(
@@ -1126,6 +1139,8 @@ class WorkerDashboardSheets {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useRootNavigator: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         decoration: const BoxDecoration(

@@ -280,6 +280,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      useRootNavigator: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         decoration: const BoxDecoration(
