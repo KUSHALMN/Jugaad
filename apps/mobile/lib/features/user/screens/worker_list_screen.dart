@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -709,86 +710,90 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
   }
 
   Widget _buildShimmerProCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: const [
-          BoxShadow(color: Color(0x06000000), blurRadius: 10, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEEF2F6),
-                  shape: BoxShape.circle,
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFF1F5F9),
+      highlightColor: Colors.white,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+          boxShadow: const [
+            BoxShadow(color: Color(0x06000000), blurRadius: 10, offset: Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE2E8F0),
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 130,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE2E8F0),
-                        borderRadius: BorderRadius.circular(4),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 140,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: 80,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEDF2F7),
-                        borderRadius: BorderRadius.circular(4),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 90,
+                        height: 11,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Container(
-                width: 50,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2F6),
-                  borderRadius: BorderRadius.circular(6),
+                Container(
+                  width: 52,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                width: 100,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEDF2F7),
-                  borderRadius: BorderRadius.circular(4),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 110,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
-              ),
-              Container(
-                width: 70,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2F6),
-                  borderRadius: BorderRadius.circular(8),
+                Container(
+                  width: 76,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

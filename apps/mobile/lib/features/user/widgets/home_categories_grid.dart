@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../screens/post_job/post_job_state.dart';
+import 'rate_card_calculator_sheet.dart';
 
 class CategoryGridItem {
   final String id;
@@ -167,44 +168,87 @@ class HomeCategoriesGrid extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      TextButton(
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          context.push('/user/book');
-                        },
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isSmallMobile ? 10 : 14,
-                            vertical: isSmallMobile ? 6 : 8,
-                          ),
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            side: const BorderSide(color: Color(0xFFE2E8F0)),
-                          ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'View All',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFF1D4ED8),
-                                fontSize: isSmallMobile ? 11.5 : 12.5,
-                                fontWeight: FontWeight.w700,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              RateCardCalculatorSheet.show(context);
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isSmallMobile ? 8 : 12,
+                                vertical: isSmallMobile ? 6 : 8,
                               ),
+                              backgroundColor: const Color(0xFFF0FDF4),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: const BorderSide(color: Color(0xFFA7F3D0)),
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.arrow_forward_rounded,
-                              color: Color(0xFF1D4ED8),
-                              size: 13,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.calculate_outlined,
+                                  color: Color(0xFF059669),
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Rate Card',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: const Color(0xFF059669),
+                                    fontSize: isSmallMobile ? 11 : 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 6),
+                          TextButton(
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              context.push('/user/book');
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isSmallMobile ? 10 : 14,
+                                vertical: isSmallMobile ? 6 : 8,
+                              ),
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: const BorderSide(color: Color(0xFFE2E8F0)),
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'View All',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: const Color(0xFF1D4ED8),
+                                    fontSize: isSmallMobile ? 11.5 : 12.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: Color(0xFF1D4ED8),
+                                  size: 13,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

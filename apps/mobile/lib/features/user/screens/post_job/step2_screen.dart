@@ -12,6 +12,7 @@ import '../../../../core/widgets/jugaad_step_header.dart';
 import '../../../../core/config/services_list.dart';
 import '../../../../core/providers/services_provider.dart';
 import '../../../../shared/widgets/cached_image.dart';
+import '../../widgets/rate_card_calculator_sheet.dart';
 import 'post_job_state.dart';
 
 class PostJobStep2Screen extends ConsumerStatefulWidget {
@@ -324,12 +325,34 @@ class _PostJobStep2ScreenState extends ConsumerState<PostJobStep2Screen> {
                               color: UserAppTheme.textPrimary,
                             ),
                           ),
-                          Text(
-                            "Details matter",
-                            style: UserAppTheme.label(
-                              size: 13,
-                              color: UserAppTheme.primaryBlue,
-                              weight: FontWeight.w600,
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              final skill = ref.read(postJobProvider).skill.toLowerCase().replaceAll(' ', '_');
+                              RateCardCalculatorSheet.show(context, initialCategory: skill);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0FDF4),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFA7F3D0)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.calculate_outlined, size: 14, color: Color(0xFF059669)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "Rate Card & Estimate",
+                                    style: UserAppTheme.label(
+                                      size: 11.5,
+                                      color: const Color(0xFF059669),
+                                      weight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],

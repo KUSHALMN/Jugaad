@@ -17,23 +17,63 @@ class SavedAddressesScreen extends StatefulWidget {
 class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
   bool _isProcessing = false;
 
-  // BUG FIX
   Widget _buildSkeleton() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: const Color(0xFFF1F5F9),
+      highlightColor: Colors.white,
       child: Column(
-        children: List.generate(4, (_) => Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: Container(
-            width: double.infinity,
-            height: 100,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+        children: List.generate(
+          3,
+          (_) => Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFF1F5F9)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE2E8F0),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE2E8F0),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: double.infinity,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE2E8F0),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        )),
+        ),
       ),
     );
   }

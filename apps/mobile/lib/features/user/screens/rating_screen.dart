@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:jugaad_mvp/core/theme/app_colors.dart';
 import 'package:jugaad_mvp/core/theme/app_text_styles.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
+import 'package:jugaad_mvp/features/shared/widgets/celebration_overlay.dart';
 
 class RatingScreen extends StatefulWidget {
   final String workerName;
@@ -205,18 +206,18 @@ class _RatingScreenState extends State<RatingScreen> with TickerProviderStateMix
             ),
           ),
           
-          // PHASE 2 — Celebration Burst
+          // Celebration Confetti & Checkmark Overlay
           if (_isSubmitted)
             Positioned.fill(
-              child: IgnorePointer(
-                child: RepaintBoundary(
-                  child: Lottie.asset(
-                    'assets/lottie/celebration_burst.json',
-                    controller: _celebrationController,
-                    repeat: false,
-                    frameRate: FrameRate(60),
-                  ),
-                ),
+              child: CelebrationOverlay(
+                title: 'Review Submitted! ⭐',
+                subtitle: 'Thank you for helping keep our community rated and trusted.',
+                autoDismissDuration: const Duration(milliseconds: 2500),
+                onDismiss: () {
+                  if (mounted && Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                },
               ),
             ),
         ],

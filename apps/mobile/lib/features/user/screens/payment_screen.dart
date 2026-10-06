@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:lottie/lottie.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:jugaad_mvp/core/services/api_service.dart';
 import 'package:jugaad_mvp/core/services/auth_service.dart';
 import 'package:jugaad_mvp/core/theme/user_app_theme.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
+import 'package:jugaad_mvp/features/shared/widgets/celebration_overlay.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String jobId;
@@ -85,7 +85,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
     await Future.delayed(150.ms);
     JugaadHaptics.success();
 
-    await Future.delayed(1500.ms); // Wait for lottie before navigation
+    await Future.delayed(2200.ms); // Wait for celebration before navigation
     if (mounted) {
       context.go('/user/completion?job_id=${widget.jobId}&worker_name=Ravi%20Kumar&duration=45');
     }
@@ -493,20 +493,11 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
           ),
           
           if (_paymentSuccessful)
-            Container(
-              color: UserAppTheme.textPrimary.withValues(alpha: 0.8), // Darken background slightly
-              child: Center(
-                child: RepaintBoundary(
-                  child: SizedBox(
-                    width: 250,
-                    height: 250,
-                    child: Lottie.asset(
-                      'assets/lottie/payment_success.json',
-                      repeat: false,
-                      frameRate: const FrameRate(60),
-                    ),
-                  ),
-                ),
+            Positioned.fill(
+              child: CelebrationOverlay(
+                title: 'Payment Successful! 🎉',
+                subtitle: '₹${displayTotal.toStringAsFixed(2)} placed in secure escrow guarantee.',
+                autoDismissDuration: Duration.zero, // handled by timer
               ),
             ),
         ],

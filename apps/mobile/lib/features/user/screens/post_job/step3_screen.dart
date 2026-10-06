@@ -11,6 +11,7 @@ import '../../../../core/services/api_service.dart';
 import '../../../../core/config/services_list.dart';
 import '../../../../core/providers/services_provider.dart';
 import '../../../../core/widgets/jugaad_step_header.dart';
+import '../../../shared/widgets/celebration_overlay.dart';
 import 'post_job_state.dart';
 
 class PostJobStep3Screen extends ConsumerStatefulWidget {
@@ -121,7 +122,15 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
       ref.read(postJobProvider.notifier).reset();
 
       if (mounted) {
-        context.go('/user/matching?job_id=$jobId');
+        await CelebrationOverlay.show(
+          context,
+          title: 'Booking Confirmed! 🚀',
+          subtitle: 'Connecting with verified Mysuru & Bengaluru technicians...',
+          autoDismissDuration: const Duration(milliseconds: 1800),
+        );
+        if (mounted) {
+          context.go('/user/matching?job_id=$jobId');
+        }
       }
     } catch (e) {
       if (e is DioException) {

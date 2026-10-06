@@ -398,10 +398,9 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
                             );
                           }
                           if (bookingsSnap.connectionState == ConnectionState.waiting) {
-                            // BUG FIX
                             return Shimmer.fromColors(
-                              baseColor: Colors.grey[300]!,
-                              highlightColor: Colors.grey[100]!,
+                              baseColor: const Color(0xFFF1F5F9),
+                              highlightColor: Colors.white,
                               child: Column(
                                 children: List.generate(3, (_) => Padding(
                                   padding: const EdgeInsets.only(bottom: 12.0),
@@ -624,11 +623,10 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
     );
   }
 
-  // BUG FIX
   Widget _buildSkeleton() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: const Color(0xFFF1F5F9),
+      highlightColor: Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
