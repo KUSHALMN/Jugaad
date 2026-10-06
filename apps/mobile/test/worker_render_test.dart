@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:jugaad_mvp/features/worker/worker_shell.dart';
 import 'package:jugaad_mvp/features/worker/screens/worker_home_screen.dart';
+import 'package:jugaad_mvp/core/theme/worker_app_theme.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -91,4 +92,26 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(WorkerHomeScreen), findsOneWidget);
   });
+
+  testWidgets('ElevatedButton renders safely within unconstrained Row under WorkerAppTheme', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: WorkerAppTheme.themeData,
+        home: Scaffold(
+          body: Row(
+            children: [
+              const Text('Label'),
+              ElevatedButton(
+                onPressed: () {},
+                child: const Text('Action'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Action'), findsOneWidget);
+  });
 }
+
