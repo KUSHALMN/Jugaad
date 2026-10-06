@@ -1017,9 +1017,11 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
             onPressed: () => context.go('/worker/active?job_id=$_activeBookingId'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD97706),
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               elevation: 0,
+              minimumSize: const Size(0, 36),
             ),
             child: Text(
               'Resume Job',
