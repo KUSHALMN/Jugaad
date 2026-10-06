@@ -150,7 +150,7 @@ class AppTheme {
             fontSize: 16.0,
             fontWeight: FontWeight.bold,
           ),
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size(64, 52),
         ),
       ),
 
