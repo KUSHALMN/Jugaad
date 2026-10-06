@@ -141,7 +141,7 @@ class WorkerAppTheme {
             fontSize: 16.0,
             fontWeight: FontWeight.bold,
           ),
-          minimumSize: const Size.fromHeight(buttonHeight),
+          minimumSize: const Size(64, buttonHeight),
         ),
       ),
       dividerColor: divider,
