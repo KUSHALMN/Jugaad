@@ -134,11 +134,11 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
         print('[POST_JOB] Exception during job post: $e');
       }
       
-      setState(() {
-        _isPosting = false;
-        _showSearchOverlay = false;
-      });
       if (mounted) {
+        setState(() {
+          _isPosting = false;
+          _showSearchOverlay = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(

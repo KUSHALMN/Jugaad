@@ -115,6 +115,9 @@ class HomeCategoriesGrid extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, rootConstraints) {
         final double screenWidth = rootConstraints.maxWidth;
+        if (screenWidth <= 0) {
+          return const SizedBox.shrink();
+        }
         final bool isSmallMobile = screenWidth < 360;
         final bool isTablet = screenWidth >= 600 && screenWidth < 900;
         final bool isDesktop = screenWidth >= 900;
@@ -232,7 +235,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
                     child: LayoutBuilder(
                       builder: (context, cardConstraints) {
                         final double availableWidth = cardConstraints.maxWidth;
-                        if (availableWidth <= 0) {
+                        if (availableWidth <= 50) {
                           return const SizedBox.shrink();
                         }
                         // On wide screens (>= 680), show all 7 categories in a balanced single row!

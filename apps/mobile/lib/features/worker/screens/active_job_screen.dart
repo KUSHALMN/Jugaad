@@ -2523,8 +2523,11 @@ class _SlideToConfirmState extends State<SlideToConfirm> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double trackWidth = constraints.maxWidth;
+        if (trackWidth <= 60.0) {
+          return const SizedBox.shrink();
+        }
         final double thumbSize = 50.0;
-        final double maxDragDistance = trackWidth - thumbSize - 6.0;
+        final double maxDragDistance = (trackWidth - thumbSize - 6.0).clamp(1.0, double.infinity);
 
         return Container(
           width: double.infinity,

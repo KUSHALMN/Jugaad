@@ -50,13 +50,15 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
-      if (_pageController.hasClients) {
+      if (_pageController.hasClients && _pageController.positions.length == 1) {
         final nextPage = (_currentPage + 1) % _bannerPaths.length;
-        _pageController.animateToPage(
-          nextPage,
-          duration: const Duration(milliseconds: 650),
-          curve: Curves.easeInOutCubic,
-        );
+        try {
+          _pageController.animateToPage(
+            nextPage,
+            duration: const Duration(milliseconds: 650),
+            curve: Curves.easeInOutCubic,
+          );
+        } catch (_) {}
       }
     });
   }
@@ -82,24 +84,28 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
   }
 
   void _nextPage() {
-    if (_pageController.hasClients) {
+    if (_pageController.hasClients && _pageController.positions.length == 1) {
       final nextPage = (_currentPage + 1) % _bannerPaths.length;
-      _pageController.animateToPage(
-        nextPage,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
+      try {
+        _pageController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      } catch (_) {}
     }
   }
 
   void _prevPage() {
-    if (_pageController.hasClients) {
+    if (_pageController.hasClients && _pageController.positions.length == 1) {
       final prevPage = (_currentPage - 1 + _bannerPaths.length) % _bannerPaths.length;
-      _pageController.animateToPage(
-        prevPage,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
+      try {
+        _pageController.animateToPage(
+          prevPage,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      } catch (_) {}
     }
   }
 
@@ -179,27 +185,33 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF16A34A),
-                      shape: BoxShape.circle,
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF16A34A),
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'In the spotlight',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF0F172A),
-                      letterSpacing: -0.4,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'In the spotlight',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F172A),
+                          letterSpacing: -0.4,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               Row(
                 children: [
@@ -289,8 +301,13 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
                 width: cardWidth,
                 height: bannerHeight,
                 child: PageView.builder(
+                  key: const PageStorageKey('spotlight_page_view'),
                   controller: _pageController,
-                  onPageChanged: (idx) => setState(() => _currentPage = idx),
+                  onPageChanged: (idx) {
+                    if (mounted) {
+                      setState(() => _currentPage = idx);
+                    }
+                  },
                   itemCount: promoItems.length,
                   itemBuilder: (context, idx) {
                     final item = promoItems[idx];
@@ -326,12 +343,16 @@ class _SpotlightBannerCardState extends State<_SpotlightBannerCard> {
 
     return RepaintBoundary(
       child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapDown: (_) {
+          if (mounted) setState(() => _isPressed = true);
+        },
         onTapUp: (_) {
-          setState(() => _isPressed = false);
+          if (mounted) setState(() => _isPressed = false);
           item.onTap();
         },
-        onTapCancel: () => setState(() => _isPressed = false),
+        onTapCancel: () {
+          if (mounted) setState(() => _isPressed = false);
+        },
         child: AnimatedScale(
           scale: _isPressed ? 0.985 : 1.0,
           duration: const Duration(milliseconds: 140),

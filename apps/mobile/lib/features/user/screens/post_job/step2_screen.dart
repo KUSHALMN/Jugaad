@@ -37,6 +37,7 @@ class _PostJobStep2ScreenState extends ConsumerState<PostJobStep2Screen> {
     _address = current.address;
     _descController.text = current.description;
     _descFocusNode.addListener(() {
+      if (!mounted) return;
       setState(() {
         _isInputFocused = _descFocusNode.hasFocus;
       });
@@ -53,15 +54,19 @@ class _PostJobStep2ScreenState extends ConsumerState<PostJobStep2Screen> {
   }
 
   Future<void> _fetchLocation() async {
+    if (!mounted) return;
     setState(() => _loadingLocation = true);
     try {
       LocationPermission permission = await Geolocator.checkPermission();
+      if (!mounted) return;
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
+        if (!mounted) return;
       }
 
       if (permission == LocationPermission.deniedForever || permission == LocationPermission.denied) {
         print('[ERROR] Location denied. Using Bangalore Center fallback.');
+        if (!mounted) return;
         setState(() {
           _loadingLocation = false;
           _locationDenied = false;
@@ -71,6 +76,7 @@ class _PostJobStep2ScreenState extends ConsumerState<PostJobStep2Screen> {
         return;
       }
 
+      if (!mounted) return;
       setState(() => _locationDenied = false);
 
       final pos = await Geolocator.getCurrentPosition(
@@ -79,6 +85,7 @@ class _PostJobStep2ScreenState extends ConsumerState<PostJobStep2Screen> {
           timeLimit: Duration(seconds: 8),
         ),
       );
+      if (!mounted) return;
 
       String addr = '';
       if (kIsWeb) {
@@ -96,6 +103,7 @@ class _PostJobStep2ScreenState extends ConsumerState<PostJobStep2Screen> {
         }
       }
 
+      if (!mounted) return;
       setState(() {
         _address = addr;
         _loadingLocation = false;
@@ -104,6 +112,7 @@ class _PostJobStep2ScreenState extends ConsumerState<PostJobStep2Screen> {
       ref.read(postJobProvider.notifier).setLocation(pos.latitude, pos.longitude, addr);
     } catch (e) {
       print('[POST_JOB] Location fetch failed: $e — using default Bangalore Center');
+      if (!mounted) return;
       setState(() {
         _loadingLocation = false;
         _locationDenied = false;
@@ -146,6 +155,7 @@ class _PostJobStep2ScreenState extends ConsumerState<PostJobStep2Screen> {
                 title: Text('Take a Photo', style: UserAppTheme.body(weight: FontWeight.w600)),
                 onTap: () {
                   context.pop();
+                  if (!mounted) return;
                   setState(() {
                     _photos.add('https://images.unsplash.com/photo-1581092921461-eab62e97a780?auto=format&fit=crop&w=150&q=80');
                   });
@@ -156,6 +166,7 @@ class _PostJobStep2ScreenState extends ConsumerState<PostJobStep2Screen> {
                 title: Text('Choose from Gallery', style: UserAppTheme.body(weight: FontWeight.w600)),
                 onTap: () {
                   context.pop();
+                  if (!mounted) return;
                   setState(() {
                     _photos.add('https://images.unsplash.com/photo-1595787143151-e601da948ea8?auto=format&fit=crop&w=150&q=80');
                   });
@@ -810,9 +821,15 @@ class _ScaleButtonState extends State<ScaleButton> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     final bool isReallyDisabled = widget.disabled || widget.onPressed == null;
     return GestureDetector(
-      onTapDown: isReallyDisabled ? null : (_) => setState(() => _scale = 0.97),
-      onTapUp: isReallyDisabled ? null : (_) => setState(() => _scale = 1.0),
-      onTapCancel: isReallyDisabled ? null : () => setState(() => _scale = 1.0),
+      onTapDown: isReallyDisabled ? null : (_) {
+        if (mounted) setState(() => _scale = 0.97);
+      },
+      onTapUp: isReallyDisabled ? null : (_) {
+        if (mounted) setState(() => _scale = 1.0);
+      },
+      onTapCancel: isReallyDisabled ? null : () {
+        if (mounted) setState(() => _scale = 1.0);
+      },
       onTap: isReallyDisabled ? null : () {
         HapticFeedback.mediumImpact();
         widget.onPressed!();

@@ -346,63 +346,63 @@ class DashboardHeader extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: () => _showLocationSheet(context, ref),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: userLocation.isGpsDetected ? const Color(0xFF93C5FD) : const Color(0xFFE2E8F0),
-                            width: 1.1,
+                    Flexible(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => _showLocationSheet(context, ref),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: userLocation.isGpsDetected ? const Color(0xFF93C5FD) : const Color(0xFFE2E8F0),
+                              width: 1.1,
+                            ),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x06000000),
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x06000000),
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (userLocation.isLoading)
-                              const Padding(
-                                padding: EdgeInsets.only(right: 6),
-                                child: SizedBox(
-                                  width: 11,
-                                  height: 11,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 1.8,
-                                    color: Color(0xFF2563EB),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (userLocation.isLoading)
+                                const Padding(
+                                  padding: EdgeInsets.only(right: 6),
+                                  child: SizedBox(
+                                    width: 11,
+                                    height: 11,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 1.8,
+                                      color: Color(0xFF2563EB),
+                                    ),
                                   ),
+                                )
+                              else
+                                Icon(
+                                  userLocation.isGpsDetected ? Icons.gps_fixed_rounded : Icons.location_on_rounded,
+                                  color: const Color(0xFF2563EB),
+                                  size: 14,
                                 ),
-                              )
-                            else
-                              Icon(
-                                userLocation.isGpsDetected ? Icons.gps_fixed_rounded : Icons.location_on_rounded,
-                                color: const Color(0xFF2563EB),
-                                size: 14,
-                              ),
-                            const SizedBox(width: 4),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 150),
-                              child: Text(
-                                userLocation.shortName,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11.5,
-                                  color: const Color(0xFF0F172A),
-                                  fontWeight: FontWeight.w800,
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  userLocation.shortName,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11.5,
+                                    color: const Color(0xFF0F172A),
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(
+                              const SizedBox(width: 4),
+                              const Icon(
                               Icons.keyboard_arrow_down_rounded,
                               color: Color(0xFF64748B),
                               size: 16,
