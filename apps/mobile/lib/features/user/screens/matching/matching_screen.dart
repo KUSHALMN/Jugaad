@@ -335,17 +335,21 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Successfully requested $workerName! Connecting...',
-              style: UserAppTheme.body(color: Colors.white, weight: FontWeight.bold),
-            ),
-            backgroundColor: UserAppTheme.successGreen,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+        if (context.mounted) {
+          try {
+            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Successfully requested $workerName! Connecting...',
+                  style: UserAppTheme.body(color: Colors.white, weight: FontWeight.bold),
+                ),
+                backgroundColor: UserAppTheme.successGreen,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            );
+          } catch (_) {}
+        }
         setState(() {
           _workerData = Map<String, dynamic>.from(worker);
           _workerData!['name'] = workerName;
@@ -369,9 +373,13 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
       print('[MATCHING] Error directly assigning worker: $e');
       if (mounted) {
         setState(() => _isActioning = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not request worker: $e')),
-        );
+        if (context.mounted) {
+          try {
+            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+              SnackBar(content: Text('Could not request worker: $e')),
+            );
+          } catch (_) {}
+        }
       }
     }
   }
@@ -434,18 +442,22 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
 
   void _onCountdownExpired() {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Booking session expired — restarting search',
-          style: UserAppTheme.body(color: Colors.white, weight: FontWeight.bold),
-        ),
-        backgroundColor: UserAppTheme.primaryBlue,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    if (context.mounted) {
+      try {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Booking session expired — restarting search',
+              style: UserAppTheme.body(color: Colors.white, weight: FontWeight.bold),
+            ),
+            backgroundColor: UserAppTheme.primaryBlue,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      } catch (_) {}
+    }
     _acceptCountdown.reset();
     setState(() => _matchingState = MatchingState.searching);
     _startFallbackTimer();
@@ -478,24 +490,30 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
       print('[MATCHING] Error accepting worker: $e');
       if (mounted) {
         setState(() => _isActioning = false);
+        if (context.mounted) {
+          try {
+            if (e.toString().contains('409')) {
+              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Version mismatch or job already modified.',
+                    style: UserAppTheme.body(color: Colors.white),
+                  ),
+                  backgroundColor: UserAppTheme.urgentRed,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                SnackBar(content: Text('Error: $e')),
+              );
+            }
+          } catch (_) {}
+        }
         if (e.toString().contains('409')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Version mismatch or job already modified.',
-                style: UserAppTheme.body(color: Colors.white),
-              ),
-              backgroundColor: UserAppTheme.urgentRed,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
           setState(() => _matchingState = MatchingState.searching);
           _startFallbackTimer();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
-          );
         }
       }
     }
@@ -516,18 +534,22 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
       });
       _acceptCountdown.reset();
       _startFallbackTimer();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Worker declined. Resuming radar search...',
-            style: UserAppTheme.body(color: Colors.white),
-          ),
-          backgroundColor: const Color(0xFF0F172A),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      if (context.mounted) {
+        try {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text(
+                'Worker declined. Resuming radar search...',
+                style: UserAppTheme.body(color: Colors.white),
+              ),
+              backgroundColor: const Color(0xFF0F172A),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } catch (_) {}
+      }
     }
   }
 
@@ -602,18 +624,22 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
     print('[MATCHING] Job converted to scheduled at: $scheduledAt');
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Job scheduled for ${scheduledAt.day}/${scheduledAt.month} at ${time.format(context)}',
-            style: UserAppTheme.body(color: Colors.white, weight: FontWeight.bold),
-          ),
-          backgroundColor: UserAppTheme.successGreen,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      if (context.mounted) {
+        try {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text(
+                'Job scheduled for ${scheduledAt.day}/${scheduledAt.month} at ${time.format(context)}',
+                style: UserAppTheme.body(color: Colors.white, weight: FontWeight.bold),
+              ),
+              backgroundColor: UserAppTheme.successGreen,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        } catch (_) {}
+      }
       context.go('/user/home');
     }
   }
@@ -1233,6 +1259,8 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                               color: const Color(0xFF0F172A),
                               letterSpacing: -0.3,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -1242,6 +1270,8 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                               fontWeight: FontWeight.w500,
                               color: const Color(0xFF64748B),
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
@@ -2610,29 +2640,36 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Estimated Arrival',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(0xFF0F172A),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Estimated Arrival',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF0F172A),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ),
-                                    Text(
-                                      'Worker will reach your location in',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 11,
-                                        color: const Color(0xFF64748B),
-                                        fontWeight: FontWeight.w500,
+                                      Text(
+                                        'Worker will reach your location in',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          color: const Color(0xFF64748B),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                                const Spacer(),
+                                const SizedBox(width: 8),
                                 Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(
                                       Icons.access_time_rounded,
@@ -2683,7 +2720,7 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                                         ),
                                       ],
                                     ),
-                                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14),
                                     child: _isActioning
                                         ? const Center(
                                             child: SizedBox(
@@ -2697,16 +2734,20 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                                             children: [
                                               const Icon(Icons.call_rounded, color: Colors.white, size: 18),
                                               const SizedBox(width: 8),
-                                              Text(
-                                                'Accept & Call Worker',
-                                                style: GoogleFonts.plusJakartaSans(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w700,
-                                                  fontSize: 14,
-                                                  letterSpacing: 0.2,
+                                              Flexible(
+                                                child: Text(
+                                                  'Accept & Call Worker',
+                                                  style: GoogleFonts.plusJakartaSans(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 14,
+                                                    letterSpacing: 0.2,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              const Spacer(),
+                                              const SizedBox(width: 4),
                                               const Icon(Icons.chevron_right_rounded, color: Colors.white70, size: 20),
                                             ],
                                           ),
@@ -2805,28 +2846,34 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
                     child: const Icon(Icons.check_rounded, color: Colors.white, size: 22),
                   ),
                   const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Expert matched & ready!',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0F172A),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Expert matched & ready!',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F172A),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Review the details below and accept to connect.',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: const Color(0xFF64748B),
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(height: 2),
+                        Text(
+                          'Review the details below and accept to connect.',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: const Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               );

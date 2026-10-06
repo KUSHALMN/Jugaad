@@ -694,15 +694,17 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
 
           // ─── FULL-SCREEN SEARCHING ANIMATION OVERLAY ───
           if (_showSearchOverlay)
-            _SearchingOverlay(
-              serviceType: jobState.skill,
-              isEmergency: isEmergency,
-              onCancel: () {
-                setState(() {
-                  _showSearchOverlay = false;
-                  _isPosting = false;
-                });
-              },
+            Positioned.fill(
+              child: _SearchingOverlay(
+                serviceType: jobState.skill,
+                isEmergency: isEmergency,
+                onCancel: () {
+                  setState(() {
+                    _showSearchOverlay = false;
+                    _isPosting = false;
+                  });
+                },
+              ),
             ),
         ],
       ),
@@ -1131,229 +1133,240 @@ class _SearchingOverlayState extends State<_SearchingOverlay>
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // Top bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.isEmergency
-                                ? '🚨 60s Flash Radar SOS (${_countdownSeconds}s)'
-                                : '🔍 Finding Helpers...',
-                            style: UserAppTheme.heading(
-                              size: 18,
-                              weight: FontWeight.bold,
-                              color: widget.isEmergency ? const Color(0xFFFCA5A5) : Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.isEmergency
-                                ? 'Broadcasting 5 km siren to certified pros'
-                                : 'Connecting to nearby experts',
-                            style: UserAppTheme.body(
-                              size: 13,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    OutlinedButton(
-                      onPressed: widget.onCancel,
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: widget.isEmergency ? const Color(0xFFFCA5A5) : Colors.white30,
-                          width: 1.0,
-                        ),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: UserAppTheme.label(
-                          size: 12,
-                          color: Colors.white,
-                          weight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Spacer(flex: 2),
-
-              // Pulsing Radar
-              SizedBox(
-                width: 280,
-                height: 280,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Outer glow
-                    AnimatedBuilder(
-                      animation: _glowController,
-                      builder: (context, _) {
-                        return Container(
-                          width: 180,
-                          height: 180,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: (widget.isEmergency ? const Color(0xFFEF4444) : UserAppTheme.skyAccent)
-                                    .withValues(alpha: 0.12 + _glowController.value * 0.1),
-                                blurRadius: 60,
-                                spreadRadius: 30,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
+                        // Top bar
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.isEmergency
+                                          ? '🚨 60s Flash Radar SOS (${_countdownSeconds}s)'
+                                          : '🔍 Finding Helpers...',
+                                      style: UserAppTheme.heading(
+                                        size: 18,
+                                        weight: FontWeight.bold,
+                                        color: widget.isEmergency ? const Color(0xFFFCA5A5) : Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      widget.isEmergency
+                                          ? 'Broadcasting 5 km siren to certified pros'
+                                          : 'Connecting to nearby experts',
+                                      style: UserAppTheme.body(
+                                        size: 13,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              OutlinedButton(
+                                onPressed: widget.onCancel,
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color: widget.isEmergency ? const Color(0xFFFCA5A5) : Colors.white30,
+                                    width: 1.0,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 8),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  'Cancel',
+                                  style: UserAppTheme.label(
+                                    size: 12,
+                                    color: Colors.white,
+                                    weight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                        );
-                      },
-                    ),
-                    // Radar rings
-                    _buildRadarRing(0),
-                    _buildRadarRing(0.25),
-                    _buildRadarRing(0.50),
-                    _buildRadarRing(0.75),
-                    // Center icon
-                    AnimatedBuilder(
-                      animation: _iconPulseController,
-                      builder: (context, _) {
-                        final scale =
-                            1.0 + _iconPulseController.value * 0.12;
-                        return Transform.scale(
-                          scale: scale,
-                          child: Container(
-                            width: 68,
-                            height: 68,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: widget.isEmergency
-                                    ? const [
-                                        Color(0xFFDC2626),
-                                        Color(0xFFEF4444),
-                                      ]
-                                    : const [
-                                        UserAppTheme.primaryBlue,
-                                        UserAppTheme.skyAccent,
+                        ),
+
+                        const Spacer(flex: 2),
+
+                        // Pulsing Radar
+                        SizedBox(
+                          width: 280,
+                          height: 280,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Outer glow
+                              AnimatedBuilder(
+                                animation: _glowController,
+                                builder: (context, _) {
+                                  return Container(
+                                    width: 180,
+                                    height: 180,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: (widget.isEmergency ? const Color(0xFFEF4444) : UserAppTheme.skyAccent)
+                                              .withValues(alpha: 0.12 + _glowController.value * 0.1),
+                                          blurRadius: 60,
+                                          spreadRadius: 30,
+                                        ),
                                       ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                                    ),
+                                  );
+                                },
                               ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: (widget.isEmergency
-                                          ? const Color(0xFFDC2626)
-                                          : UserAppTheme.primaryBlue)
-                                      .withValues(alpha: 0.5),
-                                  blurRadius: 24,
-                                  spreadRadius: 6,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              widget.isEmergency
-                                  ? Icons.emergency_rounded
-                                  : _getServiceIcon(widget.serviceType),
-                              color: Colors.white,
-                              size: 30,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Typewriter status text
-              Container(
-                height: 28,
-                alignment: Alignment.center,
-                child: Text(
-                  '$_displayText$paddedDots',
-                  style: UserAppTheme.body(
-                    size: 16,
-                    color: Colors.white,
-                    weight: FontWeight.w600,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Subtle shimmer bar
-              Container(
-                width: 200,
-                height: 4,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-                child: AnimatedBuilder(
-                  animation: _radarController,
-                  builder: (context, _) {
-                    return FractionallySizedBox(
-                      widthFactor: 0.4,
-                      alignment: Alignment(
-                        -1.0 + _radarController.value * 2.0,
-                        0,
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          gradient: LinearGradient(
-                            colors: widget.isEmergency
-                                ? const [
-                                    Colors.transparent,
-                                    Color(0xFFEF4444),
-                                    Colors.transparent,
-                                  ]
-                                : [
-                                    Colors.transparent,
-                                    UserAppTheme.skyAccent.withValues(alpha: 0.8),
-                                    Colors.transparent,
-                                  ],
+                              // Radar rings
+                              _buildRadarRing(0),
+                              _buildRadarRing(0.25),
+                              _buildRadarRing(0.50),
+                              _buildRadarRing(0.75),
+                              // Center icon
+                              AnimatedBuilder(
+                                animation: _iconPulseController,
+                                builder: (context, _) {
+                                  final scale =
+                                      1.0 + _iconPulseController.value * 0.12;
+                                  return Transform.scale(
+                                    scale: scale,
+                                    child: Container(
+                                      width: 68,
+                                      height: 68,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: widget.isEmergency
+                                              ? const [
+                                                  Color(0xFFDC2626),
+                                                  Color(0xFFEF4444),
+                                                ]
+                                              : const [
+                                                  UserAppTheme.primaryBlue,
+                                                  UserAppTheme.skyAccent,
+                                                ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: (widget.isEmergency
+                                                    ? const Color(0xFFDC2626)
+                                                    : UserAppTheme.primaryBlue)
+                                                .withValues(alpha: 0.5),
+                                            blurRadius: 24,
+                                            spreadRadius: 6,
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        widget.isEmergency
+                                            ? Icons.emergency_rounded
+                                            : _getServiceIcon(widget.serviceType),
+                                        color: Colors.white,
+                                        size: 30,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ),
 
-              const Spacer(flex: 3),
+                        const SizedBox(height: 32),
 
-              // Bottom text
-              Padding(
-                padding: const EdgeInsets.only(bottom: 32),
-                child: Text(
-                  widget.isEmergency
-                      ? 'Guaranteed 15-minute arrival • Siren broadcast to nearby certified pros'
-                      : 'This may take a few seconds',
-                  style: UserAppTheme.body(
-                    size: 12,
-                    color: widget.isEmergency ? const Color(0xFFFCA5A5) : Colors.white38,
-                    weight: FontWeight.w600,
+                        // Typewriter status text
+                        Container(
+                          height: 28,
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$_displayText$paddedDots',
+                            style: UserAppTheme.body(
+                              size: 16,
+                              color: Colors.white,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Subtle shimmer bar
+                        Container(
+                          width: 200,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(2),
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                          child: AnimatedBuilder(
+                            animation: _radarController,
+                            builder: (context, _) {
+                              return FractionallySizedBox(
+                                widthFactor: 0.4,
+                                alignment: Alignment(
+                                  -1.0 + _radarController.value * 2.0,
+                                  0,
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(2),
+                                    gradient: LinearGradient(
+                                      colors: widget.isEmergency
+                                          ? const [
+                                              Colors.transparent,
+                                              Color(0xFFEF4444),
+                                              Colors.transparent,
+                                            ]
+                                          : [
+                                              Colors.transparent,
+                                              UserAppTheme.skyAccent.withValues(alpha: 0.8),
+                                              Colors.transparent,
+                                            ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        const Spacer(flex: 3),
+
+                        // Bottom text
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 32),
+                          child: Text(
+                            widget.isEmergency
+                                ? 'Guaranteed 15-minute arrival • Siren broadcast to nearby certified pros'
+                                : 'This may take a few seconds',
+                            style: UserAppTheme.body(
+                              size: 12,
+                              color: widget.isEmergency ? const Color(0xFFFCA5A5) : Colors.white38,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),

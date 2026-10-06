@@ -50,14 +50,18 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
+      final route = ModalRoute.of(context);
+      if (route != null && !route.isCurrent) return;
       if (_pageController.hasClients && _pageController.positions.length == 1) {
         final nextPage = (_currentPage + 1) % _bannerPaths.length;
         try {
-          _pageController.animateToPage(
-            nextPage,
-            duration: const Duration(milliseconds: 650),
-            curve: Curves.easeInOutCubic,
-          );
+          _pageController
+              .animateToPage(
+                nextPage,
+                duration: const Duration(milliseconds: 650),
+                curve: Curves.easeInOutCubic,
+              )
+              .catchError((_) {});
         } catch (_) {}
       }
     });
@@ -84,27 +88,33 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
   }
 
   void _nextPage() {
+    if (!mounted) return;
     if (_pageController.hasClients && _pageController.positions.length == 1) {
       final nextPage = (_currentPage + 1) % _bannerPaths.length;
       try {
-        _pageController.animateToPage(
-          nextPage,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-        );
+        _pageController
+            .animateToPage(
+              nextPage,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+            )
+            .catchError((_) {});
       } catch (_) {}
     }
   }
 
   void _prevPage() {
+    if (!mounted) return;
     if (_pageController.hasClients && _pageController.positions.length == 1) {
       final prevPage = (_currentPage - 1 + _bannerPaths.length) % _bannerPaths.length;
       try {
-        _pageController.animateToPage(
-          prevPage,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-        );
+        _pageController
+            .animateToPage(
+              prevPage,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+            )
+            .catchError((_) {});
       } catch (_) {}
     }
   }
@@ -301,7 +311,6 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
                 width: cardWidth,
                 height: bannerHeight,
                 child: PageView.builder(
-                  key: const PageStorageKey('spotlight_page_view'),
                   controller: _pageController,
                   onPageChanged: (idx) {
                     if (mounted) {

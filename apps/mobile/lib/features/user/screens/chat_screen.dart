@@ -75,6 +75,11 @@ class _ChatScreenState extends State<ChatScreen> {
   ChatSession? _currentSession;
   bool _isLoading = true;
 
+  static bool _isValidUuid(String? id) {
+    if (id == null || id.isEmpty) return false;
+    return RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(id.trim());
+  }
+
   // Real data state
   List<ChatSession> _sessions = [];
   final Map<String, Map<String, dynamic>> _userCache = {};
@@ -207,27 +212,29 @@ class _ChatScreenState extends State<ChatScreen> {
 
         // Fetch messages for this job
         List<ChatMessage> chatMsgs = [];
-        try {
-          final msgsData = await SupabaseConfig.client
-              .from('messages')
-              .select()
-              .eq('job_id', jobId)
-              .order('created_at', ascending: true);
+        if (_isValidUuid(jobId)) {
+          try {
+            final msgsData = await SupabaseConfig.client
+                .from('messages')
+                .select()
+                .eq('job_id', jobId)
+                .order('created_at', ascending: true);
 
-          chatMsgs = msgsData.map<ChatMessage>((m) {
-            return ChatMessage(
-              id: m['id'] as String,
-              text: m['text'] as String? ?? '',
-              isMe: m['sender_id'] == _currentUid,
-              timestamp: DateTime.parse(m['created_at'] as String).toLocal(),
-              readAt: m['read_at'] != null ? DateTime.parse(m['read_at'] as String).toLocal() : null,
-              voiceUrl: m['voice_url'] as String?,
-              voiceDurationSeconds: (m['voice_duration_seconds'] as num?)?.toInt(),
-              messageType: m['message_type'] as String? ?? (m['voice_url'] != null ? 'voice' : 'text'),
-            );
-          }).toList();
-        } catch (e) {
-          print('[ChatScreen] Error loading messages for job $jobId: $e');
+            chatMsgs = msgsData.map<ChatMessage>((m) {
+              return ChatMessage(
+                id: m['id'] as String,
+                text: m['text'] as String? ?? '',
+                isMe: m['sender_id'] == _currentUid,
+                timestamp: DateTime.parse(m['created_at'] as String).toLocal(),
+                readAt: m['read_at'] != null ? DateTime.parse(m['read_at'] as String).toLocal() : null,
+                voiceUrl: m['voice_url'] as String?,
+                voiceDurationSeconds: (m['voice_duration_seconds'] as num?)?.toInt(),
+                messageType: m['message_type'] as String? ?? (m['voice_url'] != null ? 'voice' : 'text'),
+              );
+            }).toList();
+          } catch (e) {
+            print('[ChatScreen] Error loading messages for job $jobId: $e');
+          }
         }
 
         if (chatMsgs.isEmpty) {
@@ -364,6 +371,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _fetchSingleSession(String jobId) async {
+    if (!_isValidUuid(jobId)) return;
     try {
       final jobResponse = await SupabaseConfig.client
           .from('jobs')
@@ -401,7 +409,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _markMessagesAsRead(String jobId) async {
-    if (_currentUid == null) return;
+    if (_currentUid == null || !_isValidUuid(jobId)) return;
     try {
       await SupabaseConfig.client
           .from('messages')
@@ -434,7 +442,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _updateTypingStatus(bool isTyping) async {
-    if (_currentSession == null || _currentUid == null) return;
+    if (_currentSession == null || _currentUid == null || !_isValidUuid(_currentSession!.id)) return;
     try {
       await SupabaseConfig.client.from('typing_states').upsert({
         'job_id': _currentSession!.id,
@@ -454,6 +462,15 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _otherUserIsTyping = false;
     });
+
+    if (!_isValidUuid(jobId)) {
+      setState(() {
+        _currentSession!.messages.clear();
+        _currentSession!.messages.addAll(_getSampleVernacularMessages(_currentUid));
+      });
+      _scrollToBottom(delayed: true);
+      return;
+    }
 
     _markMessagesAsRead(jobId);
 
@@ -570,6 +587,37 @@ class _ChatScreenState extends State<ChatScreen> {
       _updateTypingStatus(false);
     }
 
+    if (!_isValidUuid(_currentSession!.id)) {
+      setState(() {
+        _currentSession!.messages.add(
+          ChatMessage(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            text: text,
+            isMe: true,
+            timestamp: DateTime.now(),
+            messageType: 'text',
+          ),
+        );
+      });
+      _scrollToBottom(delayed: true);
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (!mounted || _currentSession == null) return;
+        setState(() {
+          _currentSession!.messages.add(
+            ChatMessage(
+              id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+              text: 'ಧನ್ಯವಾದಗಳು! ನಾನು ಸ್ಥಳಕ್ಕೆ ತಲುಪುತ್ತಿದ್ದೇನೆ (Thank you! I am on the way.)',
+              isMe: false,
+              timestamp: DateTime.now(),
+              messageType: 'text',
+            ),
+          );
+        });
+        _scrollToBottom(delayed: true);
+      });
+      return;
+    }
+
     try {
       await SupabaseService().sendMessage(
         jobId: _currentSession!.id,
@@ -579,13 +627,15 @@ class _ChatScreenState extends State<ChatScreen> {
       _scrollToBottom(delayed: true);
     } catch (e) {
       print('[ChatScreen] Error sending message: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send message: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      if (mounted && context.mounted) {
+        try {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text('Failed to send message: $e'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } catch (_) {}
       }
     }
   }
@@ -631,6 +681,24 @@ class _ChatScreenState extends State<ChatScreen> {
       _voiceRecordDuration = 0;
     });
 
+    if (!_isValidUuid(_currentSession!.id)) {
+      setState(() {
+        _currentSession!.messages.add(
+          ChatMessage(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            text: transcript,
+            isMe: true,
+            timestamp: DateTime.now(),
+            voiceUrl: 'https://jugaad.internal/audio/voice_${DateTime.now().millisecondsSinceEpoch}.m4a',
+            voiceDurationSeconds: duration,
+            messageType: 'voice',
+          ),
+        );
+      });
+      _scrollToBottom(delayed: true);
+      return;
+    }
+
     try {
       await SupabaseService().sendVoiceMessage(
         jobId: _currentSession!.id,
@@ -643,13 +711,15 @@ class _ChatScreenState extends State<ChatScreen> {
       _scrollToBottom(delayed: true);
     } catch (e) {
       print('[ChatScreen] Error sending voice note: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send voice note: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      if (mounted && context.mounted) {
+        try {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text('Failed to send voice note: $e'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } catch (_) {}
       }
     }
   }
