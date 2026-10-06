@@ -1937,9 +1937,11 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                 onPressed: () => context.go('/worker/earnings'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF064E3B),
+                  foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(horizontal: isMobile ? 10 : 14, vertical: isMobile ? 8 : 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
+                  minimumSize: const Size(0, 36),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
