@@ -21,7 +21,7 @@ ADD COLUMN IF NOT EXISTS media_type VARCHAR(32) DEFAULT 'text';
 -- Enables "Withdraw Earnings to UPI / Bank" for Mysuru & Bengaluru technicians
 CREATE TABLE IF NOT EXISTS public.payouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    worker_id UUID NOT NULL REFERENCES public.workers(id) ON DELETE CASCADE,
+    worker_id TEXT NOT NULL REFERENCES public.workers(id) ON DELETE CASCADE,
     amount NUMERIC(10, 2) NOT NULL CHECK (amount > 0),
     payout_mode VARCHAR(32) NOT NULL DEFAULT 'upi', -- 'upi' | 'bank_transfer'
     payout_address TEXT NOT NULL, -- UPI ID (e.g., worker@okhdfcbank) or Account No
@@ -43,7 +43,7 @@ BEGIN
     ) THEN
         CREATE POLICY "Workers can view own payouts" 
         ON public.payouts FOR SELECT 
-        USING (auth.uid() = worker_id);
+        USING (auth.uid()::text = worker_id::text);
     END IF;
 END $$;
 
