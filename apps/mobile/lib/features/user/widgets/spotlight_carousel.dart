@@ -274,12 +274,15 @@ class _SpotlightCarouselState extends ConsumerState<SpotlightCarousel> {
           builder: (context, constraints) {
             // Keep padding horizontal 16 on each side
             final double availableWidth = constraints.maxWidth;
+            if (availableWidth <= 32) {
+              return const SizedBox.shrink();
+            }
             // On desktop/tablet, constrain max width for elegant presentation
-            final double cardWidth = isWide
-                ? (availableWidth > 960 ? 960 : availableWidth - 32)
-                : (availableWidth - 32);
+            final double cardWidth = (isWide
+                ? (availableWidth > 960 ? 960.0 : availableWidth - 32)
+                : (availableWidth - 32)).clamp(0.0, double.infinity);
             // 1024 / 342 = ~2.994 aspect ratio
-            final double bannerHeight = cardWidth / (1024.0 / 342.0);
+            final double bannerHeight = (cardWidth / (1024.0 / 342.0)).clamp(0.0, double.infinity);
 
             return Center(
               child: SizedBox(

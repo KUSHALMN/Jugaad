@@ -232,6 +232,9 @@ class HomeCategoriesGrid extends ConsumerWidget {
                     child: LayoutBuilder(
                       builder: (context, cardConstraints) {
                         final double availableWidth = cardConstraints.maxWidth;
+                        if (availableWidth <= 0) {
+                          return const SizedBox.shrink();
+                        }
                         // On wide screens (>= 680), show all 7 categories in a balanced single row!
                         // On mobile, use 4 columns with centered second row.
                         final bool showSingleRow = availableWidth >= 680;
@@ -240,7 +243,8 @@ class HomeCategoriesGrid extends ConsumerWidget {
                             ? 12.0
                             : (isSmallMobile ? 8.0 : 10.0);
                         final double runSpacing = showSingleRow ? 0.0 : (isSmallMobile ? 14.0 : 18.0);
-                        final double itemWidth = (availableWidth - ((columns - 1) * spacing)) / columns;
+                        final double rawWidth = (availableWidth - ((columns - 1) * spacing)) / columns;
+                        final double itemWidth = rawWidth.clamp(0.0, double.infinity);
 
                         // Responsive height & font size proportional to itemWidth
                         final double cardHeight = showSingleRow

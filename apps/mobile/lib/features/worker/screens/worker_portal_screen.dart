@@ -74,15 +74,25 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    String uid = '';
+    try {
+      uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    } catch (_) {}
     final primaryColor = AppColors.kWorkerPrimary;
     final primaryLightColor = AppColors.kWorkerPrimaryLight;
 
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: SupabaseConfig.client
+    Stream<List<Map<String, dynamic>>>? workerStream;
+    try {
+      workerStream = SupabaseConfig.client
           .from('workers')
           .stream(primaryKey: ['id'])
-          .eq('id', uid),
+          .eq('id', uid);
+    } catch (_) {
+      workerStream = Stream.value(<Map<String, dynamic>>[]);
+    }
+
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: workerStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData && !snapshot.hasError) {
           return Scaffold(
@@ -100,17 +110,21 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
         final data = list.isNotEmpty ? list.first : <String, dynamic>{};
         String name = data['name'] as String? ?? '';
         if (name.trim().isEmpty || name == 'No Name') {
-          final user = FirebaseAuth.instance.currentUser;
-          final firebaseName = user?.displayName;
-          if (firebaseName != null && firebaseName.trim().isNotEmpty) {
-            name = firebaseName;
-          } else {
-            final email = user?.email;
-            if (email != null && email.contains('@')) {
-              name = email.split('@').first;
+          try {
+            final user = FirebaseAuth.instance.currentUser;
+            final firebaseName = user?.displayName;
+            if (firebaseName != null && firebaseName.trim().isNotEmpty) {
+              name = firebaseName;
             } else {
-              name = 'No Name';
+              final email = user?.email;
+              if (email != null && email.contains('@')) {
+                name = email.split('@').first;
+              } else {
+                name = 'Worker';
+              }
             }
+          } catch (_) {
+            name = 'Worker';
           }
         }
         final phone = data['phone'] as String? ?? '';
@@ -206,7 +220,12 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
                   ];
 
                   
-                  final cardWidth = (constraints.maxWidth - 12) / 2;
+                  final availableWidth = constraints.maxWidth;
+                  if (availableWidth <= 24.0) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final cardWidth = ((availableWidth - 12) / 2).clamp(0.0, double.infinity);
                   
                   return Wrap(
                     spacing: 12,
