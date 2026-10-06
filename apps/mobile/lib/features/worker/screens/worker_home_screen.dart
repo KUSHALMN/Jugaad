@@ -1836,9 +1836,11 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               elevation: 0,
+              minimumSize: const Size(0, 36),
             ),
           ),
         ],
