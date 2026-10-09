@@ -397,7 +397,7 @@ export default function JugaadOpsDashboard() {
       const { data, error } = await supabase
         .from('workers')
         .select('*')
-        .eq('status', 'pending')
+        .or('status.eq.pending,status.eq.pending_approval,approval_status.eq.pending,approval_status.eq.pending_approval')
         .order('created_at', { ascending: true });
       
       if (error) throw error;
