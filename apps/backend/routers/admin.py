@@ -461,3 +461,189 @@ def broadcast_admin_notification(
     except Exception as e:
         logger.error(f"Error dispatching broadcast: {e}")
         raise HTTPException(status_code=500, detail=f"Broadcast failed: {str(e)}")
+
+
+# ── 6. GET /api/v1/admin/jobs — List platform jobs for admin ────────────────
+@router.get("/jobs")
+def list_jobs_for_admin(
+    status: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    admin_id: str = Depends(verify_admin),
+):
+    """
+    List all platform jobs for admin oversight with pagination and status filtering.
+    """
+    try:
+        query = supabase.table("jobs").select("*", count="exact")
+        if status and status != "all":
+            query = query.eq("status", status)
+
+        start = (page - 1) * limit
+        end = start + limit - 1
+        res = query.range(start, end).order("created_at", desc=True).execute()
+
+        jobs_data = res.data or []
+        total_count = res.count if res.count is not None else len(jobs_data)
+
+        # Collect user and worker IDs to enrich data
+        user_ids = list({j["employer_id"] for j in jobs_data if j.get("employer_id")})
+        worker_ids = list({j["worker_id"] for j in jobs_data if j.get("worker_id")})
+
+        user_map = {}
+        if user_ids:
+            try:
+                u_res = supabase.table("users").select("id, name, phone").in_("id", user_ids).execute()
+                for u in (u_res.data or []):
+                    user_map[u["id"]] = u
+            except Exception:
+                pass
+
+        worker_map = {}
+        if worker_ids:
+            try:
+                w_res = supabase.table("workers").select("id, name, phone, work_category").in_("id", worker_ids).execute()
+                for w in (w_res.data or []):
+                    worker_map[w["id"]] = w
+            except Exception:
+                pass
+
+        enriched = []
+        for j in jobs_data:
+            c = user_map.get(j.get("employer_id")) or {}
+            w = worker_map.get(j.get("worker_id")) or {}
+            enriched.append({
+                **j,
+                "customer_name": c.get("name") or "Customer",
+                "customer_phone": c.get("phone") or "",
+                "worker_name": w.get("name") or ("Assigned Worker" if j.get("worker_id") else None),
+                "worker_phone": w.get("phone") or "",
+            })
+
+        return {
+            "total": total_count,
+            "page": page,
+            "limit": limit,
+            "jobs": enriched,
+        }
+    except Exception as e:
+        logger.error(f"Error listing jobs for admin: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list jobs: {str(e)}")
+
+
+# ── 7. POST /api/v1/admin/jobs/{job_id}/cancel — Admin override cancel ───────
+@router.post("/jobs/{job_id}/cancel")
+def admin_cancel_job(
+    job_id: str,
+    reason: Optional[str] = Query("Cancelled by Admin Operations Console"),
+    admin_id: str = Depends(verify_admin),
+):
+    """
+    Admin override: Cancel any job, release assigned worker, update bookings, and notify parties.
+    """
+    try:
+        now_iso = datetime.now(timezone.utc).isoformat()
+        job_res = supabase.table("jobs").select("*").eq("id", job_id).maybe_single().execute()
+        if not job_res or not job_res.data:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        job = job_res.data
+        new_payment_status = "refunded" if job.get("payment_status") == "paid" else "cancelled"
+
+        # Update job
+        supabase.table("jobs").update({
+            "status": "cancelled",
+            "payment_status": new_payment_status,
+            "updated_at": now_iso,
+            "notes": reason,
+        }).eq("id", job_id).execute()
+
+        # Update bookings
+        try:
+            supabase.table("bookings").update({"status": "cancelled"}).eq("job_id", job_id).execute()
+        except Exception:
+            pass
+
+        # Release worker if assigned
+        worker_id = job.get("worker_id")
+        if worker_id:
+            try:
+                supabase.table("workers").update({
+                    "is_available": True,
+                    "is_online": True,
+                    "current_job_id": None,
+                    "updated_at": now_iso,
+                }).eq("id", worker_id).execute()
+
+                supabase.table("notifications").insert({
+                    "user_id": worker_id,
+                    "title": "Booking Cancelled by Admin",
+                    "body": f"Job #{job_id[:6]} was cancelled by Admin Operations. You are available for new requests.",
+                    "type": "JOB_CANCELLED_BY_ADMIN",
+                    "created_at": now_iso,
+                }).execute()
+            except Exception as w_err:
+                logger.warning(f"Worker release warning: {w_err}")
+
+        # Notify customer
+        customer_id = job.get("employer_id") or job.get("user_id")
+        if customer_id:
+            try:
+                supabase.table("notifications").insert({
+                    "user_id": customer_id,
+                    "title": "Job Cancelled & Refunded",
+                    "body": f"Job #{job_id[:6]} was cancelled by Admin. Any prepaid fees have been refunded.",
+                    "type": "JOB_CANCELLED_BY_ADMIN",
+                    "created_at": now_iso,
+                }).execute()
+            except Exception as c_err:
+                logger.warning(f"Customer notify warning: {c_err}")
+
+        # Audit log
+        try:
+            supabase.table("admin_log").insert({
+                "admin_id": admin_id,
+                "action": "JOB_CANCELLED",
+                "target_id": job_id,
+                "target_table": "jobs",
+                "metadata": {"reason": reason, "cancelled_at": now_iso},
+            }).execute()
+        except Exception:
+            pass
+
+        return {
+            "status": "success",
+            "message": "Job cancelled and worker released successfully.",
+            "job_id": job_id,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling job {job_id} by admin: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to cancel job: {str(e)}")
+
+
+# ── 8. GET /api/v1/admin/users — List registered users ───────────────────────
+@router.get("/users")
+def list_users_for_admin(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
+    admin_id: str = Depends(verify_admin),
+):
+    """
+    List all platform users for admin monitoring.
+    """
+    try:
+        start = (page - 1) * limit
+        end = start + limit - 1
+        res = supabase.table("users").select("id, name, email, phone, role, created_at", count="exact").range(start, end).order("created_at", desc=True).execute()
+
+        return {
+            "total": res.count if res.count is not None else len(res.data or []),
+            "page": page,
+            "limit": limit,
+            "users": res.data or [],
+        }
+    except Exception as e:
+        logger.error(f"Error listing users for admin: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list users: {str(e)}")

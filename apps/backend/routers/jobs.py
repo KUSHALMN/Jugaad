@@ -161,8 +161,9 @@ def get_job(job_id: str, uid: str = Depends(verify_firebase_token)):
     employer_id = job.get("employer_id")
     worker_id = job.get("worker_id")
 
-    # Access control: only employer or assigned worker can access
-    if internal_id != employer_id and internal_id != worker_id:
+    # Access control: employer, assigned worker, or platform admin
+    user_role = user_result.data.get("role")
+    if internal_id != employer_id and internal_id != worker_id and user_role != "admin":
         raise HTTPException(403, "Not authorized to view this job")
 
     status = str(job.get("status") or "").lower()
@@ -209,7 +210,8 @@ def _perform_cancel_job(job_id: str, uid: str):
         raise HTTPException(404, "Job not found")
 
     job = result.data
-    if job.get("employer_id") != employer_id:
+    user_role = user_result.data.get("role")
+    if job.get("employer_id") != employer_id and user_role != "admin":
         raise HTTPException(403, "Not authorized to cancel this job")
     if job.get("status") not in CANCELLABLE:
         raise HTTPException(400, f"Cannot cancel job in status '{job.get('status')}'")
