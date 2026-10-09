@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:jugaad_mvp/core/config/supabase_config.dart';
 import 'package:jugaad_mvp/core/network/environment_config.dart';
@@ -29,6 +30,7 @@ class _WorkerRegistrationStep3State extends ConsumerState<WorkerRegistrationStep
   Future<String> _uploadToSupabase(String bucketName, String path, Uint8List bytes) async {
     // 1. Try uploading via Backend API (bypasses Supabase Storage RLS)
     try {
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
       final uri = Uri.parse('${EnvironmentConfig.baseUrl}/api/v1/upload');
       final request = http.MultipartRequest('POST', uri)
         ..fields['bucket'] = bucketName
@@ -38,6 +40,10 @@ class _WorkerRegistrationStep3State extends ConsumerState<WorkerRegistrationStep
           bytes,
           filename: path.split('/').last,
         ));
+
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
 
       final streamedResponse = await request.send().timeout(const Duration(seconds: 15));
       final response = await http.Response.fromStream(streamedResponse);
