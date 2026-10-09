@@ -7,6 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/config/supabase_config.dart';
+import '../../../core/network/environment_config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminApprovalsScreen extends StatefulWidget {
   const AdminApprovalsScreen({super.key});
@@ -23,16 +25,41 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
   List<Map<String, dynamic>> _pendingWorkers = [];
   List<Map<String, dynamic>> _approvedWorkers = [];
   List<Map<String, dynamic>> _rejectedWorkers = [];
+  RealtimeChannel? _workersRealtimeChannel;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _fetchWorkers();
+    _setupRealtimeSubscription();
+  }
+
+  void _setupRealtimeSubscription() {
+    try {
+      _workersRealtimeChannel = SupabaseConfig.client
+          .channel('public:admin_workers_approvals')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'workers',
+            callback: (payload) {
+              if (mounted) {
+                _fetchWorkers();
+              }
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      debugPrint('[ADMIN] Error setting up realtime subscription: $e');
+    }
   }
 
   @override
   void dispose() {
+    if (_workersRealtimeChannel != null) {
+      SupabaseConfig.client.removeChannel(_workersRealtimeChannel!);
+    }
     _tabController.dispose();
     super.dispose();
   }
@@ -64,9 +91,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
         headers['Authorization'] = 'Bearer $token';
       }
 
-      final baseUrl = SupabaseConfig.fastApiUrl.isNotEmpty 
-          ? SupabaseConfig.fastApiUrl 
-          : 'http://localhost:8000';
+      final baseUrl = EnvironmentConfig.baseUrl;
 
       // Fetch pending, approved, rejected
       final pendingRes = await http.get(Uri.parse('$baseUrl/api/v1/admin/workers?status=pending_approval'), headers: headers);
@@ -103,7 +128,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (token != null) headers['Authorization'] = 'Bearer $token';
 
-      final baseUrl = SupabaseConfig.fastApiUrl.isNotEmpty ? SupabaseConfig.fastApiUrl : 'http://localhost:8000';
+      final baseUrl = EnvironmentConfig.baseUrl;
       final res = await http.post(
         Uri.parse('$baseUrl/api/v1/admin/workers/$workerId/approve'),
         headers: headers,
@@ -193,7 +218,7 @@ class _AdminApprovalsScreenState extends State<AdminApprovalsScreen> with Single
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (token != null) headers['Authorization'] = 'Bearer $token';
 
-      final baseUrl = SupabaseConfig.fastApiUrl.isNotEmpty ? SupabaseConfig.fastApiUrl : 'http://localhost:8000';
+      final baseUrl = EnvironmentConfig.baseUrl;
       final res = await http.post(
         Uri.parse('$baseUrl/api/v1/admin/workers/$workerId/reject'),
         headers: headers,

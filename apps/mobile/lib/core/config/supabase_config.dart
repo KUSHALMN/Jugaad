@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Supabase project configuration.
@@ -20,7 +21,7 @@ class SupabaseConfig {
 
   static const String fastApiUrl = String.fromEnvironment(
     'FASTAPI_URL',
-    defaultValue: 'http://localhost:8000',
+    defaultValue: kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000',
   );
 
   /// Singleton Supabase client — use everywhere in the app
