@@ -50,7 +50,7 @@ async def root():
 @app.get("/health")
 async def health():
     return {
-        "status": "ok_test_123",
+        "status": "ok",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "env": settings.ENV,
         "sms_mode": settings.SMS_MODE,
