@@ -289,13 +289,10 @@ def upload_id_doc(doc_url: str, uid: str = Depends(verify_firebase_token)):
 
 @router.post("/{worker_id}/heartbeat")
 def worker_heartbeat(worker_id: str, payload: dict, uid: str = Depends(verify_firebase_token)):
-    if uid != worker_id:
+    user_result = supabase.table("users").select("id, firebase_uid").or_(f"id.eq.{uid},firebase_uid.eq.{uid}").maybe_single().execute()
+    internal_id = user_result.data["id"] if (user_result and user_result.data) else uid
+    if worker_id not in (uid, internal_id):
         raise HTTPException(status_code=403, detail="Not authorized")
-
-    user_result = supabase.table("users").select("id").eq("firebase_uid", uid).single().execute()
-    if not user_result.data:
-        raise HTTPException(status_code=404, detail="User not found")
-    internal_id = user_result.data["id"]
 
     lat = payload.get("lat")
     lng = payload.get("lng")
@@ -341,7 +338,9 @@ def worker_heartbeat(worker_id: str, payload: dict, uid: str = Depends(verify_fi
 
 @router.post("/{worker_id}/fcm-token")
 def worker_fcm_token(worker_id: str, payload: dict, uid: str = Depends(verify_firebase_token)):
-    if uid != worker_id:
+    user_result = supabase.table("users").select("id, firebase_uid").or_(f"id.eq.{uid},firebase_uid.eq.{uid}").maybe_single().execute()
+    internal_id = user_result.data["id"] if (user_result and user_result.data) else uid
+    if worker_id not in (uid, internal_id):
         raise HTTPException(status_code=403, detail="Not authorized")
 
     token = payload.get("token")
@@ -349,7 +348,7 @@ def worker_fcm_token(worker_id: str, payload: dict, uid: str = Depends(verify_fi
         supabase.table("users").update({
             "fcm_token": token,
             "updated_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("firebase_uid", worker_id).execute()
+        }).or_(f"id.eq.{worker_id},firebase_uid.eq.{worker_id}").execute()
     return {"status": "success"}
 
 # --- Rate Limiting Cache & Store ---
