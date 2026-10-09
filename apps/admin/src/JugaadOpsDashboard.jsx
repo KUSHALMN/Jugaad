@@ -553,6 +553,42 @@ export default function JugaadOpsDashboard() {
     }
   }, [isAdmin, activeTab]);
 
+  // Real-time Supabase subscriptions: instantly connects Worker & User portal actions to Admin portal
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const channel = supabase
+      .channel('admin_live_ops_feed')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'workers' },
+        (payload) => {
+          fetchPendingWorkers();
+          fetchAllWorkers();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'jobs' },
+        (payload) => {
+          fetchJobs();
+          fetchAllJobs();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'platform_config' },
+        () => {
+          fetchPlatformConfig();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin]);
+
   // Simulate Telemetry shimmer initial load
   useEffect(() => {
     const timer = setTimeout(() => {
