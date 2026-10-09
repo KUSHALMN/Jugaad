@@ -623,27 +623,241 @@ def admin_cancel_job(
         raise HTTPException(status_code=500, detail=f"Failed to cancel job: {str(e)}")
 
 
-# ── 8. GET /api/v1/admin/users — List registered users ───────────────────────
+class UserStatusPayload(BaseModel):
+    is_suspended: bool
+    reason: Optional[str] = None
+
+
+# ── 8. GET /api/v1/admin/users — List registered users with booking metrics ──
 @router.get("/users")
 def list_users_for_admin(
+    role: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=100),
     admin_id: str = Depends(verify_admin),
 ):
     """
-    List all platform users for admin monitoring.
+    List all platform users for admin monitoring enriched with booking stats,
+    cancellation rates, and account status.
     """
     try:
+        query = supabase.table("users").select("*", count="exact")
+        if role and role != "all":
+            query = query.eq("role", role)
+
         start = (page - 1) * limit
         end = start + limit - 1
-        res = supabase.table("users").select("id, name, email, phone, role, created_at", count="exact").range(start, end).order("created_at", desc=True).execute()
+        res = query.range(start, end).order("created_at", desc=True).execute()
+
+        raw_users = res.data or []
+        total_count = res.count if res.count is not None else len(raw_users)
+
+        # Filter by search string if provided
+        if search and search.strip():
+            s = search.strip().lower()
+            raw_users = [
+                u for u in raw_users
+                if s in (u.get("name") or "").lower()
+                or s in (u.get("phone") or "").lower()
+                or s in (u.get("email") or "").lower()
+                or s in (u.get("id") or "").lower()
+            ]
+
+        # Aggregate booking metrics for each user
+        user_ids = [u["id"] for u in raw_users if u.get("id")]
+        stats_map = {}
+        if user_ids:
+            try:
+                jobs_res = supabase.table("jobs").select("employer_id, status, amount, surcharge_amount").in_("employer_id", user_ids).execute()
+                for j in (jobs_res.data or []):
+                    uid = j.get("employer_id")
+                    if not uid:
+                        continue
+                    if uid not in stats_map:
+                        stats_map[uid] = {
+                            "total_bookings": 0,
+                            "completed_bookings": 0,
+                            "cancelled_bookings": 0,
+                            "total_spent": 0.0,
+                        }
+                    stats_map[uid]["total_bookings"] += 1
+                    status = (j.get("status") or "").lower()
+                    if status == "completed":
+                        stats_map[uid]["completed_bookings"] += 1
+                        val = float(j.get("amount") or 0.0) + float(j.get("surcharge_amount") or 0.0)
+                        stats_map[uid]["total_spent"] += val
+                    elif status == "cancelled":
+                        stats_map[uid]["cancelled_bookings"] += 1
+            except Exception as j_err:
+                logger.warning(f"Failed to aggregate user job stats: {j_err}")
+
+        enriched = []
+        for u in raw_users:
+            uid = u.get("id")
+            s = stats_map.get(uid, {
+                "total_bookings": 0,
+                "completed_bookings": 0,
+                "cancelled_bookings": 0,
+                "total_spent": 0.0,
+            })
+            total_b = s["total_bookings"]
+            canc_b = s["cancelled_bookings"]
+            canc_rate = round((canc_b / total_b * 100), 1) if total_b > 0 else 0.0
+            is_susp = bool(u.get("is_suspended") or u.get("is_banned") or u.get("status") == "suspended")
+
+            enriched.append({
+                "id": str(uid),
+                "name": u.get("name") or "User",
+                "phone": u.get("phone") or "",
+                "email": u.get("email") or "",
+                "role": u.get("role") or "employer",
+                "created_at": u.get("created_at"),
+                "total_bookings": total_b,
+                "completed_bookings": s["completed_bookings"],
+                "cancelled_bookings": canc_b,
+                "cancellation_rate": canc_rate,
+                "total_spent": round(s["total_spent"], 2),
+                "is_suspended": is_susp,
+                "status": "suspended" if is_susp else "active",
+            })
 
         return {
-            "total": res.count if res.count is not None else len(res.data or []),
+            "total": total_count,
             "page": page,
             "limit": limit,
-            "users": res.data or [],
+            "users": enriched,
         }
     except Exception as e:
         logger.error(f"Error listing users for admin: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to list users: {str(e)}")
+
+
+# ── 9. POST /api/v1/admin/users/{user_id}/status — Suspend or reactivate user ─
+@router.post("/users/{user_id}/status")
+def update_user_status_by_admin(
+    user_id: str,
+    payload: UserStatusPayload,
+    admin_id: str = Depends(verify_admin),
+):
+    """
+    Suspend, ban, or reactivate a customer account with audit logging.
+    """
+    try:
+        now_iso = datetime.now(timezone.utc).isoformat()
+        new_status = "suspended" if payload.is_suspended else "active"
+
+        # Update users table
+        up_data = {
+            "is_suspended": payload.is_suspended,
+            "is_banned": payload.is_suspended,
+            "status": new_status,
+        }
+        supabase.table("users").update(up_data).eq("id", user_id).execute()
+
+        # Audit log
+        try:
+            supabase.table("admin_log").insert({
+                "admin_id": admin_id,
+                "action": "USER_STATUS_UPDATE",
+                "target_id": user_id,
+                "target_table": "users",
+                "metadata": {
+                    "is_suspended": payload.is_suspended,
+                    "reason": payload.reason,
+                    "updated_at": now_iso,
+                }
+            }).execute()
+        except Exception:
+            pass
+
+        return {
+            "status": "success",
+            "message": f"User status updated to {new_status}",
+            "user_id": user_id,
+            "is_suspended": payload.is_suspended,
+        }
+    except Exception as e:
+        logger.error(f"Error updating user status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update user status: {str(e)}")
+
+
+# ── 10. GET /api/v1/admin/analytics/summary — Operational & financial analytics
+@router.get("/analytics/summary")
+def get_analytics_summary_for_admin(
+    days: int = Query(7, ge=1, le=90),
+    admin_id: str = Depends(verify_admin),
+):
+    """
+    Provides multi-day operational metrics, revenue breakdowns, platform commission,
+    and fulfillment statistics for SaaS dashboards and reports.
+    """
+    try:
+        from datetime import timedelta
+        now = datetime.now(timezone.utc)
+        start_date = (now - timedelta(days=days)).isoformat()
+
+        # Fetch recent jobs
+        jobs_res = supabase.table("jobs").select(
+            "id, status, amount, surcharge_amount, job_type, created_at, accepted_at, completed_at"
+        ).gte("created_at", start_date).order("created_at", desc=False).execute()
+
+        jobs = jobs_res.data or []
+        total_jobs = len(jobs)
+        completed_jobs = [j for j in jobs if j.get("status") == "completed"]
+        cancelled_jobs = [j for j in jobs if j.get("status") == "cancelled"]
+
+        total_gmv = sum(
+            float(j.get("amount") or 0.0) + float(j.get("surcharge_amount") or 0.0)
+            for j in completed_jobs
+        )
+        platform_commission = round(total_gmv * 0.10, 2)  # 10% platform take rate
+        fulfillment_rate = round((len(completed_jobs) / total_jobs * 100), 1) if total_jobs > 0 else 0.0
+
+        # Build daily time-series buckets
+        daily_map = {}
+        for i in range(days):
+            d_str = (now - timedelta(days=days - 1 - i)).strftime("%b %d")
+            daily_map[d_str] = {
+                "date": d_str,
+                "jobs": 0,
+                "completed": 0,
+                "cancelled": 0,
+                "gmv": 0.0,
+                "commission": 0.0,
+            }
+
+        for j in jobs:
+            c_at = j.get("created_at")
+            if not c_at:
+                continue
+            try:
+                d_key = datetime.fromisoformat(c_at.replace("Z", "+00:00")).strftime("%b %d")
+                if d_key in daily_map:
+                    daily_map[d_key]["jobs"] += 1
+                    if j.get("status") == "completed":
+                        daily_map[d_key]["completed"] += 1
+                        val = float(j.get("amount") or 0.0) + float(j.get("surcharge_amount") or 0.0)
+                        daily_map[d_key]["gmv"] = round(daily_map[d_key]["gmv"] + val, 2)
+                        daily_map[d_key]["commission"] = round(daily_map[d_key]["commission"] + (val * 0.10), 2)
+                    elif j.get("status") == "cancelled":
+                        daily_map[d_key]["cancelled"] += 1
+            except Exception:
+                pass
+
+        time_series = list(daily_map.values())
+
+        return {
+            "period_days": days,
+            "total_jobs": total_jobs,
+            "completed_jobs": len(completed_jobs),
+            "cancelled_jobs": len(cancelled_jobs),
+            "fulfillment_rate": fulfillment_rate,
+            "total_gmv": round(total_gmv, 2),
+            "platform_commission": platform_commission,
+            "time_series": time_series,
+        }
+    except Exception as e:
+        logger.error(f"Error computing analytics summary: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to compute analytics: {str(e)}")
+
