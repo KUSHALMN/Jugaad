@@ -30,8 +30,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   bool _isOnline = true;
   bool _emergencyAvailable = true;
   bool _workerDocExists = false;
-  String _approvalStatus = 'rejected'; // Shows rejection banner as in mockup
-  String? _rejectionReason = 'Document criteria not met. Please re-submit selfie and Aadhaar.';
+  String _approvalStatus = 'pending';
+  String? _rejectionReason;
   bool _isBanned = false;
   int _strikesCount = 0;
   int _serviceRadius = 15;
@@ -2765,8 +2765,11 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
             final data = payload.newRecord;
             if (data.isEmpty) return;
 
-            final status = data['status'] as String? ?? '';
-            if (status == 'searching' && payload.eventType == PostgresChangeEvent.insert) {
+            final status = (data['status'] as String? ?? '').toLowerCase();
+            final isRelevantStatus = status == 'searching' || status == 'open';
+            final isRelevantEvent = payload.eventType == PostgresChangeEvent.insert || 
+                                    payload.eventType == PostgresChangeEvent.update;
+            if (isRelevantStatus && isRelevantEvent) {
               _checkAndShowJobOffer(data);
             }
           },
