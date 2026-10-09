@@ -17,6 +17,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import AdminActionModal from './AdminActionModal';
+import { parseWorkerCategory, getAadhaarUrl, getProfilePhoto } from '../utils/workerUtils';
 
 const PENDING_APPLICATIONS = [
   {
@@ -66,23 +67,29 @@ export default function EnhancedKycAudit({ pendingWorkers = [], onApprove, onRej
   // Link real pending workers from database
   React.useEffect(() => {
     if (pendingWorkers && pendingWorkers.length > 0) {
-      const realApps = pendingWorkers.map((pw, i) => ({
-        id: pw.id,
-        name: pw.name || 'Worker Applicant',
-        phone: pw.phone || '+91 99999 00000',
-        trade: pw.category || pw.work_category || 'Electrician',
-        experienceYears: parseInt(pw.experience) || 3,
-        aadhaarNumber: pw.aadhaar_number || 'XXXX-XXXX-' + (1000 + (i * 73) % 9000),
-        aadhaarImageUrl: pw.id_document_url || 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=600',
-        selfieUrl: pw.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
-        submittedAt: pw.created_at ? new Date(pw.created_at).toLocaleTimeString() : 'Today',
-        heuristics: {
-          nameMatchScore: 95,
-          faceMatchScore: 90,
-          formatChecksumValid: true,
-          blacklistClear: true,
-        }
-      }));
+      const realApps = pendingWorkers.map((pw, i) => {
+        const trade = parseWorkerCategory(pw);
+        const aadhaar = getAadhaarUrl(pw) || pw.id_document_url || 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=600';
+        const selfie = getProfilePhoto(pw) || pw.avatar_url || pw.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300';
+        
+        return {
+          id: pw.id,
+          name: pw.displayName || pw.name || 'Worker Applicant',
+          phone: pw.displayPhone || pw.phone || '+91 99999 00000',
+          trade,
+          experienceYears: parseInt(pw.experience) || 3,
+          aadhaarNumber: pw.aadhaar_number || 'XXXX-XXXX-' + (1000 + (i * 73) % 9000),
+          aadhaarImageUrl: aadhaar,
+          selfieUrl: selfie,
+          submittedAt: pw.created_at ? new Date(pw.created_at).toLocaleTimeString() : 'Today',
+          heuristics: {
+            nameMatchScore: 95,
+            faceMatchScore: 90,
+            formatChecksumValid: true,
+            blacklistClear: true,
+          }
+        };
+      });
       setApplications(realApps);
       setSelectedApp(realApps[0]);
     }

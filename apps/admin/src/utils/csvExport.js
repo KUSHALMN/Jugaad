@@ -78,6 +78,8 @@ export function exportJobsToCsv(jobs = []) {
   downloadCsv('jugaad_jobs_report', headers, rows);
 }
 
+import { parseWorkerCategory, parseWorkerSkills } from './workerUtils';
+
 /**
  * Export Worker Roster & KYC Audit to CSV.
  */
@@ -99,19 +101,24 @@ export function exportWorkersToCsv(workers = []) {
   ];
 
   const rows = workers.map(w => {
+    const skills = parseWorkerSkills(w);
+    const category = parseWorkerCategory(w);
+    const isApproved = w.status === 'approved' || w.approval_status === 'approved' || w.id_verified || w.isVerified;
+    const approvalStatus = w.is_banned || w.status === 'suspended' ? 'Suspended' : isApproved ? 'Approved (Verified)' : (w.status || 'Pending Review');
+
     return [
       w.id || '',
-      w.name || 'Worker',
-      w.phone || '',
+      w.displayName || w.name || 'Worker',
+      w.displayPhone || w.phone || '',
       w.email || '',
-      w.work_category || (Array.isArray(w.skills) ? w.skills[0] : '') || 'General',
-      Array.isArray(w.skills) ? w.skills.join('; ') : '',
+      category,
+      skills.join('; '),
       (w.rating || 0).toString(),
       (w.total_jobs || w.totalJobsCompleted || 0).toString(),
-      (w.hourly_rate || w.rate_per_hour || 150).toString(),
-      w.approval_status || w.status || 'pending',
-      w.id_document_url ? 'Yes' : 'No',
-      w.area || 'Mysuru',
+      (w.hourly_rate || w.rate_per_hour || 200).toString(),
+      approvalStatus,
+      w.id_document_url || w.aadhaarUrl ? 'Yes' : 'No',
+      w.area || w.address || 'Mysuru',
       w.created_at ? new Date(w.created_at).toLocaleDateString() : '',
     ];
   });

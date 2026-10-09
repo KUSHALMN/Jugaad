@@ -15,6 +15,7 @@ import {
   Sliders,
   Filter
 } from 'lucide-react';
+import { parseWorkerCategory } from '../utils/workerUtils';
 
 const MYSURU_ZONES = [
   { id: 'z1', name: 'Gokulam 3rd Stage', x: 260, y: 140, demand: 'High', workers: 14, surge: '1.4x' },
@@ -59,12 +60,11 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
         const normX = Math.max(80, Math.min(520, ((lng - 76.58) / 0.12) * 600));
         const normY = Math.max(60, Math.min(460, (1 - ((lat - 12.26) / 0.12)) * 520));
 
-        const tradeStr = lw.category || lw.work_category || 'General';
-        const formattedTrade = tradeStr.charAt(0).toUpperCase() + tradeStr.slice(1).replace('_', ' ');
+        const formattedTrade = lw.displayCategory || parseWorkerCategory(lw);
 
         return {
           id: lw.id || `w-${index}`,
-          name: lw.name || 'Worker',
+          name: lw.displayName || lw.name || 'Worker',
           trade: formattedTrade,
           status: lw.is_online || lw.isOnline ? 'online' : (lw.status || 'online'),
           lat: lat.toFixed(4),
