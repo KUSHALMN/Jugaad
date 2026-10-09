@@ -15,4 +15,8 @@ export const API_ENDPOINTS = {
   CANCEL_JOB: (id) => `${BACKEND_API_URL}/v1/admin/jobs/${id}/cancel`,
   BROADCAST: `${BACKEND_API_URL}/v1/admin/broadcast`,
   SERVICES: `${BACKEND_API_URL}/v1/services`,
+  USERS: (role = 'all', search = '') => `${BACKEND_API_URL}/v1/admin/users?role=${role}&search=${encodeURIComponent(search)}`,
+  USER_STATUS: (id) => `${BACKEND_API_URL}/v1/admin/users/${id}/status`,
+  ANALYTICS_SUMMARY: (days = 7) => `${BACKEND_API_URL}/v1/admin/analytics/summary?days=${days}`,
 };
+
