@@ -22,7 +22,9 @@ import {
   Radio,
   ShieldAlert,
   Zap,
-  ShieldCheck
+  ShieldCheck,
+  BarChart3,
+  Download
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { API_ENDPOINTS, BACKEND_API_URL } from './apiConfig';
@@ -30,6 +32,9 @@ import RadarMapModal from './components/RadarMapModal';
 import DisputesManager from './components/DisputesManager';
 import SurgeGeofencingHub from './components/SurgeGeofencingHub';
 import EnhancedKycAudit from './components/EnhancedKycAudit';
+import CustomersManager from './components/CustomersManager';
+import AnalyticsReportsHub from './components/AnalyticsReportsHub';
+import { exportJobsToCsv, exportWorkersToCsv } from './utils/csvExport';
 
 // Global memory cache for secure image blob URLs to prevent redundant Supabase Storage network downloads
 const _SECURE_IMAGE_CACHE = new Map();
@@ -549,6 +554,8 @@ export default function JugaadOpsDashboard() {
         fetchAllJobs();
       } else if (activeTab === 'KYC') {
         fetchPendingWorkers();
+      } else if (activeTab === 'Analytics') {
+        fetchAllJobs();
       }
     }
   }, [isAdmin, activeTab]);
@@ -1202,7 +1209,9 @@ export default function JugaadOpsDashboard() {
               {[
                 { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
                 { id: 'Jobs', label: 'Jobs', icon: CheckSquare },
-                { id: 'Workers', label: 'Workers', icon: Users },
+                { id: 'Workers', label: 'Workers', icon: UserCheck },
+                { id: 'Users', label: 'Users', icon: Users },
+                { id: 'Analytics', label: 'Analytics', icon: BarChart3 },
                 { id: 'Radar', label: 'Radar Map', icon: Radio },
                 { id: 'Disputes', label: 'Disputes', icon: ShieldAlert },
                 { id: 'Surge', label: 'Surge Hub', icon: Zap },
@@ -1686,6 +1695,15 @@ export default function JugaadOpsDashboard() {
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
+
+                  <button
+                    onClick={() => exportJobsToCsv(allJobs)}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[10px] text-xs font-semibold shadow-sm transition whitespace-nowrap"
+                    title="Export jobs report to CSV"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Export CSV
+                  </button>
                 </div>
               </div>
 
@@ -1820,6 +1838,15 @@ export default function JugaadOpsDashboard() {
                     <option value="verified">Verified (Approved)</option>
                     <option value="unverified">Awaiting verification</option>
                   </select>
+
+                  <button
+                    onClick={() => exportWorkersToCsv(allWorkers)}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-[10px] text-xs font-semibold shadow-sm transition whitespace-nowrap"
+                    title="Export workers KYC report to CSV"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Export CSV
+                  </button>
                 </div>
               </div>
 
@@ -2147,6 +2174,21 @@ export default function JugaadOpsDashboard() {
             />
           )}
 
+          {/* ================= TAB: USERS ================= */}
+          {activeTab === 'Users' && (
+            <CustomersManager 
+              session={session} 
+            />
+          )}
+
+          {/* ================= TAB: ANALYTICS ================= */}
+          {activeTab === 'Analytics' && (
+            <AnalyticsReportsHub 
+              session={session} 
+              onExportTrigger={() => exportJobsToCsv(allJobs)}
+            />
+          )}
+
         </main>
       </div>
 
@@ -2193,7 +2235,9 @@ export default function JugaadOpsDashboard() {
           {[
             { id: 'Dashboard', icon: LayoutDashboard, label: 'Dashboard' },
             { id: 'Jobs', icon: CheckSquare, label: 'Jobs' },
-            { id: 'Workers', icon: Users, label: 'Workers' },
+            { id: 'Workers', icon: UserCheck, label: 'Workers' },
+            { id: 'Users', icon: Users, label: 'Users' },
+            { id: 'Analytics', icon: BarChart3, label: 'Analytics' },
             { id: 'Ops', icon: Sliders, label: 'Operations' }
           ].map((tab) => {
             const Icon = tab.icon;
