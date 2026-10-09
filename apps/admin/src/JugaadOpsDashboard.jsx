@@ -34,6 +34,7 @@ import SurgeGeofencingHub from './components/SurgeGeofencingHub';
 import EnhancedKycAudit from './components/EnhancedKycAudit';
 import CustomersManager from './components/CustomersManager';
 import AnalyticsReportsHub from './components/AnalyticsReportsHub';
+import AdminActionModal from './components/AdminActionModal';
 import { exportJobsToCsv, exportWorkersToCsv } from './utils/csvExport';
 
 // Global memory cache for secure image blob URLs to prevent redundant Supabase Storage network downloads
@@ -237,6 +238,25 @@ export default function JugaadOpsDashboard() {
 
   const [jobs, setJobs] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
+
+  // In-app modal & toast feedback state (eliminating native browser popups)
+  const [adminModalState, setAdminModalState] = useState({
+    isOpen: false,
+    type: 'confirm',
+    title: '',
+    message: '',
+    inputLabel: '',
+    inputPlaceholder: '',
+    initialInputValue: '',
+    confirmText: 'Confirm',
+    onConfirm: () => {},
+  });
+  const [toastFeedback, setToastFeedback] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToastFeedback({ message, type });
+    setTimeout(() => setToastFeedback(null), 3500);
+  };
 
   const [allJobs, setAllJobs] = useState([]);
   const [loadingAllJobs, setLoadingAllJobs] = useState(true);
@@ -656,12 +676,25 @@ export default function JugaadOpsDashboard() {
   }, [activeTab, opsConfig.dispatchRadius]);
 
   const handleApprove = async (workerId, skipConfirm = false) => {
-    if (!skipConfirm && !confirm("Are you sure you want to approve this worker profile?")) return;
+    if (!skipConfirm) {
+      setAdminModalState({
+        isOpen: true,
+        type: 'confirm',
+        title: 'Approve Worker Partner',
+        message: 'Are you sure you want to approve this worker profile? They will immediately become live and receive job requests across Mysuru.',
+        confirmText: 'Approve Profile',
+        onConfirm: () => executeApprove(workerId),
+      });
+      return;
+    }
+    executeApprove(workerId);
+  };
+
+  const executeApprove = async (workerId) => {
     try {
       const adminId = session?.user?.id || 'admin-local';
       const token = session?.access_token || '';
 
-      // 1. Direct Supabase update ensures instant live sync to Mobile Worker & User portals
       const { error: dbError } = await supabase
         .from('workers')
         .update({
@@ -680,7 +713,6 @@ export default function JugaadOpsDashboard() {
         console.warn("Direct DB approval note:", dbError);
       }
 
-      // 2. Also call backend endpoint to trigger push notifications and audit logs
       try {
         await fetch(API_ENDPOINTS.APPROVE_WORKER(workerId), {
           method: 'POST',
@@ -694,7 +726,6 @@ export default function JugaadOpsDashboard() {
         console.warn("Backend approval notification note:", backendErr);
       }
 
-      // 3. Insert in-app notification so worker receives it in real-time
       try {
         await supabase.from('notifications').insert({
           user_id: workerId,
@@ -705,21 +736,39 @@ export default function JugaadOpsDashboard() {
         });
       } catch (_) {}
 
+      showToast("Worker profile approved successfully!");
       fetchPendingWorkers();
       fetchAllWorkers();
     } catch (err) {
       console.error("Error approving profile:", err);
-      alert("Approval action failed: " + err.message);
+      showToast("Approval action failed: " + err.message, "error");
     }
   };
 
   const handleReject = async (workerId, reason = null) => {
-    const rejectionReason = reason || prompt("Enter reason for rejection:") || "Application criteria or documents not met.";
+    if (!reason) {
+      setAdminModalState({
+        isOpen: true,
+        type: 'prompt',
+        title: 'Reject Worker Application',
+        message: 'Please provide the rejection rationale. The worker will be notified and given feedback to correct their profile.',
+        inputLabel: 'Rejection Reason',
+        inputPlaceholder: 'e.g. Identity document unclear, incomplete skill credentials...',
+        initialInputValue: 'Application criteria or documents not met.',
+        confirmText: 'Reject Application',
+        onConfirm: (r) => executeReject(workerId, r),
+      });
+      return;
+    }
+    executeReject(workerId, reason);
+  };
+
+  const executeReject = async (workerId, rejectionReason) => {
+    const finalReason = rejectionReason || 'Application criteria or documents not met.';
     try {
       const adminId = session?.user?.id || 'admin-local';
       const token = session?.access_token || '';
 
-      // 1. Direct Supabase update
       await supabase
         .from('workers')
         .update({
@@ -728,12 +777,11 @@ export default function JugaadOpsDashboard() {
           id_verified: false,
           is_available: false,
           is_online: false,
-          rejection_reason: rejectionReason,
+          rejection_reason: finalReason,
           updated_at: new Date().toISOString(),
         })
         .eq('id', workerId);
 
-      // 2. Also call backend endpoint
       try {
         await fetch(API_ENDPOINTS.REJECT_WORKER(workerId), {
           method: 'POST',
@@ -742,36 +790,48 @@ export default function JugaadOpsDashboard() {
             'Authorization': `Bearer ${token}`,
             'X-Admin-Id': adminId
           },
-          body: JSON.stringify({ reason: rejectionReason })
+          body: JSON.stringify({ reason: finalReason })
         });
       } catch (backendErr) {
         console.warn("Backend rejection notification note:", backendErr);
       }
 
-      // 3. Insert notification for worker
       try {
         await supabase.from('notifications').insert({
           user_id: workerId,
           title: "Verification Update",
-          body: `Your worker application was rejected: ${rejectionReason}`,
+          body: `Your worker application was rejected: ${finalReason}`,
           type: "WORKER_REJECTED",
           created_at: new Date().toISOString(),
         });
       } catch (_) {}
 
+      showToast("Worker application rejected.");
       fetchPendingWorkers();
       fetchAllWorkers();
     } catch (err) {
       console.error("Error rejecting profile:", err);
-      alert("Rejection action failed: " + err.message);
+      showToast("Rejection action failed: " + err.message, "error");
     }
   };
 
   const handleToggleWorkerStatus = async (worker) => {
     const isCurrentlyBanned = worker.is_banned || worker.status === 'suspended';
     const actionLabel = isCurrentlyBanned ? 'reactivate' : 'suspend';
-    if (!confirm(`Are you sure you want to ${actionLabel} ${worker.name || 'this provider'}?`)) return;
 
+    setAdminModalState({
+      isOpen: true,
+      type: isCurrentlyBanned ? 'confirm' : 'danger',
+      title: `${isCurrentlyBanned ? 'Reactivate' : 'Suspend'} Worker Account`,
+      message: `Are you sure you want to ${actionLabel} ${worker.name || 'this provider'}? ${
+        isCurrentlyBanned ? 'They will be allowed to go online immediately.' : 'They will be disconnected and unable to receive jobs.'
+      }`,
+      confirmText: `${isCurrentlyBanned ? 'Reactivate' : 'Suspend'} Worker`,
+      onConfirm: () => executeToggleWorkerStatus(worker, isCurrentlyBanned, actionLabel),
+    });
+  };
+
+  const executeToggleWorkerStatus = async (worker, isCurrentlyBanned, actionLabel) => {
     try {
       const newStatus = isCurrentlyBanned ? 'approved' : 'suspended';
       const newBanned = !isCurrentlyBanned;
@@ -788,7 +848,6 @@ export default function JugaadOpsDashboard() {
         })
         .eq('id', worker.id);
 
-      // Notify the worker portal in real-time
       try {
         await supabase.from('notifications').insert({
           user_id: worker.id,
@@ -801,16 +860,27 @@ export default function JugaadOpsDashboard() {
         });
       } catch (_) {}
 
-      alert(`Worker ${worker.name || worker.id} ${actionLabel}d successfully.`);
+      showToast(`Worker ${worker.name || worker.id} ${actionLabel}d successfully.`);
       fetchAllWorkers();
     } catch (err) {
       console.error("Error toggling worker status:", err);
-      alert("Failed to update worker status: " + err.message);
+      showToast("Failed to update worker status: " + err.message, "error");
     }
   };
 
   const handleCancelJob = async (job) => {
-    if (!confirm(`Are you sure you want to administratively cancel Job #${(job.id || '').slice(0, 6)}?`)) return;
+    const shortId = (job.id || '').slice(0, 6);
+    setAdminModalState({
+      isOpen: true,
+      type: 'danger',
+      title: `Cancel Job #${shortId}`,
+      message: `Are you sure you want to administratively cancel Job #${shortId}? The assigned worker will be released back to online availability and any customer prepaid fees will be refunded.`,
+      confirmText: 'Cancel Job',
+      onConfirm: () => executeCancelJob(job),
+    });
+  };
+
+  const executeCancelJob = async (job) => {
     try {
       await supabase
         .from('jobs')
@@ -877,11 +947,11 @@ export default function JugaadOpsDashboard() {
         console.warn("Backend job cancellation note:", backendErr);
       }
 
-      alert("Job cancelled and worker released.");
+      showToast("Job cancelled and worker released.");
       fetchAllJobs();
     } catch (err) {
       console.error("Error cancelling job:", err);
-      alert("Failed to cancel job: " + err.message);
+      showToast("Failed to cancel job: " + err.message, "error");
     }
   };
 
@@ -2267,6 +2337,36 @@ export default function JugaadOpsDashboard() {
           })}
         </div>
       </footer>
+
+      {/* In-app Toast Banner for Actions */}
+      {toastFeedback && (
+        <div className={`fixed bottom-20 md:bottom-8 right-6 z-50 px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 border text-sm font-medium animate-in fade-in slide-in-from-bottom-4 duration-200 ${
+          toastFeedback.type === 'error'
+            ? 'bg-red-50 text-red-800 border-red-200'
+            : 'bg-zinc-950 text-white border-zinc-800'
+        }`}>
+          {toastFeedback.type === 'error' ? (
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          )}
+          <span>{toastFeedback.message}</span>
+        </div>
+      )}
+
+      {/* Universal In-App Confirmation & Prompt Modal */}
+      <AdminActionModal
+        isOpen={adminModalState.isOpen}
+        type={adminModalState.type}
+        title={adminModalState.title}
+        message={adminModalState.message}
+        inputLabel={adminModalState.inputLabel}
+        inputPlaceholder={adminModalState.inputPlaceholder}
+        initialInputValue={adminModalState.initialInputValue}
+        confirmText={adminModalState.confirmText}
+        onConfirm={adminModalState.onConfirm}
+        onClose={() => setAdminModalState(prev => ({ ...prev, isOpen: false }))}
+      />
 
     </div>
   );

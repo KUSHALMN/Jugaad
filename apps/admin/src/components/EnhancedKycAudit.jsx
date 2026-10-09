@@ -16,6 +16,7 @@ import {
   SlidersHorizontal,
   ChevronRight
 } from 'lucide-react';
+import AdminActionModal from './AdminActionModal';
 
 const PENDING_APPLICATIONS = [
   {
@@ -98,17 +99,24 @@ export default function EnhancedKycAudit({ pendingWorkers = [], onApprove, onRej
     setTimeout(() => setActionNotice(null), 4000);
   };
 
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+
   const handleWhatsAppRequest = () => {
     if (!selectedApp) return;
     setActionNotice(`WhatsApp notification dispatched to ${selectedApp.phone}: "Please upload a clearer, uncropped photo of your Aadhaar card."`);
     setTimeout(() => setActionNotice(null), 4000);
   };
 
-  const handleReject = async () => {
+  const handleReject = () => {
     if (!selectedApp) return;
-    const reason = prompt("Enter rejection reason for worker:") || "Identity documents check failed or incomplete profile.";
+    setIsRejectModalOpen(true);
+  };
+
+  const executeReject = async (reason) => {
+    if (!selectedApp) return;
+    const finalReason = reason || "Identity documents check failed or incomplete profile.";
     if (onReject) {
-      await onReject(selectedApp.id, reason);
+      await onReject(selectedApp.id, finalReason);
     }
     setApplications(prev => prev.filter(a => a.id !== selectedApp.id));
     setActionNotice(`Application ${selectedApp.id} rejected. Status updated across mobile portal.`);
@@ -354,6 +362,20 @@ export default function EnhancedKycAudit({ pendingWorkers = [], onApprove, onRej
         </div>
 
       </div>
+
+      {/* In-app Rejection Prompt Modal */}
+      <AdminActionModal
+        isOpen={isRejectModalOpen}
+        type="prompt"
+        title="Reject Worker KYC Application"
+        message={`Please provide the reason for rejecting ${selectedApp?.name || 'this worker'}'s application.`}
+        inputLabel="Rejection Reason"
+        inputPlaceholder="e.g. Identity documents unreadable, name mismatch, expired ID..."
+        initialInputValue="Identity documents check failed or incomplete profile."
+        confirmText="Confirm Rejection"
+        onConfirm={executeReject}
+        onClose={() => setIsRejectModalOpen(false)}
+      />
     </div>
   );
 }
