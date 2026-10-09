@@ -854,6 +854,22 @@ export default function JugaadOpsDashboard() {
         } catch (_) {}
       }
 
+      // Also trigger backend cancellation endpoint for audit log and multi-channel notifications
+      try {
+        const token = session?.access_token || '';
+        const adminId = session?.user?.id || 'admin-local';
+        await fetch(API_ENDPOINTS.CANCEL_JOB(job.id), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'X-Admin-Id': adminId,
+          },
+        });
+      } catch (backendErr) {
+        console.warn("Backend job cancellation note:", backendErr);
+      }
+
       alert("Job cancelled and worker released.");
       fetchAllJobs();
     } catch (err) {

@@ -153,6 +153,27 @@ export default function SurgeGeofencingHub({ session, onConfigUpdated }) {
           created_at: new Date().toISOString(),
         }
       ]);
+
+      // Call backend broadcast endpoint for audit logging and server-side push distribution
+      try {
+        const adminId = session?.user?.id || 'admin-local';
+        const token = session?.access_token || '';
+        await fetch(API_ENDPOINTS.BROADCAST, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'X-Admin-Id': adminId,
+          },
+          body: JSON.stringify({
+            target: 'workers',
+            title: `⚡ Surge Alert: Up to ${highestMultiplier}x Active in Mysuru!`,
+            body: `Emergency hazard bonus up to ₹${highestFee} is active across city zones. Go online to claim high-demand jobs!`,
+          }),
+        });
+      } catch (backendErr) {
+        console.warn('[SurgeHub] Backend broadcast note:', backendErr);
+      }
     } catch (e) {
       console.warn('[SurgeHub] Broadcast note:', e);
     }

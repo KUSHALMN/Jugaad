@@ -715,5 +715,27 @@ class SupabaseService {
               ..sort((a, b) => (b['created_at'] ?? '')
                   .compareTo(a['created_at'] ?? '')));
   }
+
+  // ─── Platform Config Realtime ─────────────────────────────────────────────
+
+  /// Stream real-time platform configuration updates (surge fee, radius, system load, etc.)
+  Stream<Map<String, dynamic>> platformConfigStream() {
+    return _client
+        .from('platform_config')
+        .stream(primaryKey: ['id'])
+        .eq('id', 1)
+        .map((rows) => rows.isNotEmpty ? rows.first : <String, dynamic>{});
+  }
+
+  /// One-time fetch of platform configuration
+  Future<Map<String, dynamic>> fetchPlatformConfig() async {
+    try {
+      final res = await _client.from('platform_config').select().eq('id', 1).maybeSingle();
+      return res != null ? Map<String, dynamic>.from(res) : <String, dynamic>{};
+    } catch (e) {
+      print('[SupabaseService] Error fetching platform config: $e');
+      return <String, dynamic>{};
+    }
+  }
 }
 

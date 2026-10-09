@@ -317,6 +317,21 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
       _progressController.animateTo(0.7);
     } else if (status == 'completed') {
       _progressController.animateTo(1.0);
+    } else if (status == 'cancelled') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Job was cancelled by customer or admin operations.',
+              style: WorkerAppTheme.body(color: Colors.white, weight: FontWeight.bold),
+            ),
+            backgroundColor: WorkerAppTheme.urgentRed,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        context.go('/worker/home');
+      }
     }
 
     _updateTicker();
