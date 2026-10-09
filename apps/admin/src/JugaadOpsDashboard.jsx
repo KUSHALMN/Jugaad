@@ -25,6 +25,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import { API_ENDPOINTS, BACKEND_API_URL } from './apiConfig';
 import RadarMapModal from './components/RadarMapModal';
 import DisputesManager from './components/DisputesManager';
 import SurgeGeofencingHub from './components/SurgeGeofencingHub';
@@ -463,7 +464,7 @@ export default function JugaadOpsDashboard() {
 
   const fetchPlatformConfig = async () => {
     try {
-      const res = await fetch('http://localhost:8000/v1/platform/config');
+      const res = await fetch(API_ENDPOINTS.PLATFORM_CONFIG);
       if (res.ok) {
         const data = await res.json();
         setOpsConfig({
@@ -491,7 +492,7 @@ export default function JugaadOpsDashboard() {
       };
       
       const token = session?.access_token || '';
-      const res = await fetch('http://localhost:8000/v1/platform/config', {
+      const res = await fetch(API_ENDPOINTS.PLATFORM_CONFIG, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -564,7 +565,7 @@ export default function JugaadOpsDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch('http://localhost:8000/v1/admin/dashboard/stats');
+        const res = await fetch(API_ENDPOINTS.DASHBOARD_STATS);
         if (res.ok) {
           const data = await res.json();
           setStats({
@@ -638,7 +639,7 @@ export default function JugaadOpsDashboard() {
 
       // 2. Also call backend endpoint to trigger push notifications and audit logs
       try {
-        await fetch(`http://localhost:8000/v1/admin/workers/${workerId}/approve`, {
+        await fetch(API_ENDPOINTS.APPROVE_WORKER(workerId), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -691,7 +692,7 @@ export default function JugaadOpsDashboard() {
 
       // 2. Also call backend endpoint
       try {
-        await fetch(`http://localhost:8000/v1/admin/workers/${workerId}/reject`, {
+        await fetch(API_ENDPOINTS.REJECT_WORKER(workerId), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

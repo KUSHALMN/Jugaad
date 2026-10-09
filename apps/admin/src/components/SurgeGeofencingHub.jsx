@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { API_ENDPOINTS } from '../apiConfig';
 import { 
   Zap, 
   CloudRain, 
@@ -62,7 +63,7 @@ export default function SurgeGeofencingHub({ session, onConfigUpdated }) {
       }
 
       // 2. Call backend config endpoint to refresh server-side pricing caches
-      const res = await fetch('http://localhost:8000/v1/platform/config', {
+      const res = await fetch(API_ENDPOINTS.PLATFORM_CONFIG, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
