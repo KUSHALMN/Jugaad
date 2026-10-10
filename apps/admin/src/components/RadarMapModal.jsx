@@ -42,7 +42,8 @@ import {
   getOptimizedRoute,
   initializeRouteGeometries,
   advanceRouteSimulation,
-  haversineDistanceKm
+  haversineDistanceKm,
+  getDemandSurgeForCoordinates
 } from '../utils/mapRoutingUtils';
 import {
   createWorkerVehicleIcon,
@@ -77,6 +78,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
   const [showRoutes, setShowRoutes] = useState(true);
   const [showZoneLabels, setShowZoneLabels] = useState(true);
   const [isLivePinging, setIsLivePinging] = useState(true);
+  const [isClickToDispatchActive, setIsClickToDispatchActive] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState(new Date().toLocaleTimeString());
 
   // Simulation controls
@@ -489,6 +491,91 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
     }
   };
 
+  // Map click listener for Direct Map Dispatch pinning
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    const onMapClick = (e) => {
+      if (!isClickToDispatchActive) return;
+      handleDispatchAtCoordinates(e.latlng.lat, e.latlng.lng);
+    };
+
+    map.on('click', onMapClick);
+    return () => {
+      map.off('click', onMapClick);
+    };
+  }, [isClickToDispatchActive, workers]);
+
+  // Direct Map Click Dispatch calculation
+  const handleDispatchAtCoordinates = async (destLat, destLng) => {
+    setIsDispatching(true);
+    try {
+      const onlineWorkers = workers.filter((w) => w.status === 'online');
+      const candidates = onlineWorkers.length > 0 ? onlineWorkers : workers;
+
+      let nearestWorker = candidates[0];
+      let minDistance = Infinity;
+
+      for (const w of candidates) {
+        const d = haversineDistanceKm(w.lat, w.lng, destLat, destLng);
+        if (d < minDistance) {
+          minDistance = d;
+          nearestWorker = w;
+        }
+      }
+
+      const surgeData = getDemandSurgeForCoordinates(destLat, destLng);
+      const origin = { lat: nearestWorker.lat, lng: nearestWorker.lng };
+      const dest = { lat: destLat, lng: destLng };
+
+      const roadData = await getOptimizedRoute(origin, dest);
+
+      const customerNames = ['Deepak Kumar', 'Kavitha Swaminathan', 'Manish Patil', 'Divya Prasad', 'Aravind Menon'];
+      const randomName = customerNames[Math.floor(Math.random() * customerNames.length)];
+
+      const newRoute = {
+        id: `r-${Date.now()}`,
+        workerId: nearestWorker.id,
+        workerName: nearestWorker.name,
+        trade: nearestWorker.trade,
+        customerName: randomName,
+        customerPhone: '+91 98450 ' + Math.floor(10000 + Math.random() * 90000),
+        customerAddress: `Near ${surgeData.zone.name}, Mysuru`,
+        customerLat: destLat,
+        customerLng: destLng,
+        originLat: nearestWorker.lat,
+        originLng: nearestWorker.lng,
+        jobId: `#JUG-${Math.floor(9200 + Math.random() * 800)}`,
+        etaMins: roadData.durationMins,
+        distanceKm: roadData.distanceKm,
+        progress: 0.05,
+        color: '#10b981',
+        roadCoordinates: roadData.coordinates,
+        totalDurationMins: roadData.durationMins,
+        isRealRoad: roadData.isRealRoad,
+      };
+
+      setWorkers((prev) =>
+        prev.map((w) => (w.id === nearestWorker.id ? { ...w, status: 'en_route', job: newRoute.jobId } : w))
+      );
+
+      setActiveRoutes((prev) => [newRoute, ...prev]);
+      setSelectedWorker({ ...nearestWorker, status: 'en_route', job: newRoute.jobId });
+      setIsClickToDispatchActive(false);
+
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.flyTo([destLat, destLng], 14, { duration: 1.2 });
+      }
+
+      showToast(`📍 Direct Map Dispatch: Matched ${nearestWorker.name} to ${randomName} in ${surgeData.zone.name} (${roadData.distanceKm} km, ETA ${roadData.durationMins}m, Surge ${surgeData.surge})`);
+    } catch (err) {
+      showToast('Error during map dispatch. Please retry.');
+    } finally {
+      setIsDispatching(false);
+    }
+  };
+
   // Centering on Mysore City
   const handleRecenterCity = () => {
     if (mapInstanceRef.current) {
@@ -596,6 +683,24 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
           >
             <Navigation className="w-3.5 h-3.5" />
             <span>Road Routes</span>
+          </button>
+
+          {/* Click to Pin Dispatch on Map */}
+          <button
+            onClick={() => {
+              setIsClickToDispatchActive(!isClickToDispatchActive);
+              if (!isClickToDispatchActive) {
+                showToast('📍 Click anywhere on the Mysuru map to drop a customer request and auto-dispatch the nearest worker!');
+              }
+            }}
+            className={`px-3 py-1.5 text-xs font-bold rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
+              isClickToDispatchActive
+                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 animate-pulse'
+                : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-zinc-800'
+            }`}
+          >
+            <MapPin className="w-3.5 h-3.5 text-amber-400" />
+            <span>{isClickToDispatchActive ? 'Click Map Spot...' : 'Pin Dispatch'}</span>
           </button>
 
           {/* Simulate Booking Dispatch Button */}
