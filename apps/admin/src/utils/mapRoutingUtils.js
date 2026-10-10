@@ -45,6 +45,8 @@ export const MYSURU_MUNICIPAL_ZONES = [
     surge: '1.4x',
     color: '#818cf8',
     radiusMeters: 1100,
+    baseEmergencyFee: 75,
+    unfulfilledSearches: 28,
   },
   {
     id: 'z2',
@@ -57,6 +59,8 @@ export const MYSURU_MUNICIPAL_ZONES = [
     surge: '1.5x',
     color: '#ef4444',
     radiusMeters: 1400,
+    baseEmergencyFee: 100,
+    unfulfilledSearches: 45,
   },
   {
     id: 'z3',
@@ -540,6 +544,29 @@ export function advanceRouteSimulation(route, deltaSeconds, multiplier = 1) {
     etaMins: dynamicEta,
     distanceRemainingKm: dynamicDist,
     speed: Math.round(25 + Math.sin(newProgress * Math.PI * 4) * 8 * multiplier),
+  };
+}
+
+/**
+ * Resolves closest municipal ward and surge multiplier for any geographic coordinate.
+ */
+export function getDemandSurgeForCoordinates(lat, lng) {
+  let closestZone = MYSURU_MUNICIPAL_ZONES[0];
+  let minDistance = Infinity;
+
+  for (const zone of MYSURU_MUNICIPAL_ZONES) {
+    const dist = haversineDistanceKm(lat, lng, zone.lat, zone.lng);
+    if (dist < minDistance) {
+      minDistance = dist;
+      closestZone = zone;
+    }
+  }
+
+  return {
+    zone: closestZone,
+    distanceKm: minDistance,
+    surge: closestZone.surge,
+    baseEmergencyFee: closestZone.baseEmergencyFee || 50,
   };
 }
 
