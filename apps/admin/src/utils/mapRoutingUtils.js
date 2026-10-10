@@ -487,3 +487,59 @@ export function interpolateRouteProgress(coordinates, progressPercent) {
   };
 }
 
+/**
+ * Initializes road geometries for default routes asynchronously.
+ */
+export async function initializeRouteGeometries(routes) {
+  const initialized = await Promise.all(
+    routes.map(async (r) => {
+      const origin = { lat: r.originLat, lng: r.originLng };
+      const dest = { lat: r.customerLat, lng: r.customerLng };
+      const roadData = await getOptimizedRoute(origin, dest);
+      return {
+        ...r,
+        roadCoordinates: roadData.coordinates,
+        distanceKm: roadData.distanceKm,
+        totalDurationMins: roadData.durationMins,
+        isRealRoad: roadData.isRealRoad,
+      };
+    })
+  );
+  return initialized;
+}
+
+/**
+ * Advances simulated route progress given time delta in seconds and speed multiplier.
+ */
+export function advanceRouteSimulation(route, deltaSeconds, multiplier = 1) {
+  if (!route.roadCoordinates || route.roadCoordinates.length < 2) {
+    return route;
+  }
+
+  // Base trip completion rate: ~120 seconds for full animation cycle at 1x
+  const cycleSeconds = Math.max(45, (route.totalDurationMins || 5) * 15);
+  const increment = (deltaSeconds * multiplier) / cycleSeconds;
+  let newProgress = route.progress + increment;
+
+  if (newProgress >= 1.0) {
+    // Loop smoothly with a short pause or bounce
+    newProgress = 0.05;
+  }
+
+  const interpolated = interpolateRouteProgress(route.roadCoordinates, newProgress);
+  const remainingFraction = Math.max(0, 1 - newProgress);
+  const dynamicEta = Math.max(1, Math.round(remainingFraction * (route.totalDurationMins || 6)));
+  const dynamicDist = parseFloat((remainingFraction * (route.distanceKm || 3.0)).toFixed(2));
+
+  return {
+    ...route,
+    progress: newProgress,
+    currentLat: interpolated ? interpolated.lat : route.customerLat,
+    currentLng: interpolated ? interpolated.lng : route.customerLng,
+    heading: interpolated ? interpolated.bearing : 0,
+    etaMins: dynamicEta,
+    distanceRemainingKm: dynamicDist,
+    speed: Math.round(25 + Math.sin(newProgress * Math.PI * 4) * 8 * multiplier),
+  };
+}
+
