@@ -30,7 +30,8 @@ import {
   Gauge,
   Clock,
   Map as MapIcon,
-  Sparkles
+  Sparkles,
+  Satellite
 } from 'lucide-react';
 import {
   MYSURU_CENTER,
@@ -491,24 +492,8 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
     }
   };
 
-  // Map click listener for Direct Map Dispatch pinning
-  useEffect(() => {
-    if (!mapInstanceRef.current) return;
-    const map = mapInstanceRef.current;
-
-    const onMapClick = (e) => {
-      if (!isClickToDispatchActive) return;
-      handleDispatchAtCoordinates(e.latlng.lat, e.latlng.lng);
-    };
-
-    map.on('click', onMapClick);
-    return () => {
-      map.off('click', onMapClick);
-    };
-  }, [isClickToDispatchActive, workers]);
-
   // Direct Map Click Dispatch calculation
-  const handleDispatchAtCoordinates = async (destLat, destLng) => {
+  const handleDispatchAtCoordinates = useCallback(async (destLat, destLng) => {
     setIsDispatching(true);
     try {
       const onlineWorkers = workers.filter((w) => w.status === 'online');
@@ -569,12 +554,28 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
       }
 
       showToast(`📍 Direct Map Dispatch: Matched ${nearestWorker.name} to ${randomName} in ${surgeData.zone.name} (${roadData.distanceKm} km, ETA ${roadData.durationMins}m, Surge ${surgeData.surge})`);
-    } catch (err) {
+    } catch {
       showToast('Error during map dispatch. Please retry.');
     } finally {
       setIsDispatching(false);
     }
-  };
+  }, [workers, showToast]);
+
+  // Map click listener for Direct Map Dispatch pinning
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    const onMapClick = (e) => {
+      if (!isClickToDispatchActive) return;
+      handleDispatchAtCoordinates(e.latlng.lat, e.latlng.lng);
+    };
+
+    map.on('click', onMapClick);
+    return () => {
+      map.off('click', onMapClick);
+    };
+  }, [isClickToDispatchActive, handleDispatchAtCoordinates]);
 
   // Centering on Mysore City
   const handleRecenterCity = () => {
@@ -711,6 +712,20 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
           >
             <Send className="w-3.5 h-3.5" />
             <span>{isDispatching ? 'Routing...' : 'Simulate Dispatch'}</span>
+          </button>
+
+          {/* Live Pings Toggle */}
+          <button
+            onClick={() => setIsLivePinging(!isLivePinging)}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
+              isLivePinging
+                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800'
+            }`}
+            title="Toggle Live PostGIS Heartbeat Pings"
+          >
+            <Radio className={`w-3.5 h-3.5 ${isLivePinging ? 'animate-pulse text-emerald-400' : 'text-zinc-500'}`} />
+            <span>{isLivePinging ? 'Live Pings (3s)' : 'Pings Paused'}</span>
           </button>
 
           {/* Fullscreen Toggle */}
