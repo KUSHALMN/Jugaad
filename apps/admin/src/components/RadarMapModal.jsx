@@ -1,21 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import {
   Navigation,
   MapPin,
   Layers,
-  RefreshCw,
   Crosshair,
   Radio,
-  User,
   Phone,
   Zap,
-  CheckCircle,
-  AlertCircle,
   Filter,
   Play,
   Pause,
-  FastForward,
   Compass,
   ShieldCheck,
   Activity,
@@ -23,12 +18,9 @@ import {
   Minimize2,
   Search,
   Moon,
-  Sun,
-  Car,
   Send,
   Battery,
   Gauge,
-  Clock,
   Map as MapIcon,
   Sparkles,
   Satellite
@@ -64,8 +56,8 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
   const routesLayerGroupRef = useRef(null);
   const zonesLayerGroupRef = useRef(null);
 
-  // Component state
-  const [activeTileType, setActiveTileType] = useState('dark');
+  // Component state — default to 'streets' for seamless match with light admin theme
+  const [activeTileType, setActiveTileType] = useState('streets');
   const [workers, setWorkers] = useState(INITIAL_REAL_WORKERS);
   const [activeRoutes, setActiveRoutes] = useState(INITIAL_ACTIVE_ROUTES);
   const [selectedWorker, setSelectedWorker] = useState(null);
@@ -99,7 +91,6 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
   useEffect(() => {
     if (liveWorkers && liveWorkers.length > 0) {
       const mapped = liveWorkers.map((lw, index) => {
-        // Use real lat/lng if valid Mysuru coordinates (around 12.2 to 12.4, 76.5 to 76.7)
         let lat = parseFloat(lw.lat);
         let lng = parseFloat(lw.lng);
 
@@ -166,7 +157,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
       // Custom zoom control in bottom-right
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      // Default Tile Layer (Dark Ops)
+      // Default Tile Layer
       const provider = TILE_PROVIDERS[activeTileType];
       tileLayerRef.current = L.tileLayer(provider.url, {
         attribution: provider.attribution,
@@ -190,7 +181,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
     };
   }, []);
 
-  // 4. Handle Tile Layer switching (Dark Ops vs Streets vs Satellite)
+  // 4. Handle Tile Layer switching
   useEffect(() => {
     if (!mapInstanceRef.current || !tileLayerRef.current) return;
 
@@ -212,7 +203,6 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
     if (!showHeatmap) return;
 
     MYSURU_MUNICIPAL_ZONES.forEach((zone) => {
-      // Glow circle
       const circle = L.circle([zone.lat, zone.lng], {
         radius: zone.radiusMeters,
         color: zone.color,
@@ -223,9 +213,9 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
       });
 
       circle.bindTooltip(
-        `<div class="text-xs">
-          <strong>${zone.name}</strong><br/>
-          <span style="color: ${zone.color};">${zone.surge} Surge</span> • ${zone.workers} Active
+        `<div class="text-xs p-1">
+          <strong class="text-zinc-900">${zone.name}</strong><br/>
+          <span style="color: ${zone.color}; font-weight: 700;">${zone.surge} Surge</span> • ${zone.workers} Active
         </div>`,
         { direction: 'top', className: 'custom-leaflet-tooltip' }
       );
@@ -238,7 +228,6 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
       circle.addTo(zonesLayerGroupRef.current);
 
-      // Zone label marker
       if (showZoneLabels) {
         const labelMarker = L.marker([zone.lat, zone.lng], {
           icon: createZoneDemandIcon(zone),
@@ -253,7 +242,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
     });
   }, [showHeatmap, showZoneLabels]);
 
-  // 6. Render Active Dispatch Routes (Polylines + Destination Customer Pins)
+  // 6. Render Active Dispatch Routes
   useEffect(() => {
     if (!routesLayerGroupRef.current) return;
     routesLayerGroupRef.current.clearLayers();
@@ -268,16 +257,16 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
       // Outer glow line
       const glowPoly = L.polyline(coords, {
-        color: route.color || '#6366f1',
+        color: route.color || '#4f46e5',
         weight: 8,
-        opacity: 0.35,
+        opacity: 0.28,
         lineCap: 'round',
       });
       glowPoly.addTo(routesLayerGroupRef.current);
 
       // Inner animated dashed road line
       const flowPoly = L.polyline(coords, {
-        color: route.color || '#6366f1',
+        color: route.color || '#4f46e5',
         weight: 3.5,
         opacity: 0.95,
         dashArray: '10, 10',
@@ -293,14 +282,14 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
       destMarker.bindPopup(
         `<div class="p-1">
-          <div class="flex items-center space-x-1.5 text-xs font-bold text-indigo-400">
+          <div class="flex items-center space-x-1.5 text-xs font-bold text-indigo-600">
             <span>Customer Destination</span>
           </div>
-          <h4 class="text-sm font-extrabold text-white mt-1">${route.customerName}</h4>
-          <p class="text-[11px] text-zinc-300">${route.customerAddress}</p>
-          <div class="mt-2 pt-2 border-t border-zinc-700/60 flex items-center justify-between text-xs">
-            <span class="text-zinc-400">Assigned: ${route.workerName}</span>
-            <span class="font-bold text-emerald-400">ETA ${route.etaMins} mins</span>
+          <h4 class="text-sm font-extrabold text-zinc-900 mt-1">${route.customerName}</h4>
+          <p class="text-[11px] text-zinc-500">${route.customerAddress}</p>
+          <div class="mt-2 pt-2 border-t border-zinc-200 flex items-center justify-between text-xs">
+            <span class="text-zinc-600">Assigned: <strong>${route.workerName}</strong></span>
+            <span class="font-bold text-emerald-600">ETA ${route.etaMins} mins</span>
           </div>
         </div>`,
         { className: 'custom-leaflet-popup' }
@@ -315,7 +304,6 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
     if (!workersLayerGroupRef.current) return;
     workersLayerGroupRef.current.clearLayers();
 
-    // Filter workers
     const visibleWorkers = workers.filter((w) => {
       if (filterTrade !== 'all' && w.trade !== filterTrade) return false;
       if (filterStatus !== 'all' && w.status !== filterStatus) return false;
@@ -342,23 +330,23 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
       marker.bindPopup(
         `<div class="p-1 min-w-[210px]">
-          <div class="flex items-center justify-between pb-1.5 border-b border-zinc-700/60">
-            <span class="text-xs font-bold text-white">${w.name}</span>
+          <div class="flex items-center justify-between pb-1.5 border-b border-zinc-200">
+            <span class="text-xs font-bold text-zinc-900">${w.name}</span>
             <span class="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded ${
-              w.status === 'en_route' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
-              w.status === 'in_progress' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
-              'bg-blue-500/20 text-blue-400 border border-blue-500/40'
+              w.status === 'en_route' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+              w.status === 'in_progress' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+              'bg-blue-50 text-blue-700 border border-blue-200'
             }">${w.status.replace('_', ' ')}</span>
           </div>
-          <div class="grid grid-cols-2 gap-2 mt-2 text-[11px] text-zinc-300">
-            <div>Trade: <strong class="text-zinc-100">${w.trade}</strong></div>
-            <div>Battery: <strong class="text-emerald-400">${w.battery}%</strong></div>
-            <div>Speed: <strong class="text-zinc-100">${w.speed} km/h</strong></div>
-            <div>Rating: <strong class="text-amber-400">★ ${w.rating}</strong></div>
+          <div class="grid grid-cols-2 gap-2 mt-2 text-[11px] text-zinc-600">
+            <div>Trade: <strong class="text-zinc-900">${w.trade}</strong></div>
+            <div>Battery: <strong class="text-emerald-600">${w.battery}%</strong></div>
+            <div>Speed: <strong class="text-zinc-900">${w.speed} km/h</strong></div>
+            <div>Rating: <strong class="text-amber-600">★ ${w.rating}</strong></div>
           </div>
-          <div class="mt-2 pt-2 border-t border-zinc-700/60 text-[10px] text-zinc-400 flex items-center justify-between">
+          <div class="mt-2 pt-2 border-t border-zinc-200 text-[10px] text-zinc-500 flex items-center justify-between">
             <span>GPS: ${w.lat.toFixed(4)}, ${w.lng.toFixed(4)}</span>
-            <span class="text-indigo-400 font-semibold cursor-pointer">View Telemetry &rarr;</span>
+            <span class="text-indigo-600 font-semibold cursor-pointer">Inspect Telemetry &rarr;</span>
           </div>
         </div>`,
         { className: 'custom-leaflet-popup' }
@@ -368,7 +356,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
     });
   }, [workers, selectedWorker, filterTrade, filterStatus, searchQuery]);
 
-  // 8. Vehicle Transit Animation Loop (Ticks along real road geometries)
+  // 8. Vehicle Transit Animation Loop
   useEffect(() => {
     if (!isSimulating) return;
 
@@ -380,7 +368,6 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
           advanceRouteSimulation(r, deltaSeconds, speedMultiplier)
         );
 
-        // Update corresponding worker positions in real time
         setWorkers((prevWorkers) =>
           prevWorkers.map((w) => {
             const matchingRoute = updatedRoutes.find((r) => r.workerId === w.id);
@@ -400,7 +387,6 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
         return updatedRoutes;
       });
 
-      // Camera chase tracking
       if (trackingWorkerId && mapInstanceRef.current) {
         const trackedWorker = workers.find((w) => w.id === trackingWorkerId);
         if (trackedWorker) {
@@ -420,77 +406,6 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
     }, 3000);
     return () => clearInterval(interval);
   }, [isLivePinging]);
-
-  // 10. Simulate New Customer Booking Dispatch on Real Map
-  const handleSimulateDispatch = async () => {
-    setIsDispatching(true);
-    try {
-      // Find an online worker
-      const idleWorker = workers.find((w) => w.status === 'online') || workers[0];
-      if (!idleWorker) {
-        showToast('No online workers available for dispatch!');
-        setIsDispatching(false);
-        return;
-      }
-
-      // Pick a random customer destination in Mysuru
-      const sampleDestinations = [
-        { customerName: 'Deepak Gowda', address: 'KRS Road, Gokulam 3rd Stage', lat: 12.3360, lng: 76.6230 },
-        { customerName: 'Pooja Hegde', address: 'Double Road, Kuvempunagar', lat: 12.2880, lng: 76.6340 },
-        { customerName: 'Raghavendra Rao', address: 'Kalidasa Road, Jayalakshmipuram', lat: 12.3180, lng: 76.6350 },
-        { customerName: 'Sneha Patil', address: 'Chamundipuram Silk Factory Road', lat: 12.2920, lng: 76.6540 },
-      ];
-      const targetDest = sampleDestinations[Math.floor(Math.random() * sampleDestinations.length)];
-
-      const origin = { lat: idleWorker.lat, lng: idleWorker.lng };
-      const dest = { lat: targetDest.lat, lng: targetDest.lng };
-
-      // Compute real road network route
-      const roadData = await getOptimizedRoute(origin, dest);
-
-      const newRoute = {
-        id: `r-${Date.now()}`,
-        workerId: idleWorker.id,
-        workerName: idleWorker.name,
-        trade: idleWorker.trade,
-        customerName: targetDest.customerName,
-        customerPhone: '+91 98450 ' + Math.floor(10000 + Math.random() * 90000),
-        customerAddress: targetDest.address,
-        customerLat: targetDest.lat,
-        customerLng: targetDest.lng,
-        originLat: idleWorker.lat,
-        originLng: idleWorker.lng,
-        jobId: `#JUG-${Math.floor(9100 + Math.random() * 800)}`,
-        etaMins: roadData.durationMins,
-        distanceKm: roadData.distanceKm,
-        progress: 0.05,
-        color: '#10b981',
-        roadCoordinates: roadData.coordinates,
-        totalDurationMins: roadData.durationMins,
-        isRealRoad: roadData.isRealRoad,
-      };
-
-      // Update worker status to en_route
-      setWorkers((prev) =>
-        prev.map((w) => (w.id === idleWorker.id ? { ...w, status: 'en_route', job: newRoute.jobId } : w))
-      );
-
-      // Add to active routes
-      setActiveRoutes((prev) => [newRoute, ...prev]);
-
-      // Select and center
-      setSelectedWorker({ ...idleWorker, status: 'en_route', job: newRoute.jobId });
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.flyTo([idleWorker.lat, idleWorker.lng], 14, { duration: 1.2 });
-      }
-
-      showToast(`🎯 Real-World Dispatch: Assigned ${idleWorker.name} to ${targetDest.customerName} (${roadData.distanceKm} km, ETA ${roadData.durationMins}m via ${roadData.isRealRoad ? 'OSRM Live Road' : 'Arterial Grid'})`);
-    } catch (err) {
-      showToast('Dispatch simulator error. Fallback applied.');
-    } finally {
-      setIsDispatching(false);
-    }
-  };
 
   // Direct Map Click Dispatch calculation
   const handleDispatchAtCoordinates = useCallback(async (destLat, destLng) => {
@@ -535,7 +450,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
         etaMins: roadData.durationMins,
         distanceKm: roadData.distanceKm,
         progress: 0.05,
-        color: '#10b981',
+        color: '#4f46e5',
         roadCoordinates: roadData.coordinates,
         totalDurationMins: roadData.durationMins,
         isRealRoad: roadData.isRealRoad,
@@ -553,7 +468,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
         mapInstanceRef.current.flyTo([destLat, destLng], 14, { duration: 1.2 });
       }
 
-      showToast(`📍 Direct Map Dispatch: Matched ${nearestWorker.name} to ${randomName} in ${surgeData.zone.name} (${roadData.distanceKm} km, ETA ${roadData.durationMins}m, Surge ${surgeData.surge})`);
+      showToast(`🎯 Real-World Dispatch: Assigned ${nearestWorker.name} to ${randomName} in ${surgeData.zone.name} (${roadData.distanceKm} km, ETA ${roadData.durationMins}m, Surge ${surgeData.surge})`);
     } catch {
       showToast('Error during map dispatch. Please retry.');
     } finally {
@@ -577,7 +492,70 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
     };
   }, [isClickToDispatchActive, handleDispatchAtCoordinates]);
 
-  // Centering on Mysore City
+  // 10. Simulate New Customer Booking Dispatch on Real Map
+  const handleSimulateDispatch = async () => {
+    setIsDispatching(true);
+    try {
+      const idleWorker = workers.find((w) => w.status === 'online') || workers[0];
+      if (!idleWorker) {
+        showToast('No online workers available for dispatch!');
+        setIsDispatching(false);
+        return;
+      }
+
+      const sampleDestinations = [
+        { customerName: 'Deepak Gowda', address: 'KRS Road, Gokulam 3rd Stage', lat: 12.3360, lng: 76.6230 },
+        { customerName: 'Pooja Hegde', address: 'Double Road, Kuvempunagar', lat: 12.2880, lng: 76.6340 },
+        { customerName: 'Raghavendra Rao', address: 'Kalidasa Road, Jayalakshmipuram', lat: 12.3180, lng: 76.6350 },
+        { customerName: 'Sneha Patil', address: 'Chamundipuram Silk Factory Road', lat: 12.2920, lng: 76.6540 },
+      ];
+      const targetDest = sampleDestinations[Math.floor(Math.random() * sampleDestinations.length)];
+
+      const origin = { lat: idleWorker.lat, lng: idleWorker.lng };
+      const dest = { lat: targetDest.lat, lng: targetDest.lng };
+
+      const roadData = await getOptimizedRoute(origin, dest);
+
+      const newRoute = {
+        id: `r-${Date.now()}`,
+        workerId: idleWorker.id,
+        workerName: idleWorker.name,
+        trade: idleWorker.trade,
+        customerName: targetDest.customerName,
+        customerPhone: '+91 98450 ' + Math.floor(10000 + Math.random() * 90000),
+        customerAddress: targetDest.address,
+        customerLat: targetDest.lat,
+        customerLng: targetDest.lng,
+        originLat: idleWorker.lat,
+        originLng: idleWorker.lng,
+        jobId: `#JUG-${Math.floor(9100 + Math.random() * 800)}`,
+        etaMins: roadData.durationMins,
+        distanceKm: roadData.distanceKm,
+        progress: 0.05,
+        color: '#4f46e5',
+        roadCoordinates: roadData.coordinates,
+        totalDurationMins: roadData.durationMins,
+        isRealRoad: roadData.isRealRoad,
+      };
+
+      setWorkers((prev) =>
+        prev.map((w) => (w.id === idleWorker.id ? { ...w, status: 'en_route', job: newRoute.jobId } : w))
+      );
+
+      setActiveRoutes((prev) => [newRoute, ...prev]);
+      setSelectedWorker({ ...idleWorker, status: 'en_route', job: newRoute.jobId });
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.flyTo([idleWorker.lat, idleWorker.lng], 14, { duration: 1.2 });
+      }
+
+      showToast(`🎯 Real-World Dispatch: Assigned ${idleWorker.name} to ${targetDest.customerName} (${roadData.distanceKm} km, ETA ${roadData.durationMins}m via ${roadData.isRealRoad ? 'OSRM Live Road' : 'Arterial Grid'})`);
+    } catch {
+      showToast('Dispatch simulator error. Fallback applied.');
+    } finally {
+      setIsDispatching(false);
+    }
+  };
+
   const handleRecenterCity = () => {
     if (mapInstanceRef.current) {
       mapInstanceRef.current.flyTo(MYSURU_CENTER, MYSURU_DEFAULT_ZOOM, { duration: 1.2 });
@@ -585,7 +563,6 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
     }
   };
 
-  // Center on selected worker
   const handleFocusWorker = (worker) => {
     if (!worker || !mapInstanceRef.current) return;
     setSelectedWorker(worker);
@@ -593,67 +570,67 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
   };
 
   return (
-    <div className={`space-y-4 animate-fade-in ${isFullscreen ? 'fixed inset-0 z-50 bg-zinc-950 p-4 overflow-y-auto' : ''}`}>
+    <div className={`space-y-6 animate-fade-in ${isFullscreen ? 'fixed inset-0 z-50 bg-slate-50 p-6 overflow-y-auto' : ''}`}>
       {/* Toast notification banner */}
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 bg-zinc-900/95 text-white px-4 py-3 rounded-2xl border border-emerald-500/50 shadow-2xl backdrop-blur-xl flex items-center space-x-3 text-xs max-w-md animate-fade-in">
+        <div className="fixed top-6 right-6 z-50 bg-zinc-900 text-white px-4 py-3 rounded-2xl border border-zinc-800 shadow-xl flex items-center space-x-3 text-xs max-w-md animate-fade-in">
           <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
           <span className="font-medium">{toastMessage}</span>
         </div>
       )}
 
-      {/* Top Banner Control Bar */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-zinc-900/90 backdrop-blur-xl p-4 rounded-2xl border border-zinc-800 shadow-xl text-white">
+      {/* Top Banner Control Bar (Aligned with Admin Dashboard White Card Theme) */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
         <div>
           <div className="flex items-center space-x-2.5">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
             </span>
-            <h2 className="text-base font-extrabold tracking-tight text-white flex items-center space-x-2">
+            <h2 className="text-base font-bold tracking-tight text-zinc-900 flex items-center space-x-2">
               <span>Mysuru Real-World Telemetry & Road Routing Command</span>
             </h2>
-            <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/30">
+            <span className="px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200">
               Live OSRM Routing
             </span>
           </div>
-          <p className="text-xs text-zinc-400 mt-1 flex items-center space-x-2">
-            <span>Tracking {workers.length} certified providers across 9 Mysuru municipal wards.</span>
-            <span className="text-zinc-600">•</span>
-            <span className="font-mono text-zinc-400">PostGIS Feed synced: {lastRefreshed}</span>
+          <p className="text-xs text-zinc-500 mt-1 flex items-center space-x-2">
+            <span>Tracking active worker heartbeat pings across 9 Mysuru municipal wards.</span>
+            <span className="text-zinc-300">•</span>
+            <span className="text-zinc-400 font-mono">Auto-synced: {lastRefreshed}</span>
           </p>
         </div>
 
         {/* Action Controls & Layer Switcher */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Tile Layer Selector */}
-          <div className="flex items-center bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs">
-            <button
-              onClick={() => setActiveTileType('dark')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center space-x-1 ${
-                activeTileType === 'dark' ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
-              }`}
-              title="Carto Dark Matter Night Map"
-            >
-              <Moon className="w-3.5 h-3.5" />
-              <span>Dark Ops</span>
-            </button>
+          <div className="flex items-center bg-zinc-100 p-1 rounded-xl border border-zinc-200 text-xs">
             <button
               onClick={() => setActiveTileType('streets')}
               className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center space-x-1 ${
-                activeTileType === 'streets' ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                activeTileType === 'streets' ? 'bg-white text-zinc-900 shadow-xs font-semibold' : 'text-zinc-500 hover:text-zinc-900'
               }`}
-              title="OpenStreetMap Street Grid"
+              title="City Streets Map"
             >
               <MapIcon className="w-3.5 h-3.5" />
               <span>Streets</span>
             </button>
             <button
+              onClick={() => setActiveTileType('dark')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center space-x-1 ${
+                activeTileType === 'dark' ? 'bg-white text-zinc-900 shadow-xs font-semibold' : 'text-zinc-500 hover:text-zinc-900'
+              }`}
+              title="Dark Ops Night Map"
+            >
+              <Moon className="w-3.5 h-3.5" />
+              <span>Dark Ops</span>
+            </button>
+            <button
               onClick={() => setActiveTileType('satellite')}
               className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center space-x-1 ${
-                activeTileType === 'satellite' ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                activeTileType === 'satellite' ? 'bg-white text-zinc-900 shadow-xs font-semibold' : 'text-zinc-500 hover:text-zinc-900'
               }`}
-              title="Esri Aerial Satellite Imagery"
+              title="Satellite Aerial Imagery"
             >
               <Satellite className="w-3.5 h-3.5" />
               <span>Satellite</span>
@@ -663,10 +640,10 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
           {/* Toggle Heatmap */}
           <button
             onClick={() => setShowHeatmap(!showHeatmap)}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
               showHeatmap
-                ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
-                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800'
+                ? 'bg-rose-50 border-rose-200 text-rose-700 font-semibold'
+                : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -676,10 +653,10 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
           {/* Toggle Dispatch Routes */}
           <button
             onClick={() => setShowRoutes(!showRoutes)}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
               showRoutes
-                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800'
+                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-semibold'
+                : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
             }`}
           >
             <Navigation className="w-3.5 h-3.5" />
@@ -691,16 +668,16 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
             onClick={() => {
               setIsClickToDispatchActive(!isClickToDispatchActive);
               if (!isClickToDispatchActive) {
-                showToast('📍 Click anywhere on the Mysuru map to drop a customer request and auto-dispatch the nearest worker!');
+                showToast('📍 Click anywhere on the Mysuru map to drop a customer request and auto-dispatch nearest provider!');
               }
             }}
-            className={`px-3 py-1.5 text-xs font-bold rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
               isClickToDispatchActive
-                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 animate-pulse'
-                : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-zinc-800'
+                ? 'bg-amber-50 border-amber-300 text-amber-800 font-bold animate-pulse'
+                : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50'
             }`}
           >
-            <MapPin className="w-3.5 h-3.5 text-amber-400" />
+            <MapPin className="w-3.5 h-3.5 text-amber-500" />
             <span>{isClickToDispatchActive ? 'Click Map Spot...' : 'Pin Dispatch'}</span>
           </button>
 
@@ -708,30 +685,30 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
           <button
             onClick={handleSimulateDispatch}
             disabled={isDispatching}
-            className="px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
+            className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white shadow-sm flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
           >
-            <Send className="w-3.5 h-3.5" />
+            <Send className="w-3.5 h-3.5 text-emerald-400" />
             <span>{isDispatching ? 'Routing...' : 'Simulate Dispatch'}</span>
           </button>
 
           {/* Live Pings Toggle */}
           <button
             onClick={() => setIsLivePinging(!isLivePinging)}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
               isLivePinging
-                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-semibold'
+                : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50'
             }`}
             title="Toggle Live PostGIS Heartbeat Pings"
           >
-            <Radio className={`w-3.5 h-3.5 ${isLivePinging ? 'animate-pulse text-emerald-400' : 'text-zinc-500'}`} />
-            <span>{isLivePinging ? 'Live Pings (3s)' : 'Pings Paused'}</span>
+            <Radio className={`w-3.5 h-3.5 ${isLivePinging ? 'animate-pulse text-emerald-600' : 'text-zinc-400'}`} />
+            <span>{isLivePinging ? 'Live Pings (3s)' : 'Paused'}</span>
           </button>
 
           {/* Fullscreen Toggle */}
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors cursor-pointer shadow-2xs"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Map'}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -740,63 +717,63 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
       </div>
 
       {/* Main Interactive Map & Telemetry Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Real Leaflet Map Container (8 Columns) */}
-        <div className="lg:col-span-8 bg-zinc-950 rounded-2xl border border-zinc-800 p-3 relative shadow-2xl flex flex-col justify-between overflow-hidden min-h-[620px]">
+        <div className="lg:col-span-8 bg-white rounded-2xl border border-zinc-200/80 p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col justify-between min-h-[620px]">
           
           {/* Top Floating Map HUD (Filters & Search) */}
-          <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 mb-2">
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 mb-3">
             <div className="flex flex-wrap items-center gap-2">
               {/* Search Filter */}
-              <div className="flex items-center space-x-1.5 bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800 text-xs text-zinc-300">
+              <div className="flex items-center space-x-1.5 bg-zinc-50 hover:bg-white focus-within:bg-white px-3 py-1.5 rounded-xl border border-zinc-200 text-xs text-zinc-800 transition-colors">
                 <Search className="w-3.5 h-3.5 text-zinc-400" />
                 <input
                   type="text"
                   placeholder="Search worker or phone..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none w-36"
+                  className="bg-transparent text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none w-36"
                 />
               </div>
 
               {/* Trade Filter */}
-              <div className="flex items-center space-x-1.5 bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800 text-xs text-zinc-300">
+              <div className="flex items-center space-x-1.5 bg-zinc-50 px-3 py-1.5 rounded-xl border border-zinc-200 text-xs text-zinc-800">
                 <Filter className="w-3.5 h-3.5 text-zinc-400" />
                 <select
                   value={filterTrade}
                   onChange={(e) => setFilterTrade(e.target.value)}
-                  className="bg-transparent text-xs text-white focus:outline-none cursor-pointer"
+                  className="bg-transparent text-xs text-zinc-800 focus:outline-none cursor-pointer"
                 >
-                  <option value="all" className="bg-zinc-900 text-white">All Skills</option>
-                  <option value="Electrician" className="bg-zinc-900 text-white">Electrician</option>
-                  <option value="Plumber" className="bg-zinc-900 text-white">Plumber</option>
-                  <option value="Carpenter" className="bg-zinc-900 text-white">Carpenter</option>
-                  <option value="AC Tech" className="bg-zinc-900 text-white">AC Tech</option>
-                  <option value="Appliance Repair" className="bg-zinc-900 text-white">Appliance Repair</option>
+                  <option value="all">All Skills</option>
+                  <option value="Electrician">Electrician</option>
+                  <option value="Plumber">Plumber</option>
+                  <option value="Carpenter">Carpenter</option>
+                  <option value="AC Tech">AC Tech</option>
+                  <option value="Appliance Repair">Appliance Repair</option>
                 </select>
               </div>
 
               {/* Status Filter */}
-              <div className="flex items-center space-x-1.5 bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800 text-xs text-zinc-300">
+              <div className="flex items-center space-x-1.5 bg-zinc-50 px-3 py-1.5 rounded-xl border border-zinc-200 text-xs text-zinc-800">
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="bg-transparent text-xs text-white focus:outline-none cursor-pointer"
+                  className="bg-transparent text-xs text-zinc-800 focus:outline-none cursor-pointer"
                 >
-                  <option value="all" className="bg-zinc-900 text-white">All Statuses</option>
-                  <option value="online" className="bg-zinc-900 text-white">Online & Ready</option>
-                  <option value="en_route" className="bg-zinc-900 text-white">En Route</option>
-                  <option value="in_progress" className="bg-zinc-900 text-white">In Progress</option>
+                  <option value="all">All Statuses</option>
+                  <option value="online">Online & Ready</option>
+                  <option value="en_route">En Route</option>
+                  <option value="in_progress">In Progress</option>
                 </select>
               </div>
             </div>
 
             {/* Simulation Playback & Speed Controls */}
-            <div className="flex items-center space-x-1.5 bg-zinc-900/90 backdrop-blur-md p-1 rounded-xl border border-zinc-800 text-xs">
+            <div className="flex items-center space-x-1.5 bg-zinc-100 p-1 rounded-xl border border-zinc-200 text-xs">
               <button
                 onClick={() => setIsSimulating(!isSimulating)}
-                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                  isSimulating ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer shadow-xs ${
+                  isSimulating ? 'bg-white text-emerald-600' : 'bg-white text-amber-600'
                 }`}
                 title={isSimulating ? 'Pause Transit Simulation' : 'Resume Transit Simulation'}
               >
@@ -805,7 +782,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
               <button
                 onClick={() => setSpeedMultiplier((prev) => (prev === 1 ? 2 : prev === 2 ? 4 : 1))}
-                className="px-2 py-1 rounded-lg bg-zinc-800 text-[10px] font-bold text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-white text-[11px] font-bold text-zinc-700 hover:text-zinc-900 transition-colors cursor-pointer shadow-xs"
                 title="Toggle Speed Multiplier"
               >
                 {speedMultiplier}x Speed
@@ -813,7 +790,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
               <button
                 onClick={handleRecenterCity}
-                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg bg-white hover:bg-zinc-50 text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer shadow-xs"
                 title="Recenter on Mysuru Center"
               >
                 <Crosshair className="w-3.5 h-3.5" />
@@ -822,7 +799,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
           </div>
 
           {/* Real Leaflet Map DOM Canvas */}
-          <div className="relative w-full h-[490px] rounded-xl overflow-hidden border border-zinc-800/80 shadow-inner">
+          <div className="relative w-full h-[490px] rounded-2xl overflow-hidden border border-zinc-200 shadow-inner">
             <div 
               ref={mapContainerRef} 
               className="w-full h-full" 
@@ -831,9 +808,9 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
             {/* Active Pin Dispatch Guidance Banner */}
             {isClickToDispatchActive && (
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-400 pointer-events-auto bg-amber-400/95 text-zinc-950 font-extrabold px-4 py-2 rounded-full shadow-2xl backdrop-blur-md border border-amber-200 text-xs flex items-center space-x-2 animate-pulse">
-                <MapPin className="w-4 h-4 text-zinc-950" />
-                <span>Click any street on Mysuru map to auto-dispatch nearest provider</span>
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-400 pointer-events-auto bg-amber-500 text-white font-bold px-4 py-2 rounded-full shadow-xl border border-amber-400 text-xs flex items-center space-x-2 animate-pulse">
+                <MapPin className="w-4 h-4 text-white" />
+                <span>Click any point on Mysuru map to auto-dispatch nearest provider</span>
                 <button 
                   onClick={() => setIsClickToDispatchActive(false)} 
                   className="ml-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] cursor-pointer"
@@ -843,18 +820,18 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
               </div>
             )}
 
-            {/* In-Map Active Dispatches Quick Bar */}
-            <div className="absolute top-3 right-3 z-400 pointer-events-auto bg-zinc-950/85 backdrop-blur-md border border-zinc-800/80 rounded-xl p-2.5 max-w-[240px] shadow-2xl text-xs space-y-2">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
-                <span className="font-bold text-white text-[11px] flex items-center space-x-1">
-                  <Activity className="w-3 h-3 text-emerald-400" />
-                  <span>Active Road Dispatches</span>
+            {/* In-Map Active Dispatches Quick Bar (Light Frosted Theme) */}
+            <div className="absolute top-3 right-3 z-400 pointer-events-auto bg-white/95 backdrop-blur-md border border-zinc-200/90 rounded-2xl p-3 max-w-[240px] shadow-lg text-xs space-y-2">
+              <div className="flex items-center justify-between border-b border-zinc-100 pb-1.5">
+                <span className="font-bold text-zinc-900 text-[11px] flex items-center space-x-1.5">
+                  <Activity className="w-3 h-3 text-emerald-600" />
+                  <span>Active Dispatches</span>
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-400 font-extrabold">
+                <span className="px-1.5 py-0.5 rounded-md text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
                   {activeRoutes.length} LIVE
                 </span>
               </div>
-              <div className="space-y-1.5 max-h-36 overflow-y-auto">
+              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
                 {activeRoutes.map((r) => (
                   <div
                     key={r.id}
@@ -862,13 +839,13 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
                       const w = workers.find((item) => item.id === r.workerId);
                       if (w) handleFocusWorker(w);
                     }}
-                    className="p-1.5 rounded-lg bg-zinc-900/80 hover:bg-zinc-800/80 border border-zinc-800 transition-colors cursor-pointer"
+                    className="p-2 rounded-xl bg-zinc-50 hover:bg-zinc-100/90 border border-zinc-100 transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-white">
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-900">
                       <span>{r.workerName}</span>
-                      <span className="text-emerald-400 font-bold">{r.etaMins}m ETA</span>
+                      <span className="text-emerald-600 font-extrabold">{r.etaMins}m ETA</span>
                     </div>
-                    <div className="text-[10px] text-zinc-400 truncate">
+                    <div className="text-[10px] text-zinc-500 truncate mt-0.5">
                       To: {r.customerName} ({r.distanceRemainingKm || r.distanceKm} km)
                     </div>
                   </div>
@@ -878,25 +855,25 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
           </div>
 
           {/* Bottom Map Telemetry Legend */}
-          <div className="mt-2 flex flex-wrap items-center justify-between text-[11px] text-zinc-400 bg-zinc-900/90 backdrop-blur-md px-4 py-2.5 rounded-xl border border-zinc-800">
-            <div className="flex items-center space-x-4">
+          <div className="mt-3 flex flex-wrap items-center justify-between text-xs text-zinc-600 bg-zinc-50 px-4 py-2.5 rounded-xl border border-zinc-200/80">
+            <div className="flex items-center space-x-5">
               <span className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow-sm"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
                 <span>Online & Idle ({workers.filter((w) => w.status === 'online').length})</span>
               </span>
               <span className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-sm animate-pulse"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span>En Route ({workers.filter((w) => w.status === 'en_route').length})</span>
               </span>
               <span className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow-sm"></span>
-                <span>On Site Working ({workers.filter((w) => w.status === 'in_progress').length})</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+                <span>On Site ({workers.filter((w) => w.status === 'in_progress').length})</span>
               </span>
             </div>
-            <div className="flex items-center space-x-3 text-zinc-500">
-              <span className="text-zinc-400 font-medium">Avg City Dispatch ETA: ~7.2 mins</span>
+            <div className="flex items-center space-x-3 text-zinc-400">
+              <span className="text-zinc-600 font-medium">Avg City Dispatch ETA: ~7.2 mins</span>
               <span>•</span>
-              <span>Click any vehicle marker for live telemetry</span>
+              <span>Click any vehicle marker to inspect</span>
             </div>
           </div>
         </div>
@@ -904,104 +881,97 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
         {/* Right Telemetry & Inspection Drawer (4 Columns) */}
         <div className="lg:col-span-4 space-y-4">
           {selectedWorker ? (
-            <div className="bg-zinc-900/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-5 shadow-2xl space-y-4 text-white animate-fade-in">
+            <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-4 text-zinc-900 animate-fade-in">
               {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
                 <div className="flex items-center space-x-3">
-                  <div
-                    className="w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm border shadow-md"
-                    style={{
-                      background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
-                      borderColor: '#4f46e5',
-                      color: '#a5b4fc',
-                    }}
-                  >
+                  <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm shadow-xs">
                     {selectedWorker.name.split(' ').map((n) => n[0]).join('')}
                   </div>
                   <div>
                     <div className="flex items-center space-x-1.5">
-                      <h3 className="text-sm font-bold text-white">{selectedWorker.name}</h3>
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <h3 className="text-sm font-bold text-zinc-900">{selectedWorker.name}</h3>
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                     </div>
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-xs text-zinc-500">
                       {selectedWorker.trade} • {selectedWorker.phone}
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={() => setSelectedWorker(null)}
-                  className="text-zinc-400 hover:text-white text-xs cursor-pointer p-1"
+                  className="text-zinc-400 hover:text-zinc-600 text-xs cursor-pointer p-1"
                 >
                   ✕
                 </button>
               </div>
 
               {/* Status and Telemetry Matrix */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80">
-                  <span className="text-zinc-500 block text-[10px] uppercase font-bold flex items-center space-x-1">
-                    <Activity className="w-3 h-3 text-emerald-400" />
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
+                <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-100">
+                  <span className="text-zinc-400 block text-[10px] uppercase font-bold flex items-center space-x-1">
+                    <Activity className="w-3 h-3 text-emerald-600" />
                     <span>Current Status</span>
                   </span>
-                  <span className="font-extrabold text-white capitalize mt-1 inline-block">
+                  <span className="font-bold text-zinc-900 capitalize mt-1 inline-block">
                     {selectedWorker.status.replace('_', ' ')}
                   </span>
                 </div>
 
-                <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80">
-                  <span className="text-zinc-500 block text-[10px] uppercase font-bold flex items-center space-x-1">
-                    <Gauge className="w-3 h-3 text-cyan-400" />
+                <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-100">
+                  <span className="text-zinc-400 block text-[10px] uppercase font-bold flex items-center space-x-1">
+                    <Gauge className="w-3 h-3 text-indigo-600" />
                     <span>Speed / Heading</span>
                   </span>
-                  <span className="font-extrabold text-white mt-1 inline-block">
+                  <span className="font-bold text-zinc-900 mt-1 inline-block">
                     {selectedWorker.speed || 0} km/h • {selectedWorker.heading || 0}°
                   </span>
                 </div>
 
-                <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80">
-                  <span className="text-zinc-500 block text-[10px] uppercase font-bold flex items-center space-x-1">
-                    <Battery className="w-3 h-3 text-emerald-400" />
+                <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-100">
+                  <span className="text-zinc-400 block text-[10px] uppercase font-bold flex items-center space-x-1">
+                    <Battery className="w-3 h-3 text-emerald-600" />
                     <span>Device Battery</span>
                   </span>
                   <div className="mt-1 flex items-center space-x-2">
-                    <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+                    <div className="w-full bg-zinc-200 rounded-full h-2 overflow-hidden">
                       <div
                         className="bg-emerald-500 h-2 rounded-full transition-all"
                         style={{ width: `${selectedWorker.battery}%` }}
                       ></div>
                     </div>
-                    <span className="font-bold text-white text-[11px]">{selectedWorker.battery}%</span>
+                    <span className="font-bold text-zinc-800 text-[11px]">{selectedWorker.battery}%</span>
                   </div>
                 </div>
 
-                <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80">
-                  <span className="text-zinc-500 block text-[10px] uppercase font-bold flex items-center space-x-1">
-                    <MapPin className="w-3 h-3 text-amber-400" />
+                <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-100">
+                  <span className="text-zinc-400 block text-[10px] uppercase font-bold flex items-center space-x-1">
+                    <MapPin className="w-3 h-3 text-amber-500" />
                     <span>Primary Ward</span>
                   </span>
-                  <span className="font-bold text-zinc-200 mt-1 inline-block truncate">
+                  <span className="font-bold text-zinc-800 mt-1 inline-block truncate">
                     {selectedWorker.zone || 'Mysuru Center'}
                   </span>
                 </div>
               </div>
 
               {/* Coordinates and Job Details */}
-              <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80 text-xs space-y-2">
-                <div className="flex justify-between text-zinc-400">
+              <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-100 text-xs space-y-2">
+                <div className="flex justify-between text-zinc-500">
                   <span>GPS Lat / Lng</span>
-                  <span className="font-mono text-cyan-300 font-semibold">
+                  <span className="font-mono text-zinc-800 font-semibold">
                     {Number(selectedWorker.lat).toFixed(4)}, {Number(selectedWorker.lng).toFixed(4)}
                   </span>
                 </div>
                 {selectedWorker.job && (
-                  <div className="flex justify-between text-zinc-400 pt-1.5 border-t border-zinc-800">
+                  <div className="flex justify-between text-zinc-500 pt-1.5 border-t border-zinc-200/70">
                     <span>Assigned Dispatch</span>
-                    <span className="font-bold text-emerald-400">{selectedWorker.job}</span>
+                    <span className="font-bold text-indigo-600">{selectedWorker.job}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-zinc-400 pt-1 border-t border-zinc-800">
+                <div className="flex justify-between text-zinc-500 pt-1 border-t border-zinc-200/70">
                   <span>Completed Jobs</span>
-                  <span className="font-semibold text-zinc-200">{selectedWorker.jobsCompleted || 85} verified</span>
+                  <span className="font-semibold text-zinc-700">{selectedWorker.jobsCompleted || 85} verified</span>
                 </div>
               </div>
 
@@ -1009,7 +979,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
               <div className="pt-1 space-y-2">
                 <button
                   onClick={() => handleFocusWorker(selectedWorker)}
-                  className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-lg shadow-indigo-600/30"
+                  className="w-full py-2.5 px-3 bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-xs"
                 >
                   <Crosshair className="w-3.5 h-3.5" />
                   <span>Track Vehicle (Focus Camera)</span>
@@ -1018,44 +988,44 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
                 <div className="grid grid-cols-2 gap-2">
                   <a
                     href={`tel:${selectedWorker.phone}`}
-                    className="py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer border border-zinc-700"
+                    className="py-2 px-3 bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer border border-zinc-200 shadow-xs"
                   >
-                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Call Directly</span>
                   </a>
 
                   <button
                     onClick={() =>
-                      showToast(`🛰️ GPS telemetry ping dispatched to ${selectedWorker.name}'s handset. PostGIS heartbeat recalibrated.`)
+                      showToast(`🛰️ GPS telemetry ping dispatched to ${selectedWorker.name}'s device. Heartbeat recalibrated.`)
                     }
-                    className="py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-cyan-300 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer border border-zinc-700"
+                    className="py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer border border-indigo-200"
                   >
-                    <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                    <Radio className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
                     <span>Send Ping</span>
                   </button>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bg-zinc-900/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-6 text-center text-zinc-400 shadow-xl space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center mx-auto text-indigo-400 shadow-inner">
+            <div className="bg-white rounded-2xl border border-zinc-200/80 p-6 text-center text-zinc-500 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center mx-auto text-zinc-400">
                 <Compass className="w-6 h-6 animate-spin" style={{ animationDuration: '24s' }} />
               </div>
-              <h4 className="text-sm font-bold text-white">No Vehicle Selected</h4>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Click any worker marker on the Mysuru road map to inspect live driving speed, battery percentage, heading bearing, and active dispatch route.
+              <h4 className="text-sm font-bold text-zinc-800">No Vehicle Selected</h4>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Click any worker marker on the Mysuru road map to inspect live speed, battery status, heading bearing, and active route.
               </p>
             </div>
           )}
 
           {/* Municipal Wards Demand & Surge Hub */}
-          <div className="bg-zinc-900/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-4 shadow-xl space-y-3 text-white">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider flex items-center space-x-1.5 text-white">
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
+          <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
+              <h4 className="text-xs font-bold uppercase tracking-wider flex items-center space-x-1.5 text-zinc-900">
+                <Zap className="w-3.5 h-3.5 text-amber-500" />
                 <span>Municipal Ward Demand Surges</span>
               </h4>
-              <span className="text-[10px] text-zinc-500 font-mono">9 Wards</span>
+              <span className="text-[10px] text-zinc-400 font-mono">9 Wards</span>
             </div>
 
             <div className="space-y-2 text-xs max-h-[220px] overflow-y-auto pr-1">
@@ -1067,24 +1037,24 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
                       mapInstanceRef.current.flyTo([zone.lat, zone.lng], 14, { duration: 1.2 });
                     }
                   }}
-                  className="flex items-center justify-between p-2 rounded-xl bg-zinc-950/80 hover:bg-zinc-800/80 border border-zinc-800/80 transition-all cursor-pointer group"
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 hover:bg-zinc-100/90 border border-zinc-100 transition-all cursor-pointer group"
                 >
                   <div>
-                    <div className="font-semibold text-zinc-200 group-hover:text-white flex items-center space-x-1.5">
+                    <div className="font-semibold text-zinc-800 group-hover:text-zinc-900 flex items-center space-x-1.5">
                       <span className="w-2 h-2 rounded-full" style={{ background: zone.color }}></span>
                       <span>{zone.name}</span>
                     </div>
-                    <span className="text-[10px] text-zinc-500 block ml-3.5">{zone.landmark}</span>
+                    <span className="text-[10px] text-zinc-400 block ml-3.5">{zone.landmark}</span>
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <span className="text-[10px] text-zinc-400">{zone.workers} active</span>
+                    <span className="text-[10px] text-zinc-500">{zone.workers} active</span>
                     <span
-                      className="px-2 py-0.5 rounded-md font-extrabold text-[10px]"
+                      className="px-2 py-0.5 rounded-md font-bold text-[10px]"
                       style={{
-                        background: `${zone.color}22`,
+                        background: `${zone.color}15`,
                         color: zone.color,
-                        border: `1px solid ${zone.color}44`,
+                        border: `1px solid ${zone.color}33`,
                       }}
                     >
                       {zone.surge}

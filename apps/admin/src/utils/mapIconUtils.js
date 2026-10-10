@@ -2,6 +2,7 @@ import L from 'leaflet';
 
 /**
  * Creates custom high-tech SVG DivIcons for Leaflet map markers.
+ * Designed to look pristine on both light street and dark operational map tiles.
  */
 
 export function createWorkerVehicleIcon(worker, isSelected = false) {
@@ -17,24 +18,24 @@ export function createWorkerVehicleIcon(worker, isSelected = false) {
     <div class="relative flex items-center justify-center cursor-pointer select-none" style="width: 44px; height: 44px;">
       ${isEnRoute ? `
         <!-- Animated Radar Aura Ring for moving vehicle -->
-        <div class="absolute inset-0 rounded-full vehicle-aura-pulse" style="background: ${statusColor}; opacity: 0.25;"></div>
+        <div class="absolute inset-0 rounded-full vehicle-aura-pulse" style="background: ${statusColor}; opacity: 0.28;"></div>
       ` : ''}
 
       ${isSelected ? `
         <!-- High-visibility selection halo -->
-        <div class="absolute -inset-1 rounded-full border-2 border-cyan-400 animate-ping opacity-60"></div>
+        <div class="absolute -inset-1 rounded-full border-2 border-indigo-500 animate-ping opacity-60"></div>
       ` : ''}
 
       <!-- Main Marker Badge -->
       <div 
-        class="relative w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110"
+        class="relative w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-transform hover:scale-110"
         style="
-          background: linear-gradient(135deg, #18181b 0%, #09090b 100%);
+          background: #ffffff;
           border: 2.5px solid ${statusColor};
-          box-shadow: 0 0 14px ${statusColor}66, 0 4px 6px rgba(0,0,0,0.4);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.18);
         "
       >
-        <span class="text-xs font-black text-white tracking-wider">${initial}</span>
+        <span class="text-xs font-black tracking-wider" style="color: ${statusColor};">${initial}</span>
 
         ${isEnRoute ? `
           <!-- Vehicle Direction Heading Indicator -->
@@ -51,7 +52,7 @@ export function createWorkerVehicleIcon(worker, isSelected = false) {
 
       <!-- Live Speed / Battery Tiny Tag -->
       <div 
-        class="absolute -bottom-2 bg-zinc-950/90 text-[8px] font-mono text-zinc-300 px-1 py-0.2 rounded border border-zinc-800 whitespace-nowrap shadow-xs"
+        class="absolute -bottom-2 bg-white text-[9px] font-mono font-bold text-zinc-700 px-1.5 py-0.2 rounded-md border border-zinc-200 shadow-xs whitespace-nowrap"
       >
         ${worker.status === 'en_route' ? `${worker.speed || 28}km/h` : `${worker.battery || 85}%`}
       </div>
@@ -74,12 +75,12 @@ export function createCustomerDestinationIcon(customerName, etaMins) {
   const html = `
     <div class="relative flex items-center justify-center select-none" style="width: 50px; height: 50px;">
       <!-- Expanding Radar Wave -->
-      <div class="absolute inset-0 rounded-full radar-beacon-ring bg-indigo-500/40 border border-indigo-400"></div>
+      <div class="absolute inset-0 rounded-full radar-beacon-ring bg-indigo-500/30 border border-indigo-400"></div>
 
       <!-- Core Customer Marker -->
       <div 
-        class="relative w-7 h-7 rounded-full bg-indigo-600 border-2 border-white flex items-center justify-center shadow-xl"
-        style="box-shadow: 0 0 18px rgba(99, 102, 241, 0.8);"
+        class="relative w-7 h-7 rounded-full bg-indigo-600 border-2 border-white flex items-center justify-center shadow-lg"
+        style="box-shadow: 0 4px 12px rgba(79, 70, 229, 0.45);"
       >
         <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -89,10 +90,10 @@ export function createCustomerDestinationIcon(customerName, etaMins) {
 
       <!-- ETA Pill Label -->
       <div 
-        class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-indigo-950/95 text-indigo-200 text-[9px] font-bold px-2 py-0.5 rounded-full border border-indigo-500/50 whitespace-nowrap shadow-md flex items-center space-x-1"
+        class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white text-zinc-800 text-[9px] font-bold px-2 py-0.5 rounded-full border border-indigo-200 whitespace-nowrap shadow-sm flex items-center space-x-1"
       >
         <span>${customerName.split(' ')[0]}</span>
-        <span class="text-emerald-400">• ${etaMins}m</span>
+        <span class="text-emerald-600 font-extrabold">• ${etaMins}m</span>
       </div>
     </div>
   `;
@@ -113,19 +114,19 @@ export function createZoneDemandIcon(zone) {
   const isHigh = zone.demand === 'Very High' || zone.demand === 'High';
   const html = `
     <div 
-      class="cursor-pointer transition-transform hover:scale-110 flex items-center space-x-1.5 px-2.5 py-1 rounded-xl shadow-lg backdrop-blur-md"
+      class="cursor-pointer transition-transform hover:scale-105 flex items-center space-x-1.5 px-2.5 py-1 rounded-xl shadow-sm backdrop-blur-md"
       style="
-        background: rgba(15, 23, 42, 0.85);
+        background: rgba(255, 255, 255, 0.95);
         border: 1px solid ${zone.color}66;
-        box-shadow: 0 4px 12px ${zone.color}33;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       "
     >
       <span class="w-2 h-2 rounded-full inline-block animate-pulse" style="background: ${zone.color};"></span>
-      <span class="text-[11px] font-bold text-white whitespace-nowrap">${zone.name}</span>
+      <span class="text-[11px] font-bold text-zinc-900 whitespace-nowrap">${zone.name}</span>
       ${isHigh ? `
         <span 
           class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md whitespace-nowrap"
-          style="background: ${zone.color}22; color: ${zone.color}; border: 1px solid ${zone.color}44;"
+          style="background: ${zone.color}15; color: ${zone.color}; border: 1px solid ${zone.color}33;"
         >
           ${zone.surge}
         </span>
