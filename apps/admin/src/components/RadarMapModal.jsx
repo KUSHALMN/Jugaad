@@ -1,469 +1,962 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Navigation, 
-  MapPin, 
-  Layers, 
-  RefreshCw, 
-  Crosshair, 
-  Radio, 
-  User, 
-  Phone, 
-  Zap, 
-  CheckCircle, 
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import L from 'leaflet';
+import {
+  Navigation,
+  MapPin,
+  Layers,
+  RefreshCw,
+  Crosshair,
+  Radio,
+  User,
+  Phone,
+  Zap,
+  CheckCircle,
   AlertCircle,
-  Eye,
-  Sliders,
-  Filter
+  Filter,
+  Play,
+  Pause,
+  FastForward,
+  Compass,
+  ShieldCheck,
+  Activity,
+  Maximize2,
+  Minimize2,
+  Search,
+  Moon,
+  Sun,
+  Car,
+  Send,
+  Battery,
+  Gauge,
+  Clock,
+  Map as MapIcon,
+  Sparkles
 } from 'lucide-react';
+import {
+  MYSURU_CENTER,
+  MYSURU_DEFAULT_ZOOM,
+  TILE_PROVIDERS,
+  MYSURU_MUNICIPAL_ZONES,
+  INITIAL_REAL_WORKERS,
+  INITIAL_ACTIVE_ROUTES,
+  getOptimizedRoute,
+  initializeRouteGeometries,
+  advanceRouteSimulation,
+  haversineDistanceKm
+} from '../utils/mapRoutingUtils';
+import {
+  createWorkerVehicleIcon,
+  createCustomerDestinationIcon,
+  createZoneDemandIcon
+} from '../utils/mapIconUtils';
 import { parseWorkerCategory } from '../utils/workerUtils';
 
-const MYSURU_ZONES = [
-  { id: 'z1', name: 'Gokulam 3rd Stage', x: 260, y: 140, demand: 'High', workers: 14, surge: '1.4x' },
-  { id: 'z2', name: 'Kuvempunagar', x: 280, y: 380, demand: 'Very High', workers: 22, surge: '1.5x' },
-  { id: 'z3', name: 'Hebbal Industrial Area', x: 180, y: 110, demand: 'Moderate', workers: 8, surge: '1.0x' },
-  { id: 'z4', name: 'Jayalakshmipuram', x: 330, y: 220, demand: 'High', workers: 16, surge: '1.3x' },
-  { id: 'z5', name: 'Saraswathipuram', x: 340, y: 310, demand: 'Moderate', workers: 11, surge: '1.1x' },
-  { id: 'z6', name: 'Vidyaranyapuram', x: 380, y: 440, demand: 'High', workers: 15, surge: '1.3x' },
-  { id: 'z7', name: 'Vijayanagar 2nd Stage', x: 190, y: 260, demand: 'Low', workers: 6, surge: '1.0x' },
-];
-
-const INITIAL_WORKERS = [
-  { id: 'w1', name: 'Suresh Kumar', trade: 'Electrician', status: 'en_route', lat: 12.3312, lng: 76.6212, x: 275, y: 160, battery: '88%', phone: '+91 98450 12345', job: '#JUG-8821', speed: '28 km/h' },
-  { id: 'w2', name: 'Ramesh Gowda', trade: 'Plumber', status: 'online', lat: 12.2981, lng: 76.6341, x: 295, y: 360, battery: '94%', phone: '+91 97412 67890', job: null, speed: '0 km/h' },
-  { id: 'w3', name: 'Manjunath B.', trade: 'Carpenter', status: 'in_progress', lat: 12.3150, lng: 76.6450, x: 325, y: 235, battery: '62%', phone: '+91 99001 44556', job: '#JUG-8819', speed: '0 km/h' },
-  { id: 'w4', name: 'Arun Prakash', trade: 'AC Tech', status: 'en_route', lat: 12.3550, lng: 76.6120, x: 195, y: 125, battery: '79%', phone: '+91 94481 99887', job: '#JUG-8825', speed: '34 km/h' },
-  { id: 'w5', name: 'Praveen Naik', trade: 'Plumber', status: 'online', lat: 12.2850, lng: 76.6500, x: 370, y: 420, battery: '91%', phone: '+91 98860 33221', job: null, speed: '0 km/h' },
-  { id: 'w6', name: 'Kiran Swamy', trade: 'Electrician', status: 'online', lat: 12.3080, lng: 76.6280, x: 210, y: 275, battery: '83%', phone: '+91 94800 77112', job: null, speed: '0 km/h' },
-];
-
-const ACTIVE_DISPATCH_ROUTES = [
-  { id: 'r1', fromX: 275, fromY: 160, toX: 310, toY: 190, customer: 'Ananya Rao', worker: 'Suresh Kumar', eta: '6 mins' },
-  { id: 'r2', fromX: 195, fromY: 125, toX: 220, toY: 145, customer: 'Vikram Joshi', worker: 'Arun Prakash', eta: '9 mins' },
-];
-
 export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
-  const [workers, setWorkers] = useState(INITIAL_WORKERS);
+  // Map and simulation states
+  const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const tileLayerRef = useRef(null);
+
+  // Layer groups for clean Leaflet management
+  const workersLayerGroupRef = useRef(null);
+  const routesLayerGroupRef = useRef(null);
+  const zonesLayerGroupRef = useRef(null);
+
+  // Component state
+  const [activeTileType, setActiveTileType] = useState('dark');
+  const [workers, setWorkers] = useState(INITIAL_REAL_WORKERS);
+  const [activeRoutes, setActiveRoutes] = useState(INITIAL_ACTIVE_ROUTES);
   const [selectedWorker, setSelectedWorker] = useState(null);
+  const [trackingWorkerId, setTrackingWorkerId] = useState(null);
+
+  // Filters & Toggles
   const [filterTrade, setFilterTrade] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showRoutes, setShowRoutes] = useState(true);
+  const [showZoneLabels, setShowZoneLabels] = useState(true);
   const [isLivePinging, setIsLivePinging] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState(new Date().toLocaleTimeString());
 
-  // Ingest real Supabase workers when available
+  // Simulation controls
+  const [isSimulating, setIsSimulating] = useState(true);
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isDispatching, setIsDispatching] = useState(false);
+
+  // Toast auto-clear
+  const showToast = useCallback((msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3800);
+  }, []);
+
+  // 1. Ingest real Supabase workers when available and merge with Mysuru coordinates
   useEffect(() => {
     if (liveWorkers && liveWorkers.length > 0) {
       const mapped = liveWorkers.map((lw, index) => {
-        const lat = parseFloat(lw.lat) || (12.3051 + Math.sin(index * 1.5) * 0.03);
-        const lng = parseFloat(lw.lng) || (76.6551 + Math.cos(index * 1.5) * 0.03);
-        const normX = Math.max(80, Math.min(520, ((lng - 76.58) / 0.12) * 600));
-        const normY = Math.max(60, Math.min(460, (1 - ((lat - 12.26) / 0.12)) * 520));
+        // Use real lat/lng if valid Mysuru coordinates (around 12.2 to 12.4, 76.5 to 76.7)
+        let lat = parseFloat(lw.lat);
+        let lng = parseFloat(lw.lng);
+
+        if (!lat || isNaN(lat) || lat < 12.2 || lat > 12.45) {
+          const zone = MYSURU_MUNICIPAL_ZONES[index % MYSURU_MUNICIPAL_ZONES.length];
+          lat = zone.lat + (Math.sin(index * 2) * 0.008);
+        }
+        if (!lng || isNaN(lng) || lng < 76.5 || lng > 76.75) {
+          const zone = MYSURU_MUNICIPAL_ZONES[index % MYSURU_MUNICIPAL_ZONES.length];
+          lng = zone.lng + (Math.cos(index * 2) * 0.008);
+        }
 
         const formattedTrade = lw.displayCategory || parseWorkerCategory(lw);
+        const isOnline = lw.is_online || lw.isOnline;
+        const status = isOnline ? (lw.status === 'en_route' ? 'en_route' : 'online') : (lw.status || 'online');
 
         return {
-          id: lw.id || `w-${index}`,
-          name: lw.displayName || lw.name || 'Worker',
+          id: lw.id || `live-w-${index}`,
+          name: lw.displayName || lw.name || `Provider #${index + 1}`,
           trade: formattedTrade,
-          status: lw.is_online || lw.isOnline ? 'online' : (lw.status || 'online'),
-          lat: lat.toFixed(4),
-          lng: lng.toFixed(4),
-          x: normX,
-          y: normY,
-          battery: `${75 + (index * 7) % 23}%`,
-          phone: lw.phone || '+91 98450 00000',
-          job: lw.current_job_id || null,
-          speed: lw.is_online ? '0 km/h' : '22 km/h'
+          status,
+          lat: parseFloat(lat.toFixed(4)),
+          lng: parseFloat(lng.toFixed(4)),
+          speed: status === 'en_route' ? 26 + (index % 12) : 0,
+          heading: (index * 45) % 360,
+          battery: 75 + ((index * 9) % 25),
+          phone: lw.phone || `+91 98450 ${10000 + index}`,
+          job: lw.current_job_id || (status === 'en_route' ? `#JUG-90${index}` : null),
+          rating: 4.8,
+          jobsCompleted: 50 + (index * 14),
+          zone: MYSURU_MUNICIPAL_ZONES[index % MYSURU_MUNICIPAL_ZONES.length].name,
         };
       });
+
       setWorkers(mapped);
     }
   }, [liveWorkers]);
 
-  // Simulate subtle real-time GPS jitter for moving en-route workers
+  // 2. Initialize real road network geometries for active dispatch routes on mount
+  useEffect(() => {
+    let isMounted = true;
+    initializeRouteGeometries(INITIAL_ACTIVE_ROUTES).then((geomRoutes) => {
+      if (isMounted) {
+        setActiveRoutes(geomRoutes);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // 3. Initialize Leaflet Map Instance
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    if (!mapInstanceRef.current) {
+      const map = L.map(mapContainerRef.current, {
+        center: MYSURU_CENTER,
+        zoom: MYSURU_DEFAULT_ZOOM,
+        zoomControl: false,
+        attributionControl: true,
+      });
+
+      // Custom zoom control in bottom-right
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      // Default Tile Layer (Dark Ops)
+      const provider = TILE_PROVIDERS[activeTileType];
+      tileLayerRef.current = L.tileLayer(provider.url, {
+        attribution: provider.attribution,
+        subdomains: provider.subdomains,
+        maxZoom: provider.maxZoom,
+      }).addTo(map);
+
+      // Create layer groups
+      zonesLayerGroupRef.current = L.layerGroup().addTo(map);
+      routesLayerGroupRef.current = L.layerGroup().addTo(map);
+      workersLayerGroupRef.current = L.layerGroup().addTo(map);
+
+      mapInstanceRef.current = map;
+    }
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // 4. Handle Tile Layer switching (Dark Ops vs Streets vs Satellite)
+  useEffect(() => {
+    if (!mapInstanceRef.current || !tileLayerRef.current) return;
+
+    const provider = TILE_PROVIDERS[activeTileType];
+    mapInstanceRef.current.removeLayer(tileLayerRef.current);
+
+    tileLayerRef.current = L.tileLayer(provider.url, {
+      attribution: provider.attribution,
+      subdomains: provider.subdomains,
+      maxZoom: provider.maxZoom,
+    }).addTo(mapInstanceRef.current);
+  }, [activeTileType]);
+
+  // 5. Render Municipal Ward Heatmaps & Surge Zones
+  useEffect(() => {
+    if (!zonesLayerGroupRef.current) return;
+    zonesLayerGroupRef.current.clearLayers();
+
+    if (!showHeatmap) return;
+
+    MYSURU_MUNICIPAL_ZONES.forEach((zone) => {
+      // Glow circle
+      const circle = L.circle([zone.lat, zone.lng], {
+        radius: zone.radiusMeters,
+        color: zone.color,
+        fillColor: zone.color,
+        fillOpacity: zone.demand === 'Very High' ? 0.22 : zone.demand === 'High' ? 0.16 : 0.08,
+        weight: 1.5,
+        dashArray: '4, 4',
+      });
+
+      circle.bindTooltip(
+        `<div class="text-xs">
+          <strong>${zone.name}</strong><br/>
+          <span style="color: ${zone.color};">${zone.surge} Surge</span> • ${zone.workers} Active
+        </div>`,
+        { direction: 'top', className: 'custom-leaflet-tooltip' }
+      );
+
+      circle.on('click', () => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.flyTo([zone.lat, zone.lng], 14, { duration: 1.2 });
+        }
+      });
+
+      circle.addTo(zonesLayerGroupRef.current);
+
+      // Zone label marker
+      if (showZoneLabels) {
+        const labelMarker = L.marker([zone.lat, zone.lng], {
+          icon: createZoneDemandIcon(zone),
+        });
+        labelMarker.on('click', () => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.flyTo([zone.lat, zone.lng], 14, { duration: 1.2 });
+          }
+        });
+        labelMarker.addTo(zonesLayerGroupRef.current);
+      }
+    });
+  }, [showHeatmap, showZoneLabels]);
+
+  // 6. Render Active Dispatch Routes (Polylines + Destination Customer Pins)
+  useEffect(() => {
+    if (!routesLayerGroupRef.current) return;
+    routesLayerGroupRef.current.clearLayers();
+
+    if (!showRoutes) return;
+
+    activeRoutes.forEach((route) => {
+      const coords = route.roadCoordinates || [
+        [route.originLat, route.originLng],
+        [route.customerLat, route.customerLng],
+      ];
+
+      // Outer glow line
+      const glowPoly = L.polyline(coords, {
+        color: route.color || '#6366f1',
+        weight: 8,
+        opacity: 0.35,
+        lineCap: 'round',
+      });
+      glowPoly.addTo(routesLayerGroupRef.current);
+
+      // Inner animated dashed road line
+      const flowPoly = L.polyline(coords, {
+        color: route.color || '#6366f1',
+        weight: 3.5,
+        opacity: 0.95,
+        dashArray: '10, 10',
+        lineCap: 'round',
+        className: 'leaflet-route-flow',
+      });
+      flowPoly.addTo(routesLayerGroupRef.current);
+
+      // Destination Customer Beacon Marker
+      const destMarker = L.marker([route.customerLat, route.customerLng], {
+        icon: createCustomerDestinationIcon(route.customerName, route.etaMins),
+      });
+
+      destMarker.bindPopup(
+        `<div class="p-1">
+          <div class="flex items-center space-x-1.5 text-xs font-bold text-indigo-400">
+            <span>Customer Destination</span>
+          </div>
+          <h4 class="text-sm font-extrabold text-white mt-1">${route.customerName}</h4>
+          <p class="text-[11px] text-zinc-300">${route.customerAddress}</p>
+          <div class="mt-2 pt-2 border-t border-zinc-700/60 flex items-center justify-between text-xs">
+            <span class="text-zinc-400">Assigned: ${route.workerName}</span>
+            <span class="font-bold text-emerald-400">ETA ${route.etaMins} mins</span>
+          </div>
+        </div>`,
+        { className: 'custom-leaflet-popup' }
+      );
+
+      destMarker.addTo(routesLayerGroupRef.current);
+    });
+  }, [showRoutes, activeRoutes]);
+
+  // 7. Render Worker Markers
+  useEffect(() => {
+    if (!workersLayerGroupRef.current) return;
+    workersLayerGroupRef.current.clearLayers();
+
+    // Filter workers
+    const visibleWorkers = workers.filter((w) => {
+      if (filterTrade !== 'all' && w.trade !== filterTrade) return false;
+      if (filterStatus !== 'all' && w.status !== filterStatus) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = w.name.toLowerCase().includes(q);
+        const matchesTrade = w.trade.toLowerCase().includes(q);
+        const matchesPhone = w.phone.toLowerCase().includes(q);
+        if (!matchesName && !matchesTrade && !matchesPhone) return false;
+      }
+      return true;
+    });
+
+    visibleWorkers.forEach((w) => {
+      const isSelected = selectedWorker?.id === w.id;
+      const marker = L.marker([w.lat, w.lng], {
+        icon: createWorkerVehicleIcon(w, isSelected),
+        zIndexOffset: isSelected ? 1000 : 100,
+      });
+
+      marker.on('click', () => {
+        setSelectedWorker(w);
+      });
+
+      marker.bindPopup(
+        `<div class="p-1 min-w-[210px]">
+          <div class="flex items-center justify-between pb-1.5 border-b border-zinc-700/60">
+            <span class="text-xs font-bold text-white">${w.name}</span>
+            <span class="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded ${
+              w.status === 'en_route' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
+              w.status === 'in_progress' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+              'bg-blue-500/20 text-blue-400 border border-blue-500/40'
+            }">${w.status.replace('_', ' ')}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mt-2 text-[11px] text-zinc-300">
+            <div>Trade: <strong class="text-zinc-100">${w.trade}</strong></div>
+            <div>Battery: <strong class="text-emerald-400">${w.battery}%</strong></div>
+            <div>Speed: <strong class="text-zinc-100">${w.speed} km/h</strong></div>
+            <div>Rating: <strong class="text-amber-400">★ ${w.rating}</strong></div>
+          </div>
+          <div class="mt-2 pt-2 border-t border-zinc-700/60 text-[10px] text-zinc-400 flex items-center justify-between">
+            <span>GPS: ${w.lat.toFixed(4)}, ${w.lng.toFixed(4)}</span>
+            <span class="text-indigo-400 font-semibold cursor-pointer">View Telemetry &rarr;</span>
+          </div>
+        </div>`,
+        { className: 'custom-leaflet-popup' }
+      );
+
+      marker.addTo(workersLayerGroupRef.current);
+    });
+  }, [workers, selectedWorker, filterTrade, filterStatus, searchQuery]);
+
+  // 8. Vehicle Transit Animation Loop (Ticks along real road geometries)
+  useEffect(() => {
+    if (!isSimulating) return;
+
+    const interval = setInterval(() => {
+      const deltaSeconds = 1.0;
+
+      setActiveRoutes((prevRoutes) => {
+        const updatedRoutes = prevRoutes.map((r) =>
+          advanceRouteSimulation(r, deltaSeconds, speedMultiplier)
+        );
+
+        // Update corresponding worker positions in real time
+        setWorkers((prevWorkers) =>
+          prevWorkers.map((w) => {
+            const matchingRoute = updatedRoutes.find((r) => r.workerId === w.id);
+            if (matchingRoute && matchingRoute.currentLat) {
+              return {
+                ...w,
+                lat: matchingRoute.currentLat,
+                lng: matchingRoute.currentLng,
+                heading: matchingRoute.heading,
+                speed: matchingRoute.speed,
+              };
+            }
+            return w;
+          })
+        );
+
+        return updatedRoutes;
+      });
+
+      // Camera chase tracking
+      if (trackingWorkerId && mapInstanceRef.current) {
+        const trackedWorker = workers.find((w) => w.id === trackingWorkerId);
+        if (trackedWorker) {
+          mapInstanceRef.current.panTo([trackedWorker.lat, trackedWorker.lng], { animate: true, duration: 0.8 });
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isSimulating, speedMultiplier, trackingWorkerId, workers]);
+
+  // 9. Live GPS Heartbeat ping simulator
   useEffect(() => {
     if (!isLivePinging) return;
     const interval = setInterval(() => {
-      setWorkers(prev => prev.map(w => {
-        if (w.status === 'en_route') {
-          const dx = (Math.random() - 0.5) * 4;
-          const dy = (Math.random() - 0.5) * 4;
-          return { ...w, x: Math.max(100, Math.min(500, w.x + dx)), y: Math.max(80, Math.min(500, w.y + dy)) };
-        }
-        return w;
-      }));
       setLastRefreshed(new Date().toLocaleTimeString());
     }, 3000);
     return () => clearInterval(interval);
   }, [isLivePinging]);
 
-  const filteredWorkers = workers.filter(w => {
-    if (filterTrade !== 'all' && w.trade !== filterTrade) return false;
-    if (filterStatus !== 'all' && w.status !== filterStatus) return false;
-    return true;
-  });
+  // 10. Simulate New Customer Booking Dispatch on Real Map
+  const handleSimulateDispatch = async () => {
+    setIsDispatching(true);
+    try {
+      // Find an online worker
+      const idleWorker = workers.find((w) => w.status === 'online') || workers[0];
+      if (!idleWorker) {
+        showToast('No online workers available for dispatch!');
+        setIsDispatching(false);
+        return;
+      }
+
+      // Pick a random customer destination in Mysuru
+      const sampleDestinations = [
+        { customerName: 'Deepak Gowda', address: 'KRS Road, Gokulam 3rd Stage', lat: 12.3360, lng: 76.6230 },
+        { customerName: 'Pooja Hegde', address: 'Double Road, Kuvempunagar', lat: 12.2880, lng: 76.6340 },
+        { customerName: 'Raghavendra Rao', address: 'Kalidasa Road, Jayalakshmipuram', lat: 12.3180, lng: 76.6350 },
+        { customerName: 'Sneha Patil', address: 'Chamundipuram Silk Factory Road', lat: 12.2920, lng: 76.6540 },
+      ];
+      const targetDest = sampleDestinations[Math.floor(Math.random() * sampleDestinations.length)];
+
+      const origin = { lat: idleWorker.lat, lng: idleWorker.lng };
+      const dest = { lat: targetDest.lat, lng: targetDest.lng };
+
+      // Compute real road network route
+      const roadData = await getOptimizedRoute(origin, dest);
+
+      const newRoute = {
+        id: `r-${Date.now()}`,
+        workerId: idleWorker.id,
+        workerName: idleWorker.name,
+        trade: idleWorker.trade,
+        customerName: targetDest.customerName,
+        customerPhone: '+91 98450 ' + Math.floor(10000 + Math.random() * 90000),
+        customerAddress: targetDest.address,
+        customerLat: targetDest.lat,
+        customerLng: targetDest.lng,
+        originLat: idleWorker.lat,
+        originLng: idleWorker.lng,
+        jobId: `#JUG-${Math.floor(9100 + Math.random() * 800)}`,
+        etaMins: roadData.durationMins,
+        distanceKm: roadData.distanceKm,
+        progress: 0.05,
+        color: '#10b981',
+        roadCoordinates: roadData.coordinates,
+        totalDurationMins: roadData.durationMins,
+        isRealRoad: roadData.isRealRoad,
+      };
+
+      // Update worker status to en_route
+      setWorkers((prev) =>
+        prev.map((w) => (w.id === idleWorker.id ? { ...w, status: 'en_route', job: newRoute.jobId } : w))
+      );
+
+      // Add to active routes
+      setActiveRoutes((prev) => [newRoute, ...prev]);
+
+      // Select and center
+      setSelectedWorker({ ...idleWorker, status: 'en_route', job: newRoute.jobId });
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.flyTo([idleWorker.lat, idleWorker.lng], 14, { duration: 1.2 });
+      }
+
+      showToast(`🎯 Real-World Dispatch: Assigned ${idleWorker.name} to ${targetDest.customerName} (${roadData.distanceKm} km, ETA ${roadData.durationMins}m via ${roadData.isRealRoad ? 'OSRM Live Road' : 'Arterial Grid'})`);
+    } catch (err) {
+      showToast('Dispatch simulator error. Fallback applied.');
+    } finally {
+      setIsDispatching(false);
+    }
+  };
+
+  // Centering on Mysore City
+  const handleRecenterCity = () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo(MYSURU_CENTER, MYSURU_DEFAULT_ZOOM, { duration: 1.2 });
+      setTrackingWorkerId(null);
+    }
+  };
+
+  // Center on selected worker
+  const handleFocusWorker = (worker) => {
+    if (!worker || !mapInstanceRef.current) return;
+    setSelectedWorker(worker);
+    mapInstanceRef.current.flyTo([worker.lat, worker.lng], 15, { duration: 1.0 });
+  };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Top Banner Control bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
+    <div className={`space-y-4 animate-fade-in ${isFullscreen ? 'fixed inset-0 z-50 bg-zinc-950 p-4 overflow-y-auto' : ''}`}>
+      {/* Toast notification banner */}
+      {toastMessage && (
+        <div className="fixed top-6 right-6 z-50 bg-zinc-900/95 text-white px-4 py-3 rounded-2xl border border-emerald-500/50 shadow-2xl backdrop-blur-xl flex items-center space-x-3 text-xs max-w-md animate-fade-in">
+          <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="font-medium">{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Top Banner Control Bar */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-zinc-900/90 backdrop-blur-xl p-4 rounded-2xl border border-zinc-800 shadow-xl text-white">
         <div>
-          <div className="flex items-center space-x-2">
-            <span className="relative flex h-2.5 w-2.5">
+          <div className="flex items-center space-x-2.5">
+            <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
             </span>
-            <h2 className="text-base font-bold text-zinc-900 tracking-tight">
-              Mysuru City Geolocation Telemetry Radar
+            <h2 className="text-base font-extrabold tracking-tight text-white flex items-center space-x-2">
+              <span>Mysuru Real-World Telemetry & Road Routing Command</span>
             </h2>
-            <span className="px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200">
-              Live PostGIS Feed
+            <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/30">
+              Live OSRM Routing
             </span>
           </div>
-          <p className="text-xs text-zinc-500 mt-1">
-            Tracking active worker heartbeat pings across 7 municipal wards. Auto-synced at {lastRefreshed}.
+          <p className="text-xs text-zinc-400 mt-1 flex items-center space-x-2">
+            <span>Tracking {workers.length} certified providers across 9 Mysuru municipal wards.</span>
+            <span className="text-zinc-600">•</span>
+            <span className="font-mono text-zinc-400">PostGIS Feed synced: {lastRefreshed}</span>
           </p>
         </div>
 
-        {/* View toggles */}
-        <div className="flex items-center space-x-3">
+        {/* Action Controls & Layer Switcher */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Tile Layer Selector */}
+          <div className="flex items-center bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs">
+            <button
+              onClick={() => setActiveTileType('dark')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center space-x-1 ${
+                activeTileType === 'dark' ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+              }`}
+              title="Carto Dark Matter Night Map"
+            >
+              <Moon className="w-3.5 h-3.5" />
+              <span>Dark Ops</span>
+            </button>
+            <button
+              onClick={() => setActiveTileType('streets')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center space-x-1 ${
+                activeTileType === 'streets' ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+              }`}
+              title="OpenStreetMap Street Grid"
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+              <span>Streets</span>
+            </button>
+            <button
+              onClick={() => setActiveTileType('satellite')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center space-x-1 ${
+                activeTileType === 'satellite' ? 'bg-indigo-600 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+              }`}
+              title="Esri Aerial Satellite Imagery"
+            >
+              <Satellite className="w-3.5 h-3.5" />
+              <span>Satellite</span>
+            </button>
+          </div>
+
+          {/* Toggle Heatmap */}
           <button
             onClick={() => setShowHeatmap(!showHeatmap)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg border flex items-center space-x-1.5 transition-colors cursor-pointer ${
-              showHeatmap 
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-semibold' 
-                : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+            className={`px-3 py-1.5 text-xs font-semibold rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
+              showHeatmap
+                ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
+                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Demand Heatmap</span>
           </button>
 
+          {/* Toggle Dispatch Routes */}
           <button
             onClick={() => setShowRoutes(!showRoutes)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg border flex items-center space-x-1.5 transition-colors cursor-pointer ${
-              showRoutes 
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-semibold' 
-                : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+            className={`px-3 py-1.5 text-xs font-semibold rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
+              showRoutes
+                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:bg-zinc-800'
             }`}
           >
             <Navigation className="w-3.5 h-3.5" />
-            <span>Dispatch Routes</span>
+            <span>Road Routes</span>
           </button>
 
+          {/* Simulate Booking Dispatch Button */}
           <button
-            onClick={() => setIsLivePinging(!isLivePinging)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg border flex items-center space-x-1.5 transition-colors cursor-pointer ${
-              isLivePinging 
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-semibold' 
-                : 'bg-zinc-100 border-zinc-200 text-zinc-400'
-            }`}
+            onClick={handleSimulateDispatch}
+            disabled={isDispatching}
+            className="px-3 py-1.5 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
           >
-            <Radio className="w-3.5 h-3.5 animate-pulse" />
-            <span>{isLivePinging ? 'Live Pings (3s)' : 'Paused'}</span>
+            <Send className="w-3.5 h-3.5" />
+            <span>{isDispatching ? 'Routing...' : 'Simulate Dispatch'}</span>
+          </button>
+
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="p-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Map'}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
         </div>
       </div>
 
-      {/* Main Map + Inspection Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Vector Map Canvas (8 Columns) */}
-        <div className="lg:col-span-8 bg-zinc-950 rounded-2xl border border-zinc-800 p-4 relative overflow-hidden shadow-xl min-h-[560px] flex flex-col justify-between">
+      {/* Main Interactive Map & Telemetry Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Real Leaflet Map Container (8 Columns) */}
+        <div className="lg:col-span-8 bg-zinc-950 rounded-2xl border border-zinc-800 p-3 relative shadow-2xl flex flex-col justify-between overflow-hidden min-h-[620px]">
           
-          {/* Map Top Overlays & Filters */}
-          <div className="flex flex-wrap items-center justify-between gap-2 z-10">
-            <div className="flex items-center space-x-2 bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800 text-white text-xs">
-              <Filter className="w-3.5 h-3.5 text-zinc-400" />
-              <select 
-                value={filterTrade} 
-                onChange={(e) => setFilterTrade(e.target.value)}
-                className="bg-transparent text-xs text-white focus:outline-none cursor-pointer"
-              >
-                <option value="all" className="bg-zinc-900 text-white">All Skills</option>
-                <option value="Electrician" className="bg-zinc-900 text-white">Electrician</option>
-                <option value="Plumber" className="bg-zinc-900 text-white">Plumber</option>
-                <option value="Carpenter" className="bg-zinc-900 text-white">Carpenter</option>
-                <option value="AC Tech" className="bg-zinc-900 text-white">AC Tech</option>
-              </select>
+          {/* Top Floating Map HUD (Filters & Search) */}
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Search Filter */}
+              <div className="flex items-center space-x-1.5 bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800 text-xs text-zinc-300">
+                <Search className="w-3.5 h-3.5 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Search worker or phone..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none w-36"
+                />
+              </div>
+
+              {/* Trade Filter */}
+              <div className="flex items-center space-x-1.5 bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800 text-xs text-zinc-300">
+                <Filter className="w-3.5 h-3.5 text-zinc-400" />
+                <select
+                  value={filterTrade}
+                  onChange={(e) => setFilterTrade(e.target.value)}
+                  className="bg-transparent text-xs text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="all" className="bg-zinc-900 text-white">All Skills</option>
+                  <option value="Electrician" className="bg-zinc-900 text-white">Electrician</option>
+                  <option value="Plumber" className="bg-zinc-900 text-white">Plumber</option>
+                  <option value="Carpenter" className="bg-zinc-900 text-white">Carpenter</option>
+                  <option value="AC Tech" className="bg-zinc-900 text-white">AC Tech</option>
+                  <option value="Appliance Repair" className="bg-zinc-900 text-white">Appliance Repair</option>
+                </select>
+              </div>
+
+              {/* Status Filter */}
+              <div className="flex items-center space-x-1.5 bg-zinc-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800 text-xs text-zinc-300">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="bg-transparent text-xs text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="all" className="bg-zinc-900 text-white">All Statuses</option>
+                  <option value="online" className="bg-zinc-900 text-white">Online & Ready</option>
+                  <option value="en_route" className="bg-zinc-900 text-white">En Route</option>
+                  <option value="in_progress" className="bg-zinc-900 text-white">In Progress</option>
+                </select>
+              </div>
             </div>
 
-            <div className="flex items-center space-x-2 bg-zinc-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zinc-800 text-white text-xs">
-              <select 
-                value={filterStatus} 
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="bg-transparent text-xs text-white focus:outline-none cursor-pointer"
+            {/* Simulation Playback & Speed Controls */}
+            <div className="flex items-center space-x-1.5 bg-zinc-900/90 backdrop-blur-md p-1 rounded-xl border border-zinc-800 text-xs">
+              <button
+                onClick={() => setIsSimulating(!isSimulating)}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  isSimulating ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                }`}
+                title={isSimulating ? 'Pause Transit Simulation' : 'Resume Transit Simulation'}
               >
-                <option value="all" className="bg-zinc-900 text-white">All Statuses</option>
-                <option value="online" className="bg-zinc-900 text-white">Online & Ready</option>
-                <option value="en_route" className="bg-zinc-900 text-white">En Route</option>
-                <option value="in_progress" className="bg-zinc-900 text-white">In Progress</option>
-              </select>
+                {isSimulating ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              </button>
+
+              <button
+                onClick={() => setSpeedMultiplier((prev) => (prev === 1 ? 2 : prev === 2 ? 4 : 1))}
+                className="px-2 py-1 rounded-lg bg-zinc-800 text-[10px] font-bold text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                title="Toggle Speed Multiplier"
+              >
+                {speedMultiplier}x Speed
+              </button>
+
+              <button
+                onClick={handleRecenterCity}
+                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors cursor-pointer"
+                title="Recenter on Mysuru Center"
+              >
+                <Crosshair className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
-          {/* Interactive SVG Radar Map Canvas */}
-          <div className="relative w-full h-[460px] my-2">
-            <svg className="w-full h-full" viewBox="0 0 600 520">
-              <defs>
-                <radialGradient id="radarScan" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#6366F1" stopOpacity="0.1" />
-                  <stop offset="100%" stopColor="#6366F1" stopOpacity="0" />
-                </radialGradient>
-                <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#10B981" />
-                  <stop offset="100%" stopColor="#6366F1" />
-                </linearGradient>
-                <radialGradient id="heatGlowHigh" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#EF4444" stopOpacity="0.4" />
-                  <stop offset="80%" stopColor="#F59E0B" stopOpacity="0.1" />
-                  <stop offset="100%" stopColor="#EF4444" stopOpacity="0" />
-                </radialGradient>
-              </defs>
+          {/* Real Leaflet Map DOM Canvas */}
+          <div className="relative w-full h-[490px] rounded-xl overflow-hidden border border-zinc-800/80 shadow-inner">
+            <div ref={mapContainerRef} className="w-full h-full" style={{ minHeight: '490px' }} />
 
-              {/* Grid Lines */}
-              <g stroke="#27272A" strokeWidth="0.5" strokeDasharray="3 3">
-                {[100, 200, 300, 400, 500].map(x => (
-                  <line key={`x-${x}`} x1={x} y1="40" x2={x} y2="480" />
-                ))}
-                {[80, 160, 240, 320, 400, 480].map(y => (
-                  <line key={`y-${y}`} x1="50" y1={y} x2="550" y2={y} />
-                ))}
-              </g>
-
-              {/* Municipal Road Corridors */}
-              <g stroke="#3F3F46" strokeWidth="2.5" fill="none" opacity="0.6">
-                <path d="M 120 100 Q 250 200 350 450" />
-                <path d="M 450 120 Q 300 240 180 380" />
-                <path d="M 80 260 L 520 260" strokeDasharray="6 3" strokeWidth="1.5" />
-                <path d="M 300 60 L 300 460" strokeDasharray="6 3" strokeWidth="1.5" />
-              </g>
-
-              {/* Demand Density Heatmap Layer */}
-              {showHeatmap && (
-                <g>
-                  {MYSURU_ZONES.map(z => (
-                    <circle
-                      key={`heat-${z.id}`}
-                      cx={z.x}
-                      cy={z.y}
-                      r={z.demand === 'Very High' ? 70 : z.demand === 'High' ? 55 : 35}
-                      fill="url(#heatGlowHigh)"
-                    />
-                  ))}
-                </g>
-              )}
-
-              {/* Municipal Zone Label Badges */}
-              {MYSURU_ZONES.map(z => (
-                <g key={z.id}>
-                  <circle cx={z.x} cy={z.y} r="3" fill="#A1A1AA" />
-                  <text 
-                    x={z.x + 8} 
-                    y={z.y + 4} 
-                    fill="#71717A" 
-                    fontSize="10" 
-                    fontFamily="sans-serif"
-                    fontWeight="500"
+            {/* In-Map Active Dispatches Quick Bar */}
+            <div className="absolute top-3 right-3 z-400 pointer-events-auto bg-zinc-950/85 backdrop-blur-md border border-zinc-800/80 rounded-xl p-2.5 max-w-[240px] shadow-2xl text-xs space-y-2">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
+                <span className="font-bold text-white text-[11px] flex items-center space-x-1">
+                  <Activity className="w-3 h-3 text-emerald-400" />
+                  <span>Active Road Dispatches</span>
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-400 font-extrabold">
+                  {activeRoutes.length} LIVE
+                </span>
+              </div>
+              <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                {activeRoutes.map((r) => (
+                  <div
+                    key={r.id}
+                    onClick={() => {
+                      const w = workers.find((item) => item.id === r.workerId);
+                      if (w) handleFocusWorker(w);
+                    }}
+                    className="p-1.5 rounded-lg bg-zinc-900/80 hover:bg-zinc-800/80 border border-zinc-800 transition-colors cursor-pointer"
                   >
-                    {z.name}
-                  </text>
-                </g>
-              ))}
-
-              {/* Active Dispatch Routes (Animated dashed vector lines) */}
-              {showRoutes && ACTIVE_DISPATCH_ROUTES.map(r => (
-                <g key={r.id}>
-                  <line
-                    x1={r.fromX}
-                    y1={r.fromY}
-                    x2={r.toX}
-                    y2={r.toY}
-                    stroke="url(#routeGradient)"
-                    strokeWidth="2.5"
-                    strokeDasharray="6 4"
-                    strokeLinecap="round"
-                    className="animate-pulse"
-                  />
-                  {/* Destination Customer Pin */}
-                  <circle cx={r.toX} cy={r.toY} r="7" fill="#6366F1" stroke="#FFFFFF" strokeWidth="2" />
-                  <text x={r.toX + 10} y={r.toY + 4} fill="#C7D2FE" fontSize="10" fontWeight="600">
-                    {r.customer} ({r.eta})
-                  </text>
-                </g>
-              ))}
-
-              {/* Worker Marker Pins */}
-              {filteredWorkers.map(w => {
-                const isSelected = selectedWorker?.id === w.id;
-                const statusColor = w.status === 'en_route' ? '#10B981' : w.status === 'in_progress' ? '#F59E0B' : '#3B82F6';
-
-                return (
-                  <g 
-                    key={w.id} 
-                    className="cursor-pointer transition-transform hover:scale-125"
-                    onClick={() => setSelectedWorker(w)}
-                  >
-                    {/* Pulsing ring for en-route and working */}
-                    {w.status !== 'online' && (
-                      <circle cx={w.x} cy={w.y} r="18" fill={statusColor} opacity="0.2">
-                        <animate attributeName="r" values="10;24;10" dur="2.5s" repeatCount="indefinite" />
-                        <animate attributeName="opacity" values="0.3;0;0.3" dur="2.5s" repeatCount="indefinite" />
-                      </circle>
-                    )}
-
-                    {/* Worker Pin Circle */}
-                    <circle
-                      cx={w.x}
-                      cy={w.y}
-                      r={isSelected ? "11" : "8"}
-                      fill={statusColor}
-                      stroke="#FFFFFF"
-                      strokeWidth={isSelected ? "3" : "2"}
-                    />
-
-                    {/* Trade initials tag */}
-                    <text
-                      x={w.x}
-                      y={w.y + 3}
-                      fill="#FFFFFF"
-                      fontSize="8"
-                      fontWeight="bold"
-                      textAnchor="middle"
-                    >
-                      {w.trade[0]}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-white">
+                      <span>{r.workerName}</span>
+                      <span className="text-emerald-400 font-bold">{r.etaMins}m ETA</span>
+                    </div>
+                    <div className="text-[10px] text-zinc-400 truncate">
+                      To: {r.customerName} ({r.distanceRemainingKm || r.distanceKm} km)
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Bottom Map Legend */}
-          <div className="flex flex-wrap items-center justify-between text-[11px] text-zinc-400 bg-zinc-900/90 backdrop-blur-md px-4 py-2.5 rounded-xl border border-zinc-800">
+          {/* Bottom Map Telemetry Legend */}
+          <div className="mt-2 flex flex-wrap items-center justify-between text-[11px] text-zinc-400 bg-zinc-900/90 backdrop-blur-md px-4 py-2.5 rounded-xl border border-zinc-800">
             <div className="flex items-center space-x-4">
               <span className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
-                <span>Online & Idle ({workers.filter(w => w.status === 'online').length})</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow-sm"></span>
+                <span>Online & Idle ({workers.filter((w) => w.status === 'online').length})</span>
               </span>
               <span className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                <span>En Route to Job ({workers.filter(w => w.status === 'en_route').length})</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-sm animate-pulse"></span>
+                <span>En Route ({workers.filter((w) => w.status === 'en_route').length})</span>
               </span>
               <span className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
-                <span>On Site Working ({workers.filter(w => w.status === 'in_progress').length})</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow-sm"></span>
+                <span>On Site Working ({workers.filter((w) => w.status === 'in_progress').length})</span>
               </span>
             </div>
-            <span className="text-zinc-500">Tap any pin to inspect worker telemetry</span>
+            <div className="flex items-center space-x-3 text-zinc-500">
+              <span className="text-zinc-400 font-medium">Avg City Dispatch ETA: ~7.2 mins</span>
+              <span>•</span>
+              <span>Click any vehicle marker for live telemetry</span>
+            </div>
           </div>
         </div>
 
-        {/* Right Inspection & Telemetry Drawer (4 Columns) */}
+        {/* Right Telemetry & Inspection Drawer (4 Columns) */}
         <div className="lg:col-span-4 space-y-4">
           {selectedWorker ? (
-            <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 shadow-xs animate-fade-in space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+            <div className="bg-zinc-900/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-5 shadow-2xl space-y-4 text-white animate-fade-in">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                    {selectedWorker.name.split(' ').map(n => n[0]).join('')}
+                  <div
+                    className="w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm border shadow-md"
+                    style={{
+                      background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+                      borderColor: '#4f46e5',
+                      color: '#a5b4fc',
+                    }}
+                  >
+                    {selectedWorker.name.split(' ').map((n) => n[0]).join('')}
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-zinc-900">{selectedWorker.name}</h3>
-                    <span className="text-xs text-zinc-500">{selectedWorker.trade} • {selectedWorker.phone}</span>
+                    <div className="flex items-center space-x-1.5">
+                      <h3 className="text-sm font-bold text-white">{selectedWorker.name}</h3>
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    </div>
+                    <span className="text-xs text-zinc-400">
+                      {selectedWorker.trade} • {selectedWorker.phone}
+                    </span>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => setSelectedWorker(null)}
-                  className="text-zinc-400 hover:text-zinc-600 text-xs cursor-pointer"
+                  className="text-zinc-400 hover:text-white text-xs cursor-pointer p-1"
                 >
                   ✕
                 </button>
               </div>
 
-              {/* Status pill */}
+              {/* Status and Telemetry Matrix */}
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
-                  <span className="text-zinc-400 block text-[10px] uppercase font-bold">Status</span>
-                  <span className="font-semibold text-zinc-800 capitalize mt-0.5 inline-block">
+                <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80">
+                  <span className="text-zinc-500 block text-[10px] uppercase font-bold flex items-center space-x-1">
+                    <Activity className="w-3 h-3 text-emerald-400" />
+                    <span>Current Status</span>
+                  </span>
+                  <span className="font-extrabold text-white capitalize mt-1 inline-block">
                     {selectedWorker.status.replace('_', ' ')}
                   </span>
                 </div>
-                <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
-                  <span className="text-zinc-400 block text-[10px] uppercase font-bold">Speed / Battery</span>
-                  <span className="font-semibold text-zinc-800 mt-0.5 inline-block">
-                    {selectedWorker.speed} • {selectedWorker.battery}
+
+                <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80">
+                  <span className="text-zinc-500 block text-[10px] uppercase font-bold flex items-center space-x-1">
+                    <Gauge className="w-3 h-3 text-cyan-400" />
+                    <span>Speed / Heading</span>
+                  </span>
+                  <span className="font-extrabold text-white mt-1 inline-block">
+                    {selectedWorker.speed || 0} km/h • {selectedWorker.heading || 0}°
+                  </span>
+                </div>
+
+                <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80">
+                  <span className="text-zinc-500 block text-[10px] uppercase font-bold flex items-center space-x-1">
+                    <Battery className="w-3 h-3 text-emerald-400" />
+                    <span>Device Battery</span>
+                  </span>
+                  <div className="mt-1 flex items-center space-x-2">
+                    <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-emerald-500 h-2 rounded-full transition-all"
+                        style={{ width: `${selectedWorker.battery}%` }}
+                      ></div>
+                    </div>
+                    <span className="font-bold text-white text-[11px]">{selectedWorker.battery}%</span>
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80">
+                  <span className="text-zinc-500 block text-[10px] uppercase font-bold flex items-center space-x-1">
+                    <MapPin className="w-3 h-3 text-amber-400" />
+                    <span>Primary Ward</span>
+                  </span>
+                  <span className="font-bold text-zinc-200 mt-1 inline-block truncate">
+                    {selectedWorker.zone || 'Mysuru Center'}
                   </span>
                 </div>
               </div>
 
-              {/* Coordinates */}
-              <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-100 text-xs space-y-1">
-                <div className="flex justify-between text-zinc-500">
+              {/* Coordinates and Job Details */}
+              <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80 text-xs space-y-2">
+                <div className="flex justify-between text-zinc-400">
                   <span>GPS Lat / Lng</span>
-                  <span className="font-mono text-zinc-700">{selectedWorker.lat}, {selectedWorker.lng}</span>
+                  <span className="font-mono text-cyan-300 font-semibold">
+                    {Number(selectedWorker.lat).toFixed(4)}, {Number(selectedWorker.lng).toFixed(4)}
+                  </span>
                 </div>
                 {selectedWorker.job && (
-                  <div className="flex justify-between text-zinc-500 pt-1 border-t border-zinc-200/50">
+                  <div className="flex justify-between text-zinc-400 pt-1.5 border-t border-zinc-800">
                     <span>Assigned Dispatch</span>
-                    <span className="font-semibold text-indigo-600">{selectedWorker.job}</span>
+                    <span className="font-bold text-emerald-400">{selectedWorker.job}</span>
                   </div>
                 )}
+                <div className="flex justify-between text-zinc-400 pt-1 border-t border-zinc-800">
+                  <span>Completed Jobs</span>
+                  <span className="font-semibold text-zinc-200">{selectedWorker.jobsCompleted || 85} verified</span>
+                </div>
               </div>
 
-              {/* Quick Actions */}
-              <div className="pt-2 space-y-2">
-                <a
-                  href={`tel:${selectedWorker.phone}`}
-                  className="w-full py-2 px-3 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl flex items-center justify-center space-x-2 transition-colors cursor-pointer"
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  <span>Call Provider Directly</span>
-                </a>
+              {/* Interactive Telemetry Actions */}
+              <div className="pt-1 space-y-2">
                 <button
-                  onClick={() => alert(`Ping sent to ${selectedWorker.name}'s device. High-priority GPS heartbeat requested.`)}
-                  className="w-full py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl flex items-center justify-center space-x-2 transition-colors border border-indigo-200 cursor-pointer"
+                  onClick={() => handleFocusWorker(selectedWorker)}
+                  className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-lg shadow-indigo-600/30"
                 >
                   <Crosshair className="w-3.5 h-3.5" />
-                  <span>Force GPS Recalibration</span>
+                  <span>Track Vehicle (Focus Camera)</span>
                 </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <a
+                    href={`tel:${selectedWorker.phone}`}
+                    className="py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer border border-zinc-700"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Call Directly</span>
+                  </a>
+
+                  <button
+                    onClick={() =>
+                      showToast(`🛰️ GPS telemetry ping dispatched to ${selectedWorker.name}'s handset. PostGIS heartbeat recalibrated.`)
+                    }
+                    className="py-2 px-3 bg-zinc-800 hover:bg-zinc-700 text-cyan-300 text-xs font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition-colors cursor-pointer border border-zinc-700"
+                  >
+                    <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                    <span>Send Ping</span>
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-zinc-200/80 p-6 text-center text-zinc-500 shadow-xs">
-              <Crosshair className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
-              <h4 className="text-sm font-semibold text-zinc-700">No Worker Selected</h4>
-              <p className="text-xs text-zinc-400 mt-1">
-                Click any worker marker on the Mysuru radar map to inspect live speed, battery status, and telemetry.
+            <div className="bg-zinc-900/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-6 text-center text-zinc-400 shadow-xl space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center mx-auto text-indigo-400 shadow-inner">
+                <Compass className="w-6 h-6 animate-spin" style={{ animationDuration: '24s' }} />
+              </div>
+              <h4 className="text-sm font-bold text-white">No Vehicle Selected</h4>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Click any worker marker on the Mysuru road map to inspect live driving speed, battery percentage, heading bearing, and active dispatch route.
               </p>
             </div>
           )}
 
-          {/* Municipal Wards Demand Summary */}
-          <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 shadow-xs space-y-3">
-            <h4 className="text-xs font-bold text-zinc-900 uppercase tracking-wider flex items-center space-x-1.5">
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>Ward Demand Surges</span>
-            </h4>
-            <div className="space-y-2 text-xs">
-              {MYSURU_ZONES.slice(0, 4).map(z => (
-                <div key={z.id} className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 border border-zinc-100">
+          {/* Municipal Wards Demand & Surge Hub */}
+          <div className="bg-zinc-900/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-4 shadow-xl space-y-3 text-white">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider flex items-center space-x-1.5 text-white">
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span>Municipal Ward Demand Surges</span>
+              </h4>
+              <span className="text-[10px] text-zinc-500 font-mono">9 Wards</span>
+            </div>
+
+            <div className="space-y-2 text-xs max-h-[220px] overflow-y-auto pr-1">
+              {MYSURU_MUNICIPAL_ZONES.map((zone) => (
+                <div
+                  key={zone.id}
+                  onClick={() => {
+                    if (mapInstanceRef.current) {
+                      mapInstanceRef.current.flyTo([zone.lat, zone.lng], 14, { duration: 1.2 });
+                    }
+                  }}
+                  className="flex items-center justify-between p-2 rounded-xl bg-zinc-950/80 hover:bg-zinc-800/80 border border-zinc-800/80 transition-all cursor-pointer group"
+                >
                   <div>
-                    <span className="font-semibold text-zinc-800">{z.name}</span>
-                    <span className="text-[10px] text-zinc-400 block">{z.workers} active providers</span>
+                    <div className="font-semibold text-zinc-200 group-hover:text-white flex items-center space-x-1.5">
+                      <span className="w-2 h-2 rounded-full" style={{ background: zone.color }}></span>
+                      <span>{zone.name}</span>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 block ml-3.5">{zone.landmark}</span>
                   </div>
-                  <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
-                    z.surge !== '1.0x' ? 'bg-amber-100 text-amber-800' : 'bg-zinc-100 text-zinc-600'
-                  }`}>
-                    {z.surge} Surge
-                  </span>
+
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] text-zinc-400">{zone.workers} active</span>
+                    <span
+                      className="px-2 py-0.5 rounded-md font-extrabold text-[10px]"
+                      style={{
+                        background: `${zone.color}22`,
+                        color: zone.color,
+                        border: `1px solid ${zone.color}44`,
+                      }}
+                    >
+                      {zone.surge}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
