@@ -112,3 +112,34 @@
 .leaflet-control-attribution a {
   color: #a1a1aa !important;
 }
+
+/* Custom Leaflet Tooltips */
+.custom-leaflet-tooltip {
+  background: rgba(15, 23, 42, 0.92) !important;
+  backdrop-filter: blur(8px) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+  padding: 6px 10px !important;
+}
+
+.custom-leaflet-tooltip:before {
+  border-top-color: rgba(15, 23, 42, 0.92) !important;
+}
+
+/* Ops Center Dark Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}

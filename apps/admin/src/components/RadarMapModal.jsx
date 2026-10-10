@@ -808,7 +808,25 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
           {/* Real Leaflet Map DOM Canvas */}
           <div className="relative w-full h-[490px] rounded-xl overflow-hidden border border-zinc-800/80 shadow-inner">
-            <div ref={mapContainerRef} className="w-full h-full" style={{ minHeight: '490px' }} />
+            <div 
+              ref={mapContainerRef} 
+              className="w-full h-full" 
+              style={{ minHeight: '490px', cursor: isClickToDispatchActive ? 'crosshair' : 'grab' }} 
+            />
+
+            {/* Active Pin Dispatch Guidance Banner */}
+            {isClickToDispatchActive && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-400 pointer-events-auto bg-amber-400/95 text-zinc-950 font-extrabold px-4 py-2 rounded-full shadow-2xl backdrop-blur-md border border-amber-200 text-xs flex items-center space-x-2 animate-pulse">
+                <MapPin className="w-4 h-4 text-zinc-950" />
+                <span>Click any street on Mysuru map to auto-dispatch nearest provider</span>
+                <button 
+                  onClick={() => setIsClickToDispatchActive(false)} 
+                  className="ml-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             {/* In-Map Active Dispatches Quick Bar */}
             <div className="absolute top-3 right-3 z-400 pointer-events-auto bg-zinc-950/85 backdrop-blur-md border border-zinc-800/80 rounded-xl p-2.5 max-w-[240px] shadow-2xl text-xs space-y-2">
