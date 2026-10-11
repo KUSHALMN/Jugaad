@@ -107,25 +107,32 @@ def verify_payment(body: dict, uid: str = Depends(verify_firebase_token)):
     if job.get("employer_id") != caller_id and job.get("employer_id") != uid:
         raise HTTPException(403, "Not authorized to verify payment for this job")
 
-    # 2. Assert constraints for releasing payment
-    if job.get("status") != "completed":
-        raise HTTPException(400, "Cannot release payment: job must be completed first")
-
-    pending_requests = supabase.table("price_change_requests").select("id").eq("job_id", job_id).eq("status", "pending").execute()
-    if pending_requests.data:
-        raise HTTPException(400, "Cannot release payment: a price change request is pending approval")
-
+    # 2. Verify Razorpay cryptographic signature first
     message = f"{order_id}|{payment_id}"
     expected = hmac.new(key_secret.encode(), message.encode(), hashlib.sha256).hexdigest()
 
     if not hmac.compare_digest(expected, signature):
         raise HTTPException(400, "Invalid payment signature")
 
+    # 3. Determine status: 'released' if job is finished with no pending price changes, else 'escrowed'
+    is_completed = job.get("status") == "completed"
+    pending_requests = supabase.table("price_change_requests").select("id").eq("job_id", job_id).eq("status", "pending").execute()
+    has_pending = bool(pending_requests.data)
+
+    if is_completed and not has_pending:
+        new_payment_status = "released"
+    else:
+        new_payment_status = "escrowed"
+
     supabase.table("jobs").update({
-        "payment_status": "released",
+        "payment_status": new_payment_status,
         "razorpay_payment_id": payment_id,
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }).eq("id", job_id).execute()
 
-    return {"status": "verified", "payment_id": payment_id}
+    return {
+        "status": "verified",
+        "payment_status": new_payment_status,
+        "payment_id": payment_id
+    }
 
