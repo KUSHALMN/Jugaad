@@ -125,26 +125,31 @@ class DispatchService:
         return False
     
     async def handle_worker_response(self, job_id: str, worker_id: str, 
-                                      response: str):
-        """Called when worker accepts or rejects"""
+                                      response: str) -> bool:
+        """Called when worker accepts or rejects. Returns True if successfully accepted/rejected."""
         if response == "ACCEPT":
-            # Set accepted status
+            # Attempt atomic assignment
+            assigned = await self._assign_worker(job_id, worker_id)
+            if not assigned:
+                logger.warning(f"⚠️ Worker {worker_id} tried to accept job {job_id}, but it was already taken.")
+                return False
+
+            # Set accepted status in Redis to notify polling loop
             await queue_service.set_with_ttl(
                 f"job:{job_id}:status", "ACCEPTED", 3600
             )
-            await self._update_job_status(job_id, "accepted")
-            await self._assign_worker(job_id, worker_id)
-            
-            # Cancel other pending requests
+
+            # Cancel other pending worker radar requests
             await self._cancel_other_requests(job_id, worker_id)
-            
-            logger.info(f"✅ Worker {worker_id} accepted job {job_id}")
+            logger.info(f"✅ Worker {worker_id} successfully accepted job {job_id}")
+            return True
         else:
             # Worker rejected
             await queue_service.delete(
                 f"job:{job_id}:pending:{worker_id}"
             )
             logger.info(f"❌ Worker {worker_id} rejected job {job_id}")
+            return True
     
     async def _get_nearby_workers(self, lat, lng, radius_km, 
                                    service_type, exclude_ids, is_emergency: bool = False):
@@ -179,31 +184,63 @@ class DispatchService:
                         token_res = supabase.table("users").select("fcm_token").eq("id", w_id).execute()
                         token = token_res.data[0]["fcm_token"] if token_res.data else ""
                         ret_workers.append({"id": w_id, "fcm_token": token})
-                return ret_workers[:10]
+                    return ret_workers[:10]
             except Exception as e2:
                 logger.error(f"Fallback query error: {e2}")
                 return []
     
     async def _update_job_status(self, job_id: str, status: str):
         supabase.table("jobs").update(
-            {"status": status}
+            {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}
         ).eq("id", job_id).execute()
     
-    async def _assign_worker(self, job_id: str, worker_id: str):
+    async def _assign_worker(self, job_id: str, worker_id: str) -> bool:
+        """Atomic assignment of worker to job. Returns True if assigned, False if already taken."""
+        from datetime import datetime, timezone
+        now_iso = datetime.now(timezone.utc).isoformat()
+
         # Resolve internal UUID for the worker if needed
         res = supabase.table("users").select("id").eq("firebase_uid", worker_id).execute()
-        internal_worker_id = res.data[0]["id"] if res.data else worker_id
+        internal_worker_id = res.data[0]["id"] if (res.data and len(res.data) > 0) else worker_id
 
-        supabase.table("jobs").update({
-            "worker_id": internal_worker_id,
-            "status": "accepted",
-            "accepted_at": asyncio.get_event_loop().time() # Fallback local timestamp
-        }).eq("id", job_id).execute()
-        
-        # Mark worker unavailable
-        supabase.table("workers").update({
-            "is_available": False
-        }).eq("id", internal_worker_id).execute()
+        # 1. Try atomic RPC if available
+        try:
+            rpc_res = supabase.rpc("accept_job_atomic", {
+                "p_job_id": job_id,
+                "p_worker_id": str(internal_worker_id),
+            }).execute()
+            if rpc_res.data is True:
+                return True
+            elif rpc_res.data is False:
+                return False
+        except Exception as rpc_err:
+            logger.debug(f"RPC accept_job_atomic unavailable, falling back to conditional update: {rpc_err}")
+
+        # 2. Fallback: Conditional update ensuring status is open or searching
+        try:
+            update_res = supabase.table("jobs").update({
+                "worker_id": internal_worker_id,
+                "status": "accepted",
+                "accepted_at": now_iso,
+                "updated_at": now_iso,
+            }).eq("id", job_id).in_("status", ["open", "searching", "matched"]).execute()
+
+            if not update_res.data:
+                return False
+
+            # Mark worker as unavailable
+            try:
+                supabase.table("workers").update({
+                    "is_available": False,
+                    "updated_at": now_iso,
+                }).eq("id", internal_worker_id).execute()
+            except Exception as w_err:
+                logger.warning(f"Could not update worker availability: {w_err}")
+
+            return True
+        except Exception as assign_err:
+            logger.error(f"Error assigning worker {internal_worker_id} to job {job_id}: {assign_err}")
+            return False
     
     async def _cancel_other_requests(self, job_id: str, accepted_worker_id: str):
         # Optional: update other request statuses if a table tracks them
