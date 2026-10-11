@@ -18,6 +18,7 @@ import 'bank_account_screen.dart';
 import 'edit_worker_profile_screen.dart';
 import '../widgets/worker_job_history_bottom_sheet.dart';
 import '../../shared/screens/help_support_screen.dart';
+import '../../common/screens/legal_policy_screen.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
 
 
@@ -592,6 +593,12 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
                           Icons.help_outline_rounded,
                           'Help & support',
                           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen())),
+                        ),
+                        _buildMenuListItem(
+                          context,
+                          Icons.shield_outlined,
+                          'Privacy, Terms & Grievance',
+                          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LegalPolicyScreen())),
                         ),
                         InkWell(
                           onTap: () async {

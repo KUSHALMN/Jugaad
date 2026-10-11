@@ -208,7 +208,26 @@ class ApiService {
     final response = await client.get('/v1/jobs/worker/history');
     return response.data['jobs'] ?? [];
   }
+
+  /// Start job with customer's 4-digit doorstep PIN
+  Future<Map<String, dynamic>> startJobWithPin(String jobId, String pin) async {
+    final response = await client.post('/v1/jobs/$jobId/start-with-pin', data: {'pin': pin});
+    return response.data;
+  }
+
+  /// Complete job with customer's 4-digit inspection PIN
+  Future<Map<String, dynamic>> completeJobWithPin(String jobId, String pin) async {
+    final response = await client.post('/v1/jobs/$jobId/complete-with-pin', data: {'pin': pin});
+    return response.data;
+  }
+
+  /// Delete user account and anonymize PII (Google Play & DPDP compliance)
+  Future<Map<String, dynamic>> deleteAccount() async {
+    final response = await client.post('/v1/users/delete-account');
+    return response.data;
+  }
 }
+
 
 
 

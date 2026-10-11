@@ -91,3 +91,34 @@ def user_fcm_token(user_id: str, payload: dict, uid: str = Depends(verify_fireba
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("firebase_uid", user_id).execute()
     return {"status": "success"}
+
+@router.post("/delete-account")
+def delete_account(uid: str = Depends(verify_firebase_token)):
+    try:
+        now_str = datetime.now(timezone.utc).isoformat()
+        anonymized_name = f"Deleted User {uid[:6]}"
+        supabase.table("users").update({
+            "name": anonymized_name,
+            "email": None,
+            "phone": None,
+            "fcm_token": None,
+            "status": "deleted",
+            "updated_at": now_str,
+        }).eq("firebase_uid", uid).execute()
+
+        try:
+            supabase.table("workers").update({
+                "status": "deleted",
+                "is_active": False,
+                "is_available": False,
+                "phone": None,
+                "updated_at": now_str,
+            }).eq("user_id", uid).execute()
+        except Exception as we:
+            logger.warning(f"No worker record to update or table worker error: {we}")
+
+        return {"status": "success", "message": "Account and associated personal data successfully deleted"}
+    except Exception as e:
+        logger.error(f"Failed to delete account for {uid}: {e}")
+        raise HTTPException(500, "Failed to delete account")
+

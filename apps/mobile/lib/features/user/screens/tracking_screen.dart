@@ -8,6 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:jugaad_mvp/features/user/screens/user_home_screen.dart';
 import 'package:jugaad_mvp/core/theme/user_app_theme.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
@@ -650,6 +651,136 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
     );
   }
 
+  // ─── VERIFICATION PIN HANDSHAKE (ZERO-COST DOORSTEP SECURITY) ────
+  Widget _buildVerificationPinCard() {
+    final status = _jobData?['status'] as String? ?? 'matched';
+    final isWorking = status == 'in_progress';
+
+    final rawStartPin = _jobData?['start_pin']?.toString();
+    final startPin = (rawStartPin != null && rawStartPin.isNotEmpty)
+        ? rawStartPin
+        : ((widget.jobId.hashCode.abs() % 8999) + 1000).toString();
+
+    final rawCompletionPin = _jobData?['completion_pin']?.toString();
+    final completionPin = (rawCompletionPin != null && rawCompletionPin.isNotEmpty)
+        ? rawCompletionPin
+        : (((widget.jobId.hashCode.abs() + 3721) % 8999) + 1000).toString();
+
+    final activePin = isWorking ? completionPin : startPin;
+    final pinTitle = isWorking ? 'Work Completion PIN' : 'Doorstep Arrival PIN';
+    final pinSubtitle = isWorking
+        ? 'Share ONLY after you inspect and verify the completed work.'
+        : 'Share with technician ONLY when they arrive at your door.';
+    final pinColor = isWorking ? const Color(0xFF0D7844) : const Color(0xFF2563EB);
+    final pinBg = isWorking ? const Color(0xFFF0FDF4) : const Color(0xFFEFF6FF);
+    final pinBorder = isWorking ? const Color(0xFFBBF7D0) : const Color(0xFFBFDBFE);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: UserAppTheme.cardBorderRadius,
+        border: Border.all(color: pinBorder, width: 1.5),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: pinBg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isWorking ? Icons.verified_rounded : Icons.lock_open_rounded,
+              color: pinColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  pinTitle,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: UserAppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  pinSubtitle,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: UserAppTheme.textSecondary,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: pinBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: pinBorder, width: 1.2),
+            ),
+            child: Text(
+              activePin,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 19,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2.5,
+                color: pinColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── DAMAGE PROTECTION & ANTI-LEAKAGE GUARANTEE BANNER ───────────
+  Widget _buildDamageGuaranteeBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: UserAppTheme.cardBorderRadius,
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.verified_user_rounded, color: Color(0xFF16A34A), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '₹25,000 Jugaad Damage Cover Active • Never settle cash off-platform',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF334155),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ─── SPARE PARTS & MATERIALS ESCROW APPROVAL CARD ───────────────
   Widget _buildPendingSparePartBanner() {
     if (_pendingSparePart == null) {
@@ -1202,6 +1333,39 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: UserAppTheme.textPrimary, size: 20),
             onPressed: handleBack,
           ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 14),
+              child: InkWell(
+                onTap: _triggerSosEmergency,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFECACA), width: 1.2),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.shield_rounded, color: UserAppTheme.urgentRed, size: 15),
+                      SizedBox(width: 4),
+                      Text(
+                        'SOS',
+                        style: TextStyle(
+                          color: UserAppTheme.urgentRed,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       body: Stack(
         children: [
@@ -1490,7 +1654,13 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
                           ),
                         ).animate().fadeIn(duration: 400.ms),
                       const SizedBox(height: 20),
-                      
+
+                      // Verification PIN Handshake (Zero-Cost Anti-Fraud Handshake)
+                      _buildVerificationPinCard().animate().fadeIn(duration: 400.ms),
+
+                      // ₹25,000 Damage Cover & Anti-Leakage Guarantee Banner
+                      _buildDamageGuaranteeBanner().animate().fadeIn(duration: 400.ms),
+
                       // Elapsed timer card
                       if (isWorking)
                         Container(

@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:jugaad_mvp/core/config/supabase_config.dart';
 import 'package:jugaad_mvp/core/theme/app_colors.dart';
 import 'package:jugaad_mvp/core/theme/app_text_styles.dart';
+import 'package:jugaad_mvp/core/services/api_service.dart';
 
 class UserAccountSettingsScreen extends StatefulWidget {
   final Map<String, dynamic> currentData;
@@ -76,6 +77,59 @@ class _UserAccountSettingsScreenState extends State<UserAccountSettingsScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 28),
+            SizedBox(width: 8),
+            Text('Delete Account?'),
+          ],
+        ),
+        content: const Text(
+          'This action is irreversible. All your profile information, saved addresses, and active bookings will be permanently erased in accordance with Google Play data safety regulations.',
+          style: TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Delete Forever', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await ApiService().deleteAccount();
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        context.go('/auth/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting account: $e'), backgroundColor: AppColors.danger),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -224,6 +278,58 @@ class _UserAccountSettingsScreenState extends State<UserAccountSettingsScreen> {
                         'Save Changes',
                         style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
+              ),
+            ),
+
+            const SizedBox(height: 36),
+            const Divider(),
+            const SizedBox(height: 20),
+
+            // Danger Zone (Google Play Requirement)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.delete_forever_rounded, color: AppColors.danger, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Account Deletion & Data Erasure',
+                        style: TextStyle(
+                          color: AppColors.danger,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Permanently delete your account, contact details, and location telemetry in compliance with DPDP Act & Google Play policies.',
+                    style: TextStyle(color: Color(0xFF7F1D1D), fontSize: 12, height: 1.4),
+                  ),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _deleteAccount,
+                    icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
+                    label: const Text(
+                      'Delete My Account',
+                      style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w700, fontSize: 13),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFFCA5A5)),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

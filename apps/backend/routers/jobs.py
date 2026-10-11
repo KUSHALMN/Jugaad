@@ -15,9 +15,13 @@ import os
 import logging
 import hmac
 import hashlib
+import secrets
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+class PinVerifyRequest(BaseModel):
+    pin: str
 
 JOB_TIMEOUT_SECONDS = int(os.getenv("JOB_TIMEOUT_SECONDS", "120"))
 
@@ -109,6 +113,24 @@ def create_job(body: CreateJobRequest, background_tasks: BackgroundTasks, uid: s
         # Emergency columns may not exist in the table - that's OK
         print(f"[JOBS] Could not set emergency fields (columns may not exist): {e}")
 
+    # Generate zero-cost 4-digit PINs for Doorstep & Completion verification
+    start_pin = str(secrets.randbelow(9000) + 1000)
+    completion_pin = str(secrets.randbelow(9000) + 1000)
+
+    try:
+        supabase.table("jobs").update({
+            "start_pin": start_pin,
+            "completion_pin": completion_pin,
+        }).eq("id", job_id).execute()
+    except Exception as pin_err:
+        logger.info(f"[JOBS] Pin columns not in DB schema yet: {pin_err}")
+
+    try:
+        redis_client.set_state(f"job_pin:{job_id}:start", start_pin, ex=86400)
+        redis_client.set_state(f"job_pin:{job_id}:completion", completion_pin, ex=86400)
+    except Exception as re:
+        logger.warning(f"[JOBS] Redis pin cache warning: {re}")
+
     # Trigger Dispatch in background for immediate jobs
     if body.urgency != "scheduled":
         is_emergency = body.job_type == "emergency" if body.job_type else False
@@ -125,6 +147,8 @@ def create_job(body: CreateJobRequest, background_tasks: BackgroundTasks, uid: s
     return {
         "status": "ok",
         "job_id": job_id,
+        "start_pin": start_pin,
+        "completion_pin": completion_pin,
         "message": "Job created successfully",
     }
 
@@ -190,9 +214,18 @@ def get_job(job_id: str, uid: str = Depends(verify_firebase_token)):
                 if e_user and e_user.data:
                     job["employer_phone"] = e_user.data.get("phone") or ""
                     job["customer_phone"] = e_user.data.get("phone") or ""
-                    job["employer_name"] = e_user.data.get("name") or "Employer"
             except Exception as e:
-                logger.warning(f"Failed to fetch employer contact details for job {job_id}: {e}")
+                logger.warning(f"Failed to fetch employer contact details: {e}")
+
+    # Attach cached pins for customer, but mask for worker
+    if internal_id == employer_id or user_role == "admin":
+        if not job.get("start_pin"):
+            job["start_pin"] = redis_client.get_state(f"job_pin:{job_id}:start")
+        if not job.get("completion_pin"):
+            job["completion_pin"] = redis_client.get_state(f"job_pin:{job_id}:completion")
+    else:
+        job.pop("start_pin", None)
+        job.pop("completion_pin", None)
 
     return job
 
@@ -478,6 +511,77 @@ def complete_job(job_id: str, body: CompleteJobRequest, uid: str = Depends(verif
         )
 
     return {"status": "completed", "job_id": job_id}
+
+# 8b. Start Job With Customer Doorstep PIN
+@router.post("/{job_id}/start-with-pin")
+def start_job_with_pin(job_id: str, body: PinVerifyRequest, uid: str = Depends(verify_firebase_token)):
+    user_result = supabase.table("users").select("id").eq("firebase_uid", uid).maybe_single().execute()
+    if not user_result or not user_result.data:
+        raise HTTPException(404, "User not found")
+    worker_uuid = user_result.data["id"]
+
+    result = supabase.table("jobs").select("*").eq("id", job_id).maybe_single().execute()
+    if not result or not result.data:
+        raise HTTPException(404, "Job not found")
+
+    job = result.data
+    if str(job.get("worker_id")) != str(worker_uuid):
+        raise HTTPException(403, "Not the assigned worker")
+    if job.get("status") not in ("accepted", "matched"):
+        raise HTTPException(409, f"Cannot start job in status '{job.get('status')}'")
+
+    expected_pin = str(job.get("start_pin") or redis_client.get_state(f"job_pin:{job_id}:start") or "")
+    if expected_pin and body.pin.strip() != expected_pin:
+        raise HTTPException(400, "Invalid Doorstep PIN. Please ask the customer for their 4-digit arrival PIN.")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    supabase.table("jobs").update({
+        "status": "in_progress",
+        "started_at": now_iso,
+        "updated_at": now_iso,
+    }).eq("id", job_id).execute()
+
+    return {"status": "ok", "job_id": job_id, "message": "Job started successfully"}
+
+# 8c. Complete Job With Customer Inspection PIN
+@router.post("/{job_id}/complete-with-pin")
+def complete_job_with_pin(job_id: str, body: PinVerifyRequest, uid: str = Depends(verify_firebase_token)):
+    result = supabase.table("jobs").select("*").eq("id", job_id).maybe_single().execute()
+    if not result or not result.data:
+        raise HTTPException(404, "Job not found")
+
+    job = result.data
+    user_res = supabase.table("users").select("id, role").eq("firebase_uid", uid).maybe_single().execute()
+    caller_id = (user_res.data or {}).get("id", uid)
+    caller_role = (user_res.data or {}).get("role", "")
+
+    if str(caller_id) != str(job.get("worker_id")) and caller_role != "admin":
+        raise HTTPException(403, "Only the assigned worker can submit completion PIN")
+
+    if job.get("status") not in ("in_progress", "accepted"):
+        raise HTTPException(400, f"Cannot complete job in status '{job.get('status')}'")
+
+    expected_pin = str(job.get("completion_pin") or redis_client.get_state(f"job_pin:{job_id}:completion") or "")
+    if expected_pin and body.pin.strip() != expected_pin:
+        raise HTTPException(400, "Invalid Completion PIN. Please ask the customer to inspect the work and share their completion PIN.")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    supabase.table("jobs").update({
+        "status": "completed",
+        "completed_at": now_iso,
+        "updated_at": now_iso,
+    }).eq("id", job_id).execute()
+
+    employer_id = job.get("employer_id")
+    if employer_id:
+        _send_fcm_to_user(
+            employer_id,
+            title="Job Verified & Completed! ✅",
+            body="Work has been verified with completion PIN.",
+            data={"type": "JOB_COMPLETED", "job_id": job_id},
+        )
+
+    return {"status": "completed", "job_id": job_id, "message": "Job completed successfully"}
 
 # 9. Review Job
 class JobReviewRequest(BaseModel):

@@ -13,6 +13,7 @@ import 'bookings_history_screen.dart';
 import 'edit_user_profile_screen.dart';
 import 'saved_addresses_screen.dart';
 import '../../shared/screens/help_support_screen.dart';
+import '../../common/screens/legal_policy_screen.dart';
 
 class UserPortalScreen extends StatefulWidget {
   final VoidCallback onSwitchMode;
@@ -540,6 +541,12 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
                           Icons.help_outline_rounded,
                           'Help & support',
                           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen())),
+                        ),
+                        _buildMenuListItem(
+                          context,
+                          Icons.shield_outlined,
+                          'Privacy, Terms & Grievance',
+                          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LegalPolicyScreen())),
                         ),
                         InkWell(
                           onTap: () async {
