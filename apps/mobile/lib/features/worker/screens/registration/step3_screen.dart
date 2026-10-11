@@ -72,6 +72,10 @@ class _WorkerRegistrationStep3State extends ConsumerState<WorkerRegistrationStep
               upsert: true,
             ),
           );
+      // For private verification bucket (Aadhaar cards), avoid exposing public URLs
+      if (bucketName == 'worker-verification') {
+        return 'worker-verification/$path';
+      }
       final url = SupabaseConfig.client.storage.from(bucketName).getPublicUrl(path);
       return url;
     } catch (e) {

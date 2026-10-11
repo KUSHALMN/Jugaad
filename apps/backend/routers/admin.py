@@ -43,6 +43,28 @@ class RejectRequest(BaseModel):
     reason: str
 
 
+def _resolve_secure_document_urls(documents: list) -> list:
+    """Generate time-limited signed URLs for sensitive documents in private buckets."""
+    if not documents:
+        return []
+    resolved = []
+    for doc in documents:
+        d = dict(doc) if isinstance(doc, dict) else {"name": "document", "url": str(doc)}
+        url = d.get("url", "")
+        if "worker-verification" in url:
+            try:
+                path = url.split("worker-verification/")[-1].split("?")[0].lstrip("/")
+                signed_res = supabase.storage.from_("worker-verification").create_signed_url(path, 900)
+                if isinstance(signed_res, dict) and "signedURL" in signed_res:
+                    d["url"] = signed_res["signedURL"]
+                elif hasattr(signed_res, "signed_url") and signed_res.signed_url:
+                    d["url"] = signed_res.signed_url
+            except Exception as s_err:
+                logger.debug(f"Could not generate signed URL for document {path}: {s_err}")
+        resolved.append(d)
+    return resolved
+
+
 # ── 1. GET /api/v1/admin/workers — List pending/all workers ─────────────────
 @router.get("/workers")
 def list_workers_for_admin(
@@ -103,7 +125,7 @@ def list_workers_for_admin(
                 "approval_status": w_status,
                 "rejection_reason": w.get("rejection_reason"),
                 "id_document_url": w.get("id_document_url"),
-                "documents": w.get("documents") or [],
+                "documents": _resolve_secure_document_urls(w.get("documents") or []),
                 "rating": float(w.get("rating") or 0.0),
                 "total_jobs": int(w.get("total_jobs") or w.get("totalJobsCompleted") or 0),
                 "created_at": w.get("created_at"),
@@ -152,7 +174,7 @@ def get_worker_detail_for_admin(
             "approval_status": w_status,
             "rejection_reason": w.get("rejection_reason"),
             "id_document_url": w.get("id_document_url"),
-            "documents": w.get("documents") or [],
+            "documents": _resolve_secure_document_urls(w.get("documents") or []),
             "hourly_rate": w.get("hourly_rate") or w.get("rate_per_hour"),
             "experience": w.get("experience"),
             "bio": w.get("bio"),
