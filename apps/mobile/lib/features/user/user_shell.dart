@@ -112,6 +112,8 @@ class _DesktopUserNavBar extends StatelessWidget {
       (Icons.person_rounded, Icons.person_outline_rounded, 'Profile'),
     ];
 
+    final double screenWidth = MediaQuery.of(context).size.width;
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -126,152 +128,179 @@ class _DesktopUserNavBar extends StatelessWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 28),
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth > 960 ? 28 : 16,
+      ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1140),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Left: Brand Logo + City
-              GestureDetector(
-                onTap: () => onItemTapped(0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF0D7844), Color(0xFF16A34A)],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.flash_on_rounded, color: Colors.white, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            'JUGAAD',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 14,
-                              letterSpacing: 0.5,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final double width = constraints.maxWidth;
+              final bool isCompact = width < 980;
+              final bool isUltraCompact = width < 850;
+
+              return Row(
+                children: [
+                  // Left: Brand Logo + City (Adaptive)
+                  GestureDetector(
+                    onTap: () => onItemTapped(0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF0D7844), Color(0xFF16A34A)],
                             ),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.flash_on_rounded, color: Colors.white, size: 16),
+                              const SizedBox(width: 4),
+                              Text(
+                                'JUGAAD',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (!isUltraCompact) ...[
+                          const SizedBox(width: 10),
                           Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF16A34A),
-                              shape: BoxShape.circle,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Bengaluru & Mysuru',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF475569),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF16A34A),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  isCompact ? 'Bengaluru' : 'Bengaluru & Mysuru',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF475569),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-              // Center: Desktop Navigation Tabs
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(navItems.length, (idx) {
-                  final item = navItems[idx];
-                  final isSelected = idx == selectedIndex;
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: InkWell(
-                      onTap: () => onItemTapped(idx),
-                      borderRadius: BorderRadius.circular(12),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFF0FDF4) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                  // Center: Desktop Navigation Tabs (Expanded + Horizontally Scrollable)
+                  Expanded(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isSelected ? item.$1 : item.$2,
-                              size: 18,
-                              color: isSelected ? const Color(0xFF0D7844) : const Color(0xFF64748B),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              item.$3,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                color: isSelected ? const Color(0xFF0D7844) : const Color(0xFF475569),
+                          children: List.generate(navItems.length, (idx) {
+                            final item = navItems[idx];
+                            final isSelected = idx == selectedIndex;
+
+                            return Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isCompact ? 2.0 : 4.0,
+                              ),
+                              child: InkWell(
+                                onTap: () => onItemTapped(idx),
+                                borderRadius: BorderRadius.circular(12),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isCompact ? 10 : 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? const Color(0xFFF0FDF4) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isSelected ? item.$1 : item.$2,
+                                      size: 18,
+                                      color: isSelected ? const Color(0xFF0D7844) : const Color(0xFF64748B),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      item.$3,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                        color: isSelected ? const Color(0xFF0D7844) : const Color(0xFF475569),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-
-              // Right: Switch to Worker Mode + Monogram
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      context.go('/worker/home');
-                    },
-                    icon: const Icon(Icons.engineering_rounded, size: 16, color: Color(0xFF16A34A)),
-                    label: Text(
-                      'Worker Portal',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF16A34A),
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      side: const BorderSide(color: Color(0xFFBBF7D0)),
-                      backgroundColor: const Color(0xFFF0FDF4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                          );
+                        }),
                       ),
                     ),
                   ),
+                ),
+
+                  // Right: Switch to Worker Mode + Monogram
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          context.go('/worker/home');
+                        },
+                        icon: const Icon(Icons.engineering_rounded, size: 16, color: Color(0xFF16A34A)),
+                        label: Text(
+                          isCompact ? 'Worker' : 'Worker Portal',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF16A34A),
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isCompact ? 10 : 12,
+                            vertical: 8,
+                          ),
+                          side: const BorderSide(color: Color(0xFFBBF7D0)),
+                          backgroundColor: const Color(0xFFF0FDF4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
