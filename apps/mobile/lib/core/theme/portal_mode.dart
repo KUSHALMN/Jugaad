@@ -139,8 +139,3 @@ class PortalModeProvider extends ChangeNotifier {
     setMode(_mode == PortalMode.user ? PortalMode.worker : PortalMode.user);
   }
 }
-
-/// Riverpod provider allowing ConsumerWidgets to observe portal mode without pkg_provider
-final portalModeStateProvider = ChangeNotifierProvider<PortalModeProvider>((ref) {
-  return PortalModeProvider();
-});
