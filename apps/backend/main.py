@@ -318,6 +318,9 @@ async def upload_file(
             file=content,
             file_options={"content-type": file.content_type or "image/jpeg", "upsert": "true"}
         )
+        if bucket == "worker-verification":
+            return {"status": "success", "url": f"{bucket}/{path}", "is_private": True}
+
         public_url = supabase.storage.from_(bucket).get_public_url(path)
         return {"status": "success", "url": public_url}
     except HTTPException:
@@ -325,6 +328,8 @@ async def upload_file(
     except Exception as e:
         err_str = str(e)
         if "already exists" in err_str or "Duplicate" in err_str or "409" in err_str:
+            if bucket == "worker-verification":
+                return {"status": "success", "url": f"{bucket}/{path}", "is_private": True}
             public_url = supabase.storage.from_(bucket).get_public_url(path)
             return {"status": "success", "url": public_url}
         logging.error(f"Error uploading file to {bucket}/{path}: {e}")

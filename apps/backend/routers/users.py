@@ -8,6 +8,14 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+from typing import Optional
+
+class UpdateUserProfileRequest(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    avatar_url: Optional[str] = None
+
 class FCMTokenPayload(BaseModel):
     token: str
 
@@ -19,9 +27,17 @@ def get_profile(uid: str = Depends(verify_firebase_token)):
     return result.data
 
 @router.put("/me")
-def update_profile(profile: dict, uid: str = Depends(verify_firebase_token)):
-    profile["updated_at"] = datetime.now(timezone.utc).isoformat()
-    supabase.table("users").update(profile).eq("firebase_uid", uid).execute()
+def update_profile(body: UpdateUserProfileRequest, uid: str = Depends(verify_firebase_token)):
+    # Whitelist updatable fields; ignore/strip any attempt to modify role, id, or firebase_uid
+    updates = {k: v for k, v in body.model_dump(exclude_unset=True).items() if v is not None}
+    for protected in ("role", "id", "firebase_uid", "created_at"):
+        updates.pop(protected, None)
+
+    if not updates:
+        return {"status": "success", "message": "No changes to update"}
+
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    supabase.table("users").update(updates).eq("firebase_uid", uid).execute()
     return {"status": "success", "message": "Profile updated"}
 
 @router.post("/me/fcm-token")

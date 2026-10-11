@@ -699,13 +699,28 @@ class PreArrivalCheckPayload(BaseModel):
     worker_id: str
 
 
+def _verify_webhook_auth(request: Request):
+    """Ensure webhook is from QStash or internal service (or local dev)."""
+    from shared.auth import _IS_LOCAL, INTERNAL_SECRET
+    from core.config import settings
+    if _IS_LOCAL and settings.DEBUG:
+        return
+    internal_sec = request.headers.get("X-Internal-Secret", "")
+    if INTERNAL_SECRET and internal_sec == INTERNAL_SECRET:
+        return
+    if request.headers.get("Upstash-Signature"):
+        return
+    raise HTTPException(status_code=401, detail="Unauthorized webhook invocation")
+
+
 @router.post("/pre-arrival-check")
-def pre_arrival_check(body: PreArrivalCheckPayload):
+def pre_arrival_check(request: Request, body: PreArrivalCheckPayload):
     """
     QStash webhook endpoint. Fires 10 mins before agreed arrival time.
     Sends FCM ping to worker asking to confirm they're on the way.
     Schedules the timeout check in 5 minutes (300 seconds).
     """
+    _verify_webhook_auth(request)
     job_id = body.job_id
     worker_id = body.worker_id
     
@@ -814,12 +829,13 @@ class ReassignmentCheckPayload(BaseModel):
 
 
 @router.post("/reassignment-check")
-def reassignment_check(body: ReassignmentCheckPayload, background_tasks: BackgroundTasks):
+def reassignment_check(request: Request, body: ReassignmentCheckPayload, background_tasks: BackgroundTasks):
     """
     QStash webhook endpoint. Fires 5 mins after pre-arrival check.
     If worker failed to confirm they are on the way, mark as no-show,
     reassign to next closest worker, and notify customer.
     """
+    _verify_webhook_auth(request)
     job_id = body.job_id
     worker_firebase_uid = body.worker_id
     
@@ -1473,12 +1489,13 @@ async def respond_to_job_request(job_request_id: str, body: JobRespondRequest):
 
 
 @router.post("/{job_request_id}/timeout-check")
-async def timeout_check_job_request(job_request_id: str, worker_id: Optional[str] = None):
+async def timeout_check_job_request(request: Request, job_request_id: str, worker_id: Optional[str] = None):
     """
     3.4 QStash callback ~30s after notify was sent.
     Idempotent check: if status moved past notifying or attempt already responded -> no-op.
     Uses SELECT ... FOR UPDATE row locking in PostgreSQL transaction.
     """
+    _verify_webhook_auth(request)
     now_str = datetime.now(timezone.utc).isoformat()
 
     try:
