@@ -75,23 +75,34 @@ async def send_otp(request: Request, req: SendOtpRequest):
 
 @router.post("/verify-otp")
 async def verify_otp(req: VerifyOtpRequest):
+    from core.config import settings
     r = redis_client.get_redis()
+    fail_key = f"otp_fails:{req.phone}"
+    
     if r:
         try:
+            # Check for excessive failed attempts (lockout after 5 failed tries)
+            fail_count = int(r.get(fail_key) or 0)
+            if fail_count >= 5:
+                raise HTTPException(status_code=429, detail="Too many invalid OTP attempts. Please request a new OTP.")
+
             stored_otp = r.get(f"otp:{req.phone}")
             if stored_otp and stored_otp == req.otp:
                 r.delete(f"otp:{req.phone}")
+                r.delete(fail_key)
                 return {"message": "OTP verified successfully", "phone": req.phone}
             elif stored_otp:
+                r.incr(fail_key)
+                r.expire(fail_key, 300)
                 raise HTTPException(status_code=400, detail="Invalid OTP")
         except HTTPException:
             raise
         except Exception:
             pass
 
-    # For development fallback if redis unavailable
-    if req.otp in ("123456", "000000"):
-        return {"message": "OTP verified successfully (dev)", "phone": req.phone}
+    # Strictly isolate dev fallback to local debug environments
+    if settings.ENV == "local" and settings.DEBUG and req.otp in ("123456", "000000"):
+        return {"message": "OTP verified successfully (local dev only)", "phone": req.phone}
 
     raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
