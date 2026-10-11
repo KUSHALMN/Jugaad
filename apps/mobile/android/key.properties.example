@@ -1,0 +1,8 @@
+# Android Keystore Signing Configuration Template
+# Copy this file to 'key.properties' and fill in your actual production keystore details.
+# DO NOT commit 'key.properties' or '*.jks' files to version control!
+
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=YOUR_KEY_ALIAS
+storeFile=../../release-keystore.jks

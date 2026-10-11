@@ -74,6 +74,9 @@ firebase-credentials.json
 *credentials*.json
 *.pem
 *.key
+*.jks
+*.keystore
+*key.properties
 
 # OS files
 .DS_Store
