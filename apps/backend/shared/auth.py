@@ -22,16 +22,33 @@ _IS_LOCAL = settings.ENV == "local"
 # ─── 1. Public Firebase token (Flutter app users + workers) ──────
 
 def verify_token(authorization_header: str) -> dict:
-    """Verify Firebase Auth ID token from Authorization header value."""
+    """Verify Firebase Auth ID token or Supabase Auth JWT from Authorization header value."""
     if not authorization_header.startswith("Bearer "):
         raise HTTPException(401, "Missing token")
     token = authorization_header.split(" ", 1)[1]
+    
+    # 1. Try Firebase Auth ID token
     try:
         decoded = fb_auth.verify_id_token(token)
-        log("auth", "verify_token", "ok", uid=decoded["uid"])
+        log("auth", "verify_token", "ok_firebase", uid=decoded["uid"])
         return decoded
-    except Exception as e:
-        log("auth", "verify_token", "fail", error=str(e), severity="WARNING")
+    except Exception as e_fb:
+        # 2. Fallback: Try Supabase Auth JWT (used by Admin Operations console)
+        try:
+            from shared.database import supabase
+            sb_user = supabase.auth.get_user(token)
+            if sb_user and sb_user.user:
+                u_id = str(sb_user.user.id)
+                log("auth", "verify_token", "ok_supabase", uid=u_id)
+                return {
+                    "uid": u_id,
+                    "email": sb_user.user.email,
+                    "provider": "supabase",
+                }
+        except Exception as e_sb:
+            pass
+
+        log("auth", "verify_token", "fail", error=str(e_fb), severity="WARNING")
         raise HTTPException(401, "Invalid token")
 
 
@@ -111,27 +128,12 @@ def verify_firebase_token(
     In local dev mode (ENV=local), if no token is provided, returns DEV_UID
     so you can test endpoints from Swagger without a real Firebase token.
     """
-    # Allow admin identification via X-Admin-Id from Admin portal
-    admin_id_header = request.headers.get("X-Admin-Id")
-    if admin_id_header:
-        from shared.database import supabase
-        try:
-            res = supabase.table("users").select("id, role").eq("id", admin_id_header).maybe_single().execute()
-            if res and res.data and res.data.get("role") == "admin":
-                return admin_id_header
-            # Allow local/demo super admin IDs in dev mode
-            if admin_id_header in ("admin-local", "super-admin", "test-admin") or _IS_LOCAL:
-                return admin_id_header
-        except Exception:
-            if _IS_LOCAL or admin_id_header in ("admin-local", "super-admin", "test-admin"):
-                return admin_id_header
-
     auth_header = request.headers.get("X-Forwarded-Authorization")
     if not auth_header:
         auth_header = request.headers.get("Authorization", "")
 
     if not auth_header:
-        if _IS_LOCAL:
+        if _IS_LOCAL and settings.DEBUG:
             return _DEV_UID
         raise HTTPException(401, "Missing Authorization Bearer token")
 

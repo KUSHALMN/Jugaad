@@ -29,9 +29,11 @@ def verify_admin(request: Request, uid: str = Depends(verify_firebase_token)) ->
     except Exception as e:
         logger.warning(f"Error checking admin role for uid {uid}: {e}")
 
-    # Local dev mode fallback if running locally
-    if _IS_LOCAL:
-        logger.info(f"Local dev mode bypass granted for admin user: {uid}")
+    # Local dev mode fallback if running locally with dev test user
+    from shared.auth import _DEV_UID
+    from core.config import settings
+    if _IS_LOCAL and settings.DEBUG and uid == _DEV_UID:
+        logger.info(f"Local dev mode bypass granted for test admin user: {uid}")
         return uid
 
     raise HTTPException(status_code=403, detail="Not authorized as admin")
