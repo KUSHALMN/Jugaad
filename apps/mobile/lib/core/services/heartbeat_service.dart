@@ -29,6 +29,7 @@ void callbackDispatcher() {
 
         double? lat;
         double? lng;
+        bool isMocked = false;
 
         try {
           final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -41,6 +42,7 @@ void callbackDispatcher() {
             if (lastKnown != null) {
               lat = lastKnown.latitude;
               lng = lastKnown.longitude;
+              isMocked = lastKnown.isMocked;
             }
             try {
               final position = await Geolocator.getCurrentPosition(
@@ -51,12 +53,18 @@ void callbackDispatcher() {
               );
               lat = position.latitude;
               lng = position.longitude;
+              isMocked = position.isMocked;
             } catch (_) {
               // Current position timed out, continue with lastKnown if available
             }
           }
         } catch (e) {
           print('[HEARTBEAT] Error fetching GPS position: $e');
+        }
+
+        if (isMocked) {
+          print('[HEARTBEAT] SECURITY WARNING: Fake/Mock GPS detected for worker: $workerId. Telemetry suppressed.');
+          return Future.value(false);
         }
 
         if (lat == null || lng == null) {
