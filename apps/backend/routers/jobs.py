@@ -530,6 +530,52 @@ def complete_job(job_id: str, body: CompleteJobRequest, uid: str = Depends(verif
 
     return {"status": "completed", "job_id": job_id}
 
+
+# 8d. Smart Route Stacking — Discover nearby pending jobs on-the-way
+@router.get("/{job_id}/stacked-candidates")
+def get_stacked_job_candidates(job_id: str, radius_km: float = 3.0, uid: str = Depends(verify_firebase_token)):
+    """
+    Algorithmic Route Stacking (On-The-Way Gigs).
+    Allows partners nearing completion of an active gig to queue up the next
+    job within a 3.0 km radius of their current destination, eliminating dead travel kilometers.
+    """
+    job_res = supabase.table("jobs").select("*").eq("id", job_id).maybe_single().execute()
+    if not job_res or not job_res.data:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    current_job = job_res.data
+    dest_lat, dest_lng = _get_job_coords(job_id, current_job)
+
+    # Fetch pending open jobs
+    candidates = []
+    try:
+        open_jobs = supabase.table("jobs").select("id, title, skill, budget, location, latitude, longitude, area, created_at").in_("status", ["open", "searching"]).limit(25).execute()
+        for j in (open_jobs.data or []):
+            if j.get("id") == job_id:
+                continue
+            j_lat, j_lng = _get_job_coords(j.get("id"), j)
+            dist = haversine_km(dest_lat, dest_lng, j_lat, j_lng)
+            if dist <= radius_km:
+                candidates.append({
+                    "job_id": j.get("id"),
+                    "title": j.get("title") or f"{j.get('skill', 'Service')} Request",
+                    "skill": j.get("skill"),
+                    "budget": float(j.get("budget") or 0.0),
+                    "distance_km": round(dist, 2),
+                    "area": j.get("area") or "Nearby",
+                })
+        candidates.sort(key=lambda x: x["distance_km"])
+    except Exception as e:
+        logger.warning(f"Error fetching stacked job candidates: {e}")
+
+    return {
+        "status": "ok",
+        "current_job_id": job_id,
+        "search_radius_km": radius_km,
+        "stacked_candidates": candidates
+    }
+
+
 # 8b. Start Job With Customer Doorstep PIN
 @router.post("/{job_id}/start-with-pin")
 def start_job_with_pin(job_id: str, body: PinVerifyRequest, uid: str = Depends(verify_firebase_token)):

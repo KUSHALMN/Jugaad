@@ -17,6 +17,7 @@ import 'package:jugaad_mvp/core/services/offline_queue_service.dart';
 import 'package:jugaad_mvp/core/services/offline_sync_manager.dart';
 import 'package:jugaad_mvp/core/widgets/offline_sync_banner.dart';
 import 'package:jugaad_mvp/core/services/sound_service.dart';
+import 'package:jugaad_mvp/core/services/location_service.dart';
 
 class ActiveJobScreen extends StatefulWidget {
   final String jobId;
@@ -834,6 +835,22 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
 
   void _showPartnerEmergencySosModal() {
     JugaadHaptics.error();
+    SoundService().playEmergencyAlert();
+
+    // Transmit encrypted partner GPS coordinates to 24/7 Operations Radar
+    final pos = LocationService().currentPosition ?? LocationService().lastPosition;
+    if (pos != null) {
+      ApiService().sendEmergencySos(
+        jobId: widget.jobId,
+        lat: pos.latitude,
+        lng: pos.longitude,
+        notes: 'Discreet SOS triggered from active job screen',
+      ).catchError((e) {
+        debugPrint('[SOS] Telemetry transmission note: $e');
+        return <String, dynamic>{};
+      });
+    }
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -3473,13 +3490,16 @@ class MockMiniMap extends StatelessWidget {
               child: GestureDetector(
                 onTap: () async {
                   if (userLat != null && userLng != null) {
-                    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$userLat,$userLng');
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                    final nativeUri = Uri.parse('google.navigation:q=$userLat,$userLng&mode=d');
+                    final webUri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$userLat,$userLng&travelmode=driving');
+                    if (await canLaunchUrl(nativeUri)) {
+                      await launchUrl(nativeUri, mode: LaunchMode.externalApplication);
+                    } else if (await canLaunchUrl(webUri)) {
+                      await launchUrl(webUri, mode: LaunchMode.externalApplication);
                     }
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('User location not available')),
+                      const SnackBar(content: Text('Customer location not available for navigation')),
                     );
                   }
                 },

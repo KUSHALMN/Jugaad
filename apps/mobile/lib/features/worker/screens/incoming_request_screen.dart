@@ -7,6 +7,7 @@ import 'package:percent_indicator/percent_indicator.dart';
 import 'package:jugaad_mvp/core/theme/worker_app_theme.dart';
 import 'package:jugaad_mvp/core/services/job_dispatch_service.dart';
 import 'package:jugaad_mvp/core/services/notification_service.dart';
+import 'package:jugaad_mvp/core/services/sound_service.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
 
 class IncomingRequestScreen extends StatefulWidget {
@@ -68,8 +69,9 @@ class _IncomingRequestScreenState extends State<IncomingRequestScreen>
         'skill=${widget.skill}, budget=${widget.budget}, '
         'distance=${widget.distanceKm}km, timeout=${widget.timeoutSeconds}s');
 
-    // Haptic feedback when screen appears
+    // Audible field attention alert & haptics when screen appears
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await SoundService().playJobAlert();
       await JugaadHaptics.heavy();
       await Future.delayed(200.ms);
       await JugaadHaptics.medium();
@@ -106,7 +108,10 @@ class _IncomingRequestScreenState extends State<IncomingRequestScreen>
         if (newSecs != _secondsLeft) {
           setState(() => _secondsLeft = newSecs);
           JugaadHaptics.selection();
-          if (_secondsLeft < 10) {
+          if (_secondsLeft == 30) {
+            SoundService().playJobAlert();
+            JugaadHaptics.warning();
+          } else if (_secondsLeft < 10) {
             HapticFeedback.heavyImpact();
           } else if (_secondsLeft < 30) {
             JugaadHaptics.warning();

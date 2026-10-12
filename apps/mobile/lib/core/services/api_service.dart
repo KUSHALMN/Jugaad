@@ -235,6 +235,52 @@ class ApiService {
     final response = await client.post('/v1/users/delete-account');
     return response.data;
   }
+
+  /// Transmit emergency SOS with partner coordinates
+  Future<Map<String, dynamic>> sendEmergencySos({
+    String? jobId,
+    required double lat,
+    required double lng,
+    int? batteryLevel,
+    String? notes,
+  }) async {
+    final payload = <String, dynamic>{
+      'lat': lat,
+      'lng': lng,
+    };
+    if (jobId != null) payload['job_id'] = jobId;
+    if (batteryLevel != null) payload['battery_level'] = batteryLevel;
+    if (notes != null) payload['notes'] = notes;
+
+    final response = await client.post('/v1/workers/sos', data: payload);
+    return response.data;
+  }
+
+  /// Discover nearby on-the-way candidate gigs near active job destination
+  Future<List<dynamic>> getStackedJobCandidates(String jobId, {double radiusKm = 3.0}) async {
+    final response = await client.get('/v1/jobs/$jobId/stacked-candidates', queryParameters: {
+      'radius_km': radiusKm,
+    });
+    return response.data['stacked_candidates'] ?? [];
+  }
+
+  /// Add spare part to active job ledger
+  Future<Map<String, dynamic>> addSparePart(String jobId, {
+    required String name,
+    required double price,
+    String? receiptUrl,
+    String? notes,
+  }) async {
+    final payload = <String, dynamic>{
+      'name': name,
+      'price': price,
+    };
+    if (receiptUrl != null) payload['receipt_url'] = receiptUrl;
+    if (notes != null) payload['notes'] = notes;
+
+    final response = await client.post('/v1/jobs/$jobId/spare-parts', data: payload);
+    return response.data;
+  }
 }
 
 

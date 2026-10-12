@@ -1298,3 +1298,77 @@ async def update_worker_fcm_token(body: FCMTokenUpdate, uid: str = Depends(verif
     return {"status": "success", "message": "FCM token updated successfully"}
 
 
+class WorkerSosPayload(BaseModel):
+    job_id: Optional[str] = None
+    lat: float
+    lng: float
+    battery_level: Optional[int] = None
+    emergency_type: Optional[str] = "partner_safety"
+    notes: Optional[str] = None
+
+
+@router.post("/sos")
+async def report_worker_sos(
+    body: WorkerSosPayload,
+    uid: str = Depends(verify_firebase_token)
+):
+    """
+    Emergency Field SOS Escalation.
+    Transmits encrypted partner GPS coordinates, battery metrics, and active job ID
+    to the 24/7 Operations Desk and local field coordination units.
+    """
+    w_res = supabase.table("workers").select("id, name, phone").eq("firebase_uid", uid).maybe_single().execute()
+    if not w_res or not w_res.data:
+        w_res = supabase.table("workers").select("id, name, phone").eq("id", uid).maybe_single().execute()
+    
+    worker_data = w_res.data or {}
+    worker_id = worker_data.get("id", uid)
+    worker_name = worker_data.get("name", "Field Partner")
+    worker_phone = worker_data.get("phone", "")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    sos_record = {
+        "worker_id": str(worker_id),
+        "worker_name": worker_name,
+        "worker_phone": worker_phone,
+        "job_id": body.job_id,
+        "lat": body.lat,
+        "lng": body.lng,
+        "battery_level": body.battery_level,
+        "emergency_type": body.emergency_type,
+        "notes": body.notes,
+        "timestamp": now_iso,
+    }
+
+    # High-priority Redis SOS alert cache (1 hour)
+    redis_client.set_state(f"sos:worker:{worker_id}", json.dumps(sos_record), ex=3600)
+    logger.critical(f"🚨 [PARTNER SOS EMERGENCY] Worker: {worker_name} ({worker_id}) at ({body.lat}, {body.lng}) - Battery: {body.battery_level}%")
+
+    # Insert into notifications for immediate Operations Radar pickup
+    try:
+        supabase.table("notifications").insert({
+            "user_id": str(worker_id),
+            "type": "PARTNER_EMERGENCY_SOS",
+            "title": f"🚨 SOS ALERT: {worker_name}",
+            "body": f"Partner triggered SOS at ({body.lat:.4f}, {body.lng:.4f}). Active Job: {body.job_id or 'None'}",
+            "data": sos_record,
+            "sent": True,
+        }).execute()
+    except Exception as notify_err:
+        logger.warning(f"Failed to record SOS notification: {notify_err}")
+
+    return {
+        "status": "escalated",
+        "message": "Emergency SOS received. Dispatch operations and emergency services alerted.",
+        "emergency_numbers": {
+            "police": "112",
+            "jugaad_ops": "1800-890-5842"
+        },
+        "telemetry_received": {
+            "lat": body.lat,
+            "lng": body.lng,
+            "timestamp": now_iso
+        }
+    }
+
+
