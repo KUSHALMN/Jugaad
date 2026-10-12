@@ -167,27 +167,10 @@ def main():
                 pass
 
         if run_mobile:
-            is_web = target_dev in ("chrome", "edge", "web-server")
-            if is_web:
-                actual_dev = "web-server"
-                extra_flags = " --web-port 3000 --web-hostname localhost"
-            else:
-                actual_dev = target_dev
-                extra_flags = ""
-
-            print(f"[2/2] Launching Flutter Mobile on '{target_dev}' in dedicated window...")
-            cmd_mobile = f'start "Jugaad Flutter Mobile" cmd /k "cd /d \"{MOBILE_DIR}\" && flutter run -d {actual_dev}{extra_flags}"'
+            watch_script = os.path.join(ROOT_DIR, "scripts", "watch_flutter.py")
+            print(f"[Flutter] Launching Flutter Mobile on '{target_dev}' with Live Auto-Reload...")
+            cmd_mobile = f'start "Jugaad Flutter Mobile (Live Auto-Reload)" cmd /k "cd /d \"{ROOT_DIR}\" && python \"{watch_script}\" {target_dev}"'
             os.system(cmd_mobile)
-
-            if is_web:
-                def open_web():
-                    time.sleep(5)
-                    try:
-                        import webbrowser
-                        webbrowser.open("http://localhost:3000")
-                    except Exception:
-                        pass
-                threading.Thread(target=open_web, daemon=True).start()
 
         print("\n" + "=" * 65)
         print("  [SUCCESS] Both Backend and Frontend are now RUNNING!")
@@ -234,26 +217,11 @@ def main():
 
     # 3. Start Flutter Mobile if requested
     if run_mobile:
-        flutter_cmd = "flutter.bat" if sys.platform == "win32" else "flutter"
-        is_web = target_dev in ("chrome", "edge", "web-server")
-        if is_web:
-            actual_dev = "web-server"
-            flutter_args = [flutter_cmd, "run", "-d", actual_dev, "--web-port", "3000", "--web-hostname", "localhost"]
-            def open_web_inline():
-                time.sleep(5)
-                try:
-                    import webbrowser
-                    webbrowser.open("http://localhost:3000")
-                except Exception:
-                    pass
-            threading.Thread(target=open_web_inline, daemon=True).start()
-        else:
-            flutter_args = [flutter_cmd, "run", "-d", target_dev]
-
-        print(f"--> [Starting] Flutter Mobile ({' '.join(flutter_args)})...")
+        watch_script = os.path.join(ROOT_DIR, "scripts", "watch_flutter.py")
+        print(f"--> [Starting] Flutter Mobile on '{target_dev}' with Live Auto-Reload...")
         mobile_proc = subprocess.Popen(
-            flutter_args,
-            cwd=MOBILE_DIR,
+            [sys.executable or "python", watch_script, target_dev],
+            cwd=ROOT_DIR,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
