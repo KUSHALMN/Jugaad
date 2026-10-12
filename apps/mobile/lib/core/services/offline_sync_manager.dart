@@ -86,6 +86,16 @@ class OfflineSyncManager {
           await _apiService.ackJob(mutation.jobId);
           break;
 
+        case 'start_with_pin':
+          final pin = mutation.payload['pin'] as String? ?? '';
+          await _apiService.startJobWithPin(mutation.jobId, pin);
+          break;
+
+        case 'complete_with_pin':
+          final pin = mutation.payload['pin'] as String? ?? '';
+          await _apiService.completeJobWithPin(mutation.jobId, pin);
+          break;
+
         case 'complete_job':
           final confirmer = mutation.payload['confirmer'] as String? ?? 'worker';
           await _apiService.completeJob(mutation.jobId, confirmer: confirmer);
