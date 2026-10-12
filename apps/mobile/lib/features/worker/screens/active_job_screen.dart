@@ -385,6 +385,22 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
       }
       return;
     }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.shield_rounded, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Expanded(child: Text('Connecting via Jugaad Privacy Relay (Virtual Masking)...')),
+            ],
+          ),
+          backgroundColor: Color(0xFF0F172A),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
     final url = Uri.parse('tel:$phone');
     if (await canLaunchUrl(url)) await launchUrl(url);
   }
@@ -2477,7 +2493,28 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.lock_outline_rounded, size: 13, color: Color(0xFF64748B)),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Jugaad Privacy Relay: Personal phone numbers are masked.',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
