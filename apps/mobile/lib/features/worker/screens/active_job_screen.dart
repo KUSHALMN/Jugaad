@@ -548,6 +548,21 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
                             });
                           },
                   ),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _showBypassDialog(isStart: true);
+                    },
+                    child: Text(
+                      'Customer phone unavailable? Request manual bypass',
+                      style: WorkerAppTheme.body(
+                        size: 11,
+                        color: WorkerAppTheme.textSecondary,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -555,6 +570,123 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
         );
       },
     );
+  }
+
+  void _showBypassDialog({required bool isStart}) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 24),
+            const SizedBox(width: 8),
+            Text(
+              'Emergency PIN Bypass',
+              style: WorkerAppTheme.heading(size: 16, color: WorkerAppTheme.textPrimary),
+            ),
+          ],
+        ),
+        content: Text(
+          'Use manual bypass only if the customer’s phone is powered off, uncharged, or inaccessible. This bypass is logged and subject to partner operations review.\n\nProceed with bypass?',
+          style: WorkerAppTheme.body(size: 13, color: WorkerAppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD97706),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              if (isStart) {
+                await _bypassStartJob();
+              } else {
+                await _bypassCompleteJob();
+              }
+            },
+            child: const Text('Confirm Bypass'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _bypassStartJob() async {
+    setState(() => _isActioning = true);
+    try {
+      await ApiService().ackJob(widget.jobId);
+      JugaadHaptics.success();
+      if (mounted) {
+        setState(() {
+          if (_jobData != null) {
+            _jobData!['worker_ack'] = true;
+            _jobData!['status'] = 'in_progress';
+            _jobData!['started_at'] = DateTime.now().toIso8601String();
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Job started via emergency manual bypass.'),
+            backgroundColor: Color(0xFFD97706),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      await OfflineQueueService().enqueue(
+        jobId: widget.jobId,
+        actionType: 'ack_arrival',
+      );
+      if (mounted) {
+        setState(() {
+          if (_jobData != null) {
+            _jobData!['worker_ack'] = true;
+            _jobData!['status'] = 'in_progress';
+          }
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isActioning = false);
+    }
+  }
+
+  Future<void> _bypassCompleteJob() async {
+    setState(() => _isActioning = true);
+    try {
+      await ApiService().completeJob(widget.jobId, confirmer: 'worker');
+      JugaadHaptics.success();
+      if (mounted) {
+        setState(() {
+          if (_jobData != null) {
+            _jobData!['status'] = 'completed';
+            _jobData!['completed_at'] = DateTime.now().toIso8601String();
+          }
+        });
+        _handlePaymentReceived();
+      }
+    } catch (e) {
+      await OfflineQueueService().enqueue(
+        jobId: widget.jobId,
+        actionType: 'complete_job',
+        payload: {'confirmer': 'worker'},
+      );
+      if (mounted) {
+        setState(() {
+          if (_jobData != null) {
+            _jobData!['status'] = 'completed';
+          }
+        });
+        _handlePaymentReceived();
+      }
+    } finally {
+      if (mounted) setState(() => _isActioning = false);
+    }
   }
 
   Future<void> _verifyAndStartJob(
@@ -852,7 +984,22 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
                             );
                           },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _showBypassDialog(isStart: false);
+                    },
+                    child: Text(
+                      'Customer phone unavailable? Request manual bypass',
+                      style: WorkerAppTheme.body(
+                        size: 11,
+                        color: WorkerAppTheme.textSecondary,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
                     child: Text(
