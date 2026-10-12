@@ -4,6 +4,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter/foundation.dart';
 import '../config/supabase_config.dart';
 
+enum TrackingMode {
+  idle,       // Waiting for jobs: distanceFilter 60m, medium accuracy, sync interval 60s
+  enRoute,    // Heading to client: distanceFilter 15m, high accuracy, sync interval 8s
+  inProgress, // Working on site: distanceFilter 120m, low accuracy, sync interval 120s
+}
+
 /// Service for real-time worker location tracking and fetching.
 /// When worker goes online, starts streaming position updates to Supabase.
 class LocationService {
@@ -13,14 +19,35 @@ class LocationService {
 
   StreamSubscription<Position>? _positionSub;
   bool _isTracking = false;
+  TrackingMode _trackingMode = TrackingMode.idle;
   Position? _lastPosition;
   Position? _currentPosition;
   DateTime? _lastDbSyncTime;
-  static const Duration _minDbSyncInterval = Duration(seconds: 10);
 
   bool get isTracking => _isTracking;
+  TrackingMode get trackingMode => _trackingMode;
   Position? get lastPosition => _lastPosition;
   Position? get currentPosition => _currentPosition;
+
+  Duration get _currentMinDbSyncInterval {
+    switch (_trackingMode) {
+      case TrackingMode.enRoute:
+        return const Duration(seconds: 8);
+      case TrackingMode.inProgress:
+        return const Duration(seconds: 120);
+      case TrackingMode.idle:
+        return const Duration(seconds: 60);
+    }
+  }
+
+  void setTrackingMode(TrackingMode mode) {
+    if (_trackingMode == mode) return;
+    _trackingMode = mode;
+    debugPrint('[LOCATION] Switching tracking mode to: ${mode.name}');
+    if (_isTracking) {
+      _restartPositionStream();
+    }
+  }
 
   Position _getFallbackPosition() {
     return Position(
@@ -156,20 +183,7 @@ class LocationService {
     }
 
     _isTracking = true;
-    debugPrint('[LOCATION] Starting position stream (distanceFilter: 50m)');
-
-    _positionSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 50, // Only fire when moved 50m+
-      ),
-    ).listen(
-      _onPositionUpdate,
-      onError: (e) {
-        debugPrint('[LOCATION] Position stream error: $e. Fallback to Mysuru.');
-        _onPositionUpdate(_getFallbackPosition());
-      },
-    );
+    _restartPositionStream();
 
     // Immediately get current position too
     try {
@@ -185,6 +199,42 @@ class LocationService {
       debugPrint('[LOCATION] Error getting initial position: $e. Fallback to Mysuru.');
       _onPositionUpdate(_getFallbackPosition());
     }
+  }
+
+  void _restartPositionStream() {
+    _positionSub?.cancel();
+    LocationSettings settings;
+    switch (_trackingMode) {
+      case TrackingMode.enRoute:
+        settings = const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 15, // Fast 15m responsive updates for active dispatch
+        );
+        break;
+      case TrackingMode.inProgress:
+        settings = const LocationSettings(
+          accuracy: LocationAccuracy.low,
+          distanceFilter: 120, // Battery saving while doing stationary work
+        );
+        break;
+      case TrackingMode.idle:
+        settings = const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          distanceFilter: 60, // Efficient 60m standby tracking
+        );
+        break;
+    }
+
+    debugPrint('[LOCATION] Starting position stream for mode: ${_trackingMode.name}');
+    _positionSub = Geolocator.getPositionStream(
+      locationSettings: settings,
+    ).listen(
+      _onPositionUpdate,
+      onError: (e) {
+        debugPrint('[LOCATION] Position stream error: $e. Fallback to Mysuru.');
+        _onPositionUpdate(_getFallbackPosition());
+      },
+    );
   }
 
   // ─── Stop Tracking ────────────────────────────────────────
@@ -203,15 +253,15 @@ class LocationService {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    // Rate-limit database updates to prevent hammering Supabase and draining battery
+    // Rate-limit database updates dynamically by trackingMode to save field battery
     final now = DateTime.now();
-    if (_lastDbSyncTime != null && now.difference(_lastDbSyncTime!) < _minDbSyncInterval) {
+    if (_lastDbSyncTime != null && now.difference(_lastDbSyncTime!) < _currentMinDbSyncInterval) {
       return;
     }
     _lastDbSyncTime = now;
 
     debugPrint(
-      '[LOCATION] Throttled DB Sync: ${position.latitude}, ${position.longitude}',
+      '[LOCATION] Adaptive DB Sync (${_trackingMode.name}): ${position.latitude}, ${position.longitude}',
     );
 
     try {
