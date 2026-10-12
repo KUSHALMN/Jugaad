@@ -18,6 +18,7 @@ import hashlib
 import secrets
 
 from core.idempotency import extract_idempotency_key, get_cached_idempotency_response, cache_idempotency_response
+from utils.security import timing_safe_equal
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -556,7 +557,7 @@ def start_job_with_pin(job_id: str, body: PinVerifyRequest, uid: str = Depends(v
     expected_pin = str(job.get("start_pin") or redis_client.get_state(f"job_pin:{job_id}:start") or "")
     if expected_pin:
         # Constant-time comparison to prevent timing side-channels
-        if not hmac.compare_digest(body.pin.strip(), expected_pin.strip()):
+        if not timing_safe_equal(body.pin, expected_pin):
             new_fails = redis_client.incr_state(fail_key, ex=900)
             remaining = max(0, 5 - new_fails)
             raise HTTPException(400, f"Invalid Doorstep PIN. {remaining} attempt(s) remaining before 15-minute security lockout.")
@@ -599,7 +600,7 @@ def complete_job_with_pin(job_id: str, body: PinVerifyRequest, uid: str = Depend
     expected_pin = str(job.get("completion_pin") or redis_client.get_state(f"job_pin:{job_id}:completion") or "")
     if expected_pin:
         # Constant-time comparison to prevent timing side-channels
-        if not hmac.compare_digest(body.pin.strip(), expected_pin.strip()):
+        if not timing_safe_equal(body.pin, expected_pin):
             new_fails = redis_client.incr_state(fail_key, ex=900)
             remaining = max(0, 5 - new_fails)
             raise HTTPException(400, f"Invalid Completion PIN. {remaining} attempt(s) remaining before 15-minute security lockout.")
