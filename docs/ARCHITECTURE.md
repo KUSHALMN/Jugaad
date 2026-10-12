@@ -72,3 +72,10 @@ sequenceDiagram
     G->>FCM: Dispatches instant approval alert
     FCM-->>W: Push notification: "You are approved! Start accepting jobs."
 ```
+
+---
+
+## 4. Enterprise Distributed Architecture & SRE Standards
+
+For detailed distributed concurrency controls (Atomic CAS), Redis two-tier geospatial telemetry ingestion, UIDAI Aadhaar masking standards, and SRE Service Level Objectives (SLOs), refer to [DISTRIBUTED_SYSTEMS_AND_SRE.md](DISTRIBUTED_SYSTEMS_AND_SRE.md).
+
