@@ -624,6 +624,9 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
 
   void _showCompletionSheet() {
     final amount = _jobData?['amount'] ?? 350;
+    final completionPinController = TextEditingController();
+    String? pinError;
+    bool isVerifying = false;
 
     showModalBottomSheet(
       context: context,
@@ -638,7 +641,12 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
             final hasAfterPhoto = _afterPhotoUrl != null || _jobData?['after_photo_url'] != null;
 
             return Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.only(
+                left: 24.0,
+                right: 24.0,
+                top: 24.0,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -678,7 +686,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Customer will confirm and give completion OTP.',
+                    'Ask customer for their 4-digit Completion PIN',
                     style: WorkerAppTheme.body(color: WorkerAppTheme.textSecondary, size: 13),
                     textAlign: TextAlign.center,
                   ),
@@ -719,7 +727,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
                               Text(
                                 hasAfterPhoto
                                     ? 'Anti-dispute shield activated for 7 days'
-                                    : 'Snap 1 photo of completed fix before OTP',
+                                    : 'Snap 1 photo of completed fix before PIN',
                                 style: WorkerAppTheme.body(size: 11, color: WorkerAppTheme.textSecondary),
                               ),
                             ],
@@ -776,18 +784,73 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
                       ),
                     ),
                   ],
-                  const SizedBox(height: 24),
-                  JugaadButton(
-                    text: hasAfterPhoto ? 'Confirm Completion' : 'Snap Photo to Complete',
-                    onPressed: () async {
-                      if (!hasAfterPhoto) {
-                        await _captureAfterPhoto();
-                        setSheetState(() {});
-                        return;
-                      }
-                      Navigator.pop(ctx);
-                      _markCompleted();
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: completionPinController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 14,
+                      color: Color(0xFF0F172A),
+                    ),
+                    decoration: InputDecoration(
+                      counterText: '',
+                      hintText: 'PIN ••••',
+                      hintStyle: const TextStyle(
+                        fontSize: 18,
+                        letterSpacing: 8,
+                        color: Color(0xFFCBD5E1),
+                      ),
+                      errorText: pinError,
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFF059669), width: 2),
+                      ),
+                    ),
+                    onChanged: (val) {
+                      if (pinError != null) setSheetState(() => pinError = null);
                     },
+                  ),
+                  const SizedBox(height: 20),
+                  JugaadButton(
+                    text: isVerifying
+                        ? 'Verifying...'
+                        : (!hasAfterPhoto ? 'Snap Photo First' : 'Verify PIN & Complete'),
+                    isLoading: isVerifying,
+                    onPressed: isVerifying
+                        ? null
+                        : () async {
+                            if (!hasAfterPhoto) {
+                              await _captureAfterPhoto();
+                              setSheetState(() {});
+                              return;
+                            }
+                            final pin = completionPinController.text.trim();
+                            if (pin.length != 4) {
+                              setSheetState(() => pinError = 'Enter 4-digit Completion PIN');
+                              return;
+                            }
+                            setSheetState(() => isVerifying = true);
+                            await _verifyAndCompleteJob(
+                              pin,
+                              onSuccess: () => Navigator.pop(ctx),
+                              onError: (err) {
+                                setSheetState(() {
+                                  isVerifying = false;
+                                  pinError = err;
+                                });
+                              },
+                            );
+                          },
                   ),
                   const SizedBox(height: 12),
                   TextButton(
@@ -809,18 +872,15 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     );
   }
 
-  Future<void> _markCompleted() async {
+  Future<void> _verifyAndCompleteJob(
+    String pin, {
+    required VoidCallback onSuccess,
+    required Function(String) onError,
+  }) async {
     setState(() => _isActioning = true);
     try {
-      await ApiService().completeJob(widget.jobId, confirmer: 'worker');
+      await ApiService().completeJobWithPin(widget.jobId, pin);
       JugaadHaptics.success();
-    } catch (e) {
-      print('[ACTIVE_JOB] Complete failed, enqueueing offline: $e');
-      await OfflineQueueService().enqueue(
-        jobId: widget.jobId,
-        actionType: 'complete_job',
-        payload: {'confirmer': 'worker'},
-      );
       if (mounted) {
         setState(() {
           if (_jobData != null) {
@@ -828,11 +888,53 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
             _jobData!['completed_at'] = DateTime.now().toIso8601String();
           }
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Completion PIN verified! Job marked as completed.'),
+            backgroundColor: Color(0xFF059669),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
         _handlePaymentReceived();
+      }
+      onSuccess();
+    } catch (e) {
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('invalid') || errStr.contains('pin')) {
+        onError('Incorrect Completion PIN. Please check customer screen.');
+        JugaadHaptics.error();
+      } else {
+        print('[ACTIVE_JOB] Complete with PIN failed over network, enqueueing offline: $e');
+        await OfflineQueueService().enqueue(
+          jobId: widget.jobId,
+          actionType: 'complete_with_pin',
+          payload: {'pin': pin},
+        );
+        if (mounted) {
+          setState(() {
+            if (_jobData != null) {
+              _jobData!['status'] = 'completed';
+              _jobData!['completed_at'] = DateTime.now().toIso8601String();
+            }
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Completion saved offline. Will sync once connected!'),
+              backgroundColor: Color(0xFFF59E0B),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          _handlePaymentReceived();
+        }
+        onSuccess();
       }
     } finally {
       if (mounted) setState(() => _isActioning = false);
     }
+  }
+
+  Future<void> _markCompleted() async {
+    _showCompletionSheet();
   }
 
   void _handlePaymentReceived() {
