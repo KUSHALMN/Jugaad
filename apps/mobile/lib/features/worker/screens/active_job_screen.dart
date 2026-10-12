@@ -421,17 +421,151 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     }
   }
 
-  Future<void> _markArrived() async {
+  Future<void> _showStartPinModal() async {
+    final pinController = TextEditingController();
+    String? pinError;
+    bool isVerifying = false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: WorkerAppTheme.background,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: WorkerAppTheme.divider,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.pin_rounded, color: Color(0xFF059669), size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Doorstep Start PIN',
+                              style: WorkerAppTheme.heading(size: 17, color: WorkerAppTheme.textPrimary),
+                            ),
+                            Text(
+                              'Ask customer for their 4-digit verification code',
+                              style: WorkerAppTheme.body(size: 12, color: WorkerAppTheme.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+                  TextField(
+                    controller: pinController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    textAlign: TextAlign.center,
+                    autofocus: true,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 16,
+                      color: Color(0xFF0F172A),
+                    ),
+                    decoration: InputDecoration(
+                      counterText: '',
+                      hintText: '••••',
+                      hintStyle: const TextStyle(
+                        fontSize: 28,
+                        letterSpacing: 16,
+                        color: Color(0xFFCBD5E1),
+                      ),
+                      errorText: pinError,
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: Color(0xFF059669), width: 2),
+                      ),
+                    ),
+                    onChanged: (val) {
+                      if (pinError != null) {
+                        setModalState(() => pinError = null);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 18),
+                  JugaadButton(
+                    text: isVerifying ? 'Verifying...' : 'Verify & Start Job',
+                    isLoading: isVerifying,
+                    onPressed: isVerifying
+                        ? null
+                        : () async {
+                            final pin = pinController.text.trim();
+                            if (pin.length != 4) {
+                              setModalState(() => pinError = 'Enter complete 4-digit PIN');
+                              return;
+                            }
+                            setModalState(() => isVerifying = true);
+                            await _verifyAndStartJob(pin, onSuccess: () {
+                              Navigator.pop(ctx);
+                            }, onError: (err) {
+                              setModalState(() {
+                                isVerifying = false;
+                                pinError = err;
+                              });
+                            });
+                          },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _verifyAndStartJob(
+    String pin, {
+    required VoidCallback onSuccess,
+    required Function(String) onError,
+  }) async {
     setState(() => _isActioning = true);
     try {
-      await ApiService().ackJob(widget.jobId);
+      await ApiService().startJobWithPin(widget.jobId, pin);
       JugaadHaptics.success();
-    } catch (e) {
-      print('[ACTIVE_JOB] Ack failed, enqueueing offline: $e');
-      await OfflineQueueService().enqueue(
-        jobId: widget.jobId,
-        actionType: 'ack_arrival',
-      );
       if (mounted) {
         setState(() {
           if (_jobData != null) {
@@ -442,15 +576,50 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Arrival saved offline. Will sync once connected!'),
-            backgroundColor: Color(0xFFF59E0B),
+            content: Text('Start PIN verified successfully! Job is in progress.'),
+            backgroundColor: Color(0xFF059669),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
+      onSuccess();
+    } catch (e) {
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('invalid') || errStr.contains('pin')) {
+        onError('Incorrect PIN. Please re-check with customer.');
+        JugaadHaptics.error();
+      } else {
+        print('[ACTIVE_JOB] Start with PIN failed over network, enqueueing offline: $e');
+        await OfflineQueueService().enqueue(
+          jobId: widget.jobId,
+          actionType: 'start_with_pin',
+          payload: {'pin': pin},
+        );
+        if (mounted) {
+          setState(() {
+            if (_jobData != null) {
+              _jobData!['worker_ack'] = true;
+              _jobData!['status'] = 'in_progress';
+              _jobData!['started_at'] = DateTime.now().toIso8601String();
+            }
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('PIN recorded offline. Will sync once connected!'),
+              backgroundColor: Color(0xFFF59E0B),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        onSuccess();
+      }
     } finally {
       if (mounted) setState(() => _isActioning = false);
     }
+  }
+
+  Future<void> _markArrived() async {
+    await _showStartPinModal();
   }
 
   void _showCompletionSheet() {
