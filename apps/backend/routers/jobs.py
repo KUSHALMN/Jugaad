@@ -17,6 +17,8 @@ import hmac
 import hashlib
 import secrets
 
+from core.idempotency import extract_idempotency_key, get_cached_idempotency_response, cache_idempotency_response
+
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
@@ -266,7 +268,14 @@ def cancel_job_delete(job_id: str, uid: str = Depends(verify_firebase_token)):
 
 # 5. Accept Job
 @router.post("/{job_id}/accept")
-def accept_job(job_id: str, body: AcceptJobRequest, uid: str = Depends(verify_firebase_token)):
+def accept_job(job_id: str, body: AcceptJobRequest, request: Request, uid: str = Depends(verify_firebase_token)):
+    # Check Idempotency Header to prevent duplicate processing on mobile retries
+    idemp_key = extract_idempotency_key(request)
+    if idemp_key:
+        cached = get_cached_idempotency_response(idemp_key, scope=f"job_accept:{job_id}")
+        if cached:
+            return cached
+
     # Verify the caller is the worker accepting the job
     worker_user = supabase.table("users").select("id, name, phone, fcm_token").eq("firebase_uid", uid).maybe_single().execute()
     if not worker_user or not worker_user.data:
@@ -303,13 +312,17 @@ def accept_job(job_id: str, body: AcceptJobRequest, uid: str = Depends(verify_fi
             }).execute()
             is_accepted = accept_result.data
         except Exception:
-            # Fallback direct update
-            supabase.table("jobs").update({
+            # Fallback direct CAS update (Compare-And-Swap) with state guard
+            update_res = supabase.table("jobs").update({
                 "worker_id": worker_uuid,
                 "status": "accepted",
                 "updated_at": datetime.now(timezone.utc).isoformat(),
                 "accepted_at": datetime.now(timezone.utc).isoformat(),
-            }).eq("id", job_id).execute()
+            }).eq("id", job_id).in_("status", ["open", "searching", "matched"]).execute()
+            
+            if not update_res or not update_res.data:
+                raise HTTPException(status_code=409, detail="Job was claimed by another partner (CAS conflict)")
+                
             # Mark worker as unavailable
             try:
                 supabase.table("workers").update({
@@ -422,11 +435,15 @@ def accept_job(job_id: str, body: AcceptJobRequest, uid: str = Depends(verify_fi
         except Exception as e:
             logger.warning(f"Error notifying other workers: {e}")
 
-        return {
+        result_payload = {
             "status": "ok",
             "job_id": job_id,
             "message": "Job accepted.",
         }
+        if idemp_key:
+            cache_idempotency_response(idemp_key, result_payload, scope=f"job_accept:{job_id}")
+
+        return result_payload
 
     finally:
         redis_client.release_lock(lock_key)
