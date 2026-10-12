@@ -12,6 +12,7 @@ import 'package:jugaad_mvp/core/services/fcm_token_manager.dart';
 import 'package:jugaad_mvp/core/services/job_dispatch_service.dart';
 import 'package:jugaad_mvp/core/config/supabase_config.dart';
 import 'package:jugaad_mvp/core/services/location_service.dart';
+import 'package:jugaad_mvp/core/services/sound_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/worker_dashboard_sheets.dart';
@@ -2868,6 +2869,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     }
 
     print('[WORKER_HOME] MATCH FOUND! Redirecting to IncomingRequestScreen for job $jobId');
+    SoundService().playJobAlert();
     final skillEncoded = Uri.encodeComponent(data['skill_required'] ?? 'Service');
     final descEncoded = Uri.encodeComponent(data['description'] ?? '');
     final budget = data['amount'] ?? 150.0;

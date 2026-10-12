@@ -109,16 +109,6 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
       _paymentFailed = false;
     });
 
-    const razorpayKey = String.fromEnvironment('RAZORPAY_KEY_ID');
-    if (razorpayKey.isEmpty) {
-      print('[PAYMENT] Missing RAZORPAY_KEY_ID dart-define. Checkout blocked.');
-      setState(() {
-        _isProcessing = false;
-        _paymentFailed = true;
-      });
-      return;
-    }
-
     try {
       final order = await ApiService().createRazorpayOrder(widget.jobId);
       final orderId = order['id'] as String?;
@@ -127,8 +117,25 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
       }
       print('[PAYMENT] Razorpay order created: $orderId');
 
+      final keyFromBackend = order['key_id'] as String?;
+      const keyFromEnv = String.fromEnvironment('RAZORPAY_KEY_ID');
+      final activeKey = (keyFromBackend != null &&
+              keyFromBackend.isNotEmpty &&
+              keyFromBackend != 'rzp_test_placeholder_key_id')
+          ? keyFromBackend
+          : keyFromEnv;
+
+      final isSimulated = order['simulated'] == true ||
+          activeKey.isEmpty ||
+          activeKey == 'rzp_test_placeholder_key_id';
+
+      if (isSimulated) {
+        await _showSimulatedPaymentDialog(orderId, order['amount'] ?? ((widget.amount + 18.0) * 100));
+        return;
+      }
+
       final options = {
-        'key': razorpayKey,
+        'key': activeKey,
         'order_id': orderId,
         'amount': order['amount'],
         'name': 'Jugaad Services',
@@ -142,10 +149,57 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
       _razorpay.open(options);
     } catch (e) {
       print('[PAYMENT] Error launching razorpay: $e');
-      setState(() {
-        _isProcessing = false;
-        _paymentFailed = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _paymentFailed = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _showSimulatedPaymentDialog(String orderId, dynamic amountPaise) async {
+    setState(() => _isProcessing = false);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.developer_mode_rounded, color: Color(0xFF059669)),
+            SizedBox(width: 8),
+            Text('Simulated Checkout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'Live Razorpay Gateway is in simulation mode for order $orderId (₹${((amountPaise as num) / 100).toStringAsFixed(0)}).\n\nComplete test payment now?',
+          style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF059669),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Simulate Success'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      _handlePaymentSuccess(PaymentSuccessResponse(
+        'pay_sim_${DateTime.now().millisecondsSinceEpoch}',
+        orderId,
+        'sig_simulated_success',
+        null,
+      ));
     }
   }
 

@@ -16,6 +16,7 @@ import 'package:jugaad_mvp/shared/widgets/jugaad_button.dart';
 import 'package:jugaad_mvp/core/services/offline_queue_service.dart';
 import 'package:jugaad_mvp/core/services/offline_sync_manager.dart';
 import 'package:jugaad_mvp/core/widgets/offline_sync_banner.dart';
+import 'package:jugaad_mvp/core/services/sound_service.dart';
 
 class ActiveJobScreen extends StatefulWidget {
   final String jobId;
@@ -791,6 +792,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     try {
       await ApiService().startJobWithPin(widget.jobId, pin);
       JugaadHaptics.success();
+      SoundService().playPinSuccess();
       if (mounted) {
         setState(() {
           if (_jobData != null) {
@@ -1121,6 +1123,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     try {
       await ApiService().completeJobWithPin(widget.jobId, pin);
       JugaadHaptics.success();
+      SoundService().playPinSuccess();
       if (mounted) {
         setState(() {
           if (_jobData != null) {
@@ -1171,10 +1174,6 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     } finally {
       if (mounted) setState(() => _isActioning = false);
     }
-  }
-
-  Future<void> _markCompleted() async {
-    _showCompletionSheet();
   }
 
   void _handlePaymentReceived() {

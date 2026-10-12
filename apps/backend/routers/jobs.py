@@ -768,6 +768,9 @@ def create_order(job_id: str, uid: str = Depends(verify_firebase_token)):
                 "currency": "INR", "status": "created", "simulated": True,
             }
 
+    # Attach publishable key_id for dynamic client checkout
+    order_data["key_id"] = key_id or "rzp_test_placeholder_key_id"
+
     # Store order reference
     supabase.table("jobs").update({
         "razorpay_order_id": order_data["id"],
