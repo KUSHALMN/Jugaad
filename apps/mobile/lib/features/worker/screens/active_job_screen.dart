@@ -689,6 +689,83 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     }
   }
 
+  void _showPartnerEmergencySosModal() {
+    JugaadHaptics.error();
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDC2626).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.shield_rounded, color: Color(0xFFDC2626), size: 28),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'PARTNER SAFETY DESK',
+                        style: WorkerAppTheme.heading(size: 16, color: const Color(0xFFDC2626)),
+                      ),
+                      Text(
+                        '24/7 Field Support & Immediate Emergency Assistance',
+                        style: WorkerAppTheme.body(size: 12, color: WorkerAppTheme.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.local_police_rounded, color: Colors.white),
+              label: const Text('Call Police Control (112)', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              onPressed: () => launchUrl(Uri.parse('tel:112')),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.support_agent_rounded, color: Color(0xFF0F172A)),
+              label: const Text('Call Jugaad Partner Helpline (1800-890-5842)', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              onPressed: () => launchUrl(Uri.parse('tel:18008905842')),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Your GPS live telemetry is encrypted and active for emergency dispatch.',
+              textAlign: TextAlign.center,
+              style: WorkerAppTheme.body(size: 11, color: WorkerAppTheme.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _verifyAndStartJob(
     String pin, {
     required VoidCallback onSuccess,
@@ -2704,6 +2781,34 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
         title: Text('Active Job',
             style: WorkerAppTheme.heading(color: WorkerAppTheme.textPrimary, size: 18)),
         actions: [
+          IconButton(
+            tooltip: 'Partner Emergency SOS',
+            icon: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFDC2626).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFDC2626), width: 1.2),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.shield_rounded, color: Color(0xFFDC2626), size: 14),
+                  SizedBox(width: 4),
+                  Text(
+                    'SOS',
+                    style: TextStyle(
+                      color: Color(0xFFDC2626),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 11,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            onPressed: _showPartnerEmergencySosModal,
+          ),
           Container(
             margin: const EdgeInsets.only(right: 16),
             child: Center(
@@ -2784,6 +2889,34 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
         title: Text('Active Job',
             style: WorkerAppTheme.heading(color: WorkerAppTheme.textPrimary, size: 18)),
         actions: [
+          IconButton(
+            tooltip: 'Partner Emergency SOS',
+            icon: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFDC2626).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFDC2626), width: 1.2),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.shield_rounded, color: Color(0xFFDC2626), size: 14),
+                  SizedBox(width: 4),
+                  Text(
+                    'SOS',
+                    style: TextStyle(
+                      color: Color(0xFFDC2626),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 11,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            onPressed: _showPartnerEmergencySosModal,
+          ),
           Container(
             margin: const EdgeInsets.only(right: 16),
             child: Center(
