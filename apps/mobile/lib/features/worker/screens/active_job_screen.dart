@@ -439,7 +439,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
   }
 
   Future<void> _showStartPinModal() async {
-    final pinController = TextEditingController();
+    String pin = '';
     String? pinError;
     bool isVerifying = false;
 
@@ -447,18 +447,50 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      backgroundColor: WorkerAppTheme.background,
+      backgroundColor: Colors.white,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            void onDigitPressed(String digit) {
+              if (pin.length < 4 && !isVerifying) {
+                HapticFeedback.lightImpact();
+                setModalState(() {
+                  pin += digit;
+                  pinError = null;
+                });
+                if (pin.length == 4) {
+                  // Auto-submit when all 4 digits entered
+                  setModalState(() => isVerifying = true);
+                  _verifyAndStartJob(pin, onSuccess: () {
+                    Navigator.pop(ctx);
+                  }, onError: (err) {
+                    setModalState(() {
+                      isVerifying = false;
+                      pinError = err;
+                    });
+                  });
+                }
+              }
+            }
+
+            void onDeletePressed() {
+              if (pin.isNotEmpty && !isVerifying) {
+                HapticFeedback.lightImpact();
+                setModalState(() {
+                  pin = pin.substring(0, pin.length - 1);
+                  pinError = null;
+                });
+              }
+            }
+
             return Padding(
               padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 20,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                left: 20,
+                right: 20,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -466,11 +498,11 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
                 children: [
                   Center(
                     child: Container(
-                      width: 40,
-                      height: 4,
+                      width: 44,
+                      height: 5,
                       decoration: BoxDecoration(
-                        color: WorkerAppTheme.divider,
-                        borderRadius: BorderRadius.circular(2),
+                        color: const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(3),
                       ),
                     ),
                   ),
@@ -483,7 +515,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
                           color: const Color(0xFF059669).withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.pin_rounded, color: Color(0xFF059669), size: 24),
+                        child: const Icon(Icons.dialpad_rounded, color: Color(0xFF059669), size: 24),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -491,11 +523,11 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Doorstep Start PIN',
+                              'Doorstep Start Verification',
                               style: WorkerAppTheme.heading(size: 17, color: WorkerAppTheme.textPrimary),
                             ),
                             Text(
-                              'Ask customer for their 4-digit verification code',
+                              'Ask customer for their 4-digit security code',
                               style: WorkerAppTheme.body(size: 12, color: WorkerAppTheme.textSecondary),
                             ),
                           ],
@@ -503,78 +535,117 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 22),
-                  TextField(
-                    controller: pinController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 4,
-                    textAlign: TextAlign.center,
-                    autofocus: true,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 16,
-                      color: Color(0xFF0F172A),
-                    ),
-                    decoration: InputDecoration(
-                      counterText: '',
-                      hintText: '••••',
-                      hintStyle: const TextStyle(
-                        fontSize: 28,
-                        letterSpacing: 16,
-                        color: Color(0xFFCBD5E1),
-                      ),
-                      errorText: pinError,
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: Color(0xFF059669), width: 2),
-                      ),
-                    ),
-                    onChanged: (val) {
-                      if (pinError != null) {
-                        setModalState(() => pinError = null);
-                      }
-                    },
+                  const SizedBox(height: 24),
+
+                  // 4 PIN Boxes Display
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(4, (index) {
+                      final isFilled = index < pin.length;
+                      final isFocused = index == pin.length;
+                      final digitChar = isFilled ? pin[index] : '';
+
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        width: 58,
+                        height: 64,
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        decoration: BoxDecoration(
+                          color: isFilled ? const Color(0xFFF0FDF4) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: pinError != null
+                                ? const Color(0xFFDC2626)
+                                : (isFocused
+                                    ? const Color(0xFF059669)
+                                    : (isFilled ? const Color(0xFF10B981) : const Color(0xFFE2E8F0))),
+                            width: (isFocused || isFilled) ? 2.0 : 1.5,
+                          ),
+                          boxShadow: isFocused
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF059669).withValues(alpha: 0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ]
+                              : [],
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          digitChar,
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
-                  const SizedBox(height: 18),
-                  JugaadButton(
-                    text: isVerifying ? 'Verifying...' : 'Verify & Start Job',
-                    isLoading: isVerifying,
-                    onPressed: isVerifying
-                        ? null
-                        : () async {
-                            final pin = pinController.text.trim();
-                            if (pin.length != 4) {
-                              setModalState(() => pinError = 'Enter complete 4-digit PIN');
-                              return;
-                            }
-                            setModalState(() => isVerifying = true);
-                            await _verifyAndStartJob(pin, onSuccess: () {
-                              Navigator.pop(ctx);
-                            }, onError: (err) {
-                              setModalState(() {
-                                isVerifying = false;
-                                pinError = err;
-                              });
-                            });
-                          },
+                  if (pinError != null) ...[
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Text(
+                        pinError!,
+                        style: const TextStyle(
+                          color: Color(0xFFDC2626),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+
+                  // Tactile Numpad
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildNumpadRow(['1', '2', '3'], onDigitPressed),
+                        const SizedBox(height: 8),
+                        _buildNumpadRow(['4', '5', '6'], onDigitPressed),
+                        const SizedBox(height: 8),
+                        _buildNumpadRow(['7', '8', '9'], onDigitPressed),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Expanded(child: SizedBox()),
+                            _buildNumpadKey('0', () => onDigitPressed('0')),
+                            _buildNumpadActionKey(
+                              icon: Icons.backspace_outlined,
+                              onTap: onDeletePressed,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
+
+                  if (isVerifying)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CircularProgressIndicator(color: Color(0xFF059669), strokeWidth: 2.5),
+                      ),
+                    ),
+
                   TextButton(
                     onPressed: () {
                       Navigator.pop(ctx);
                       _showBypassDialog(isStart: true);
                     },
                     child: Text(
-                      'Customer phone unavailable? Request manual bypass',
+                      'Customer phone dead or offline? Request manual bypass',
                       style: WorkerAppTheme.body(
-                        size: 11,
+                        size: 12,
                         color: WorkerAppTheme.textSecondary,
                         weight: FontWeight.w600,
                       ),
@@ -588,6 +659,61 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
       },
     );
   }
+
+  Widget _buildNumpadRow(List<String> digits, Function(String) onDigit) {
+    return Row(
+      children: digits.map((d) => _buildNumpadKey(d, () => onDigit(d))).toList(),
+    );
+  }
+
+  Widget _buildNumpadKey(String digit, VoidCallback onTap) {
+    return Expanded(
+      child: Container(
+        height: 52,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          elevation: 0.5,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: Center(
+              child: Text(
+                digit,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNumpadActionKey({required IconData icon, required VoidCallback onTap}) {
+    return Expanded(
+      child: Container(
+        height: 52,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: Center(
+              child: Icon(icon, color: const Color(0xFF64748B), size: 22),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 
   void _showBypassDialog({required bool isStart}) {
     showDialog(
@@ -851,7 +977,7 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
 
   void _showCompletionSheet() {
     final amount = _jobData?['amount'] ?? 350;
-    final completionPinController = TextEditingController();
+    String completionPin = '';
     String? pinError;
     bool isVerifying = false;
 
@@ -859,253 +985,319 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      backgroundColor: WorkerAppTheme.background,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      backgroundColor: Colors.white,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final hasBeforePhoto = _beforePhotoUrl != null || _jobData?['before_photo_url'] != null;
             final hasAfterPhoto = _afterPhotoUrl != null || _jobData?['after_photo_url'] != null;
 
+            void onDigitPressed(String digit) {
+              if (completionPin.length < 4 && !isVerifying) {
+                HapticFeedback.lightImpact();
+                setSheetState(() {
+                  completionPin += digit;
+                  pinError = null;
+                });
+                if (completionPin.length == 4) {
+                  if (!hasAfterPhoto) {
+                    setSheetState(() => pinError = 'Please snap after-work photo first');
+                    return;
+                  }
+                  setSheetState(() => isVerifying = true);
+                  _verifyAndCompleteJob(
+                    completionPin,
+                    onSuccess: () => Navigator.pop(ctx),
+                    onError: (err) {
+                      setSheetState(() {
+                        isVerifying = false;
+                        pinError = err;
+                      });
+                    },
+                  );
+                }
+              }
+            }
+
+            void onDeletePressed() {
+              if (completionPin.isNotEmpty && !isVerifying) {
+                HapticFeedback.lightImpact();
+                setSheetState(() {
+                  completionPin = completionPin.substring(0, completionPin.length - 1);
+                  pinError = null;
+                });
+              }
+            }
+
             return Padding(
               padding: EdgeInsets.only(
-                left: 24.0,
-                right: 24.0,
-                top: 24.0,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
+                left: 20.0,
+                right: 20.0,
+                top: 16.0,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20.0,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: WorkerAppTheme.divider,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: WorkerAppTheme.primaryGreen.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.check_circle_rounded,
-                        color: WorkerAppTheme.primaryGreen, size: 30),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Ready to mark this done?',
-                    style: WorkerAppTheme.heading(color: WorkerAppTheme.textPrimary),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'You\'ll earn ₹$amount for this job.',
-                    style: WorkerAppTheme.display(
-                      size: 24,
-                      color: WorkerAppTheme.primaryGreen,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Ask customer for their 4-digit Completion PIN',
-                    style: WorkerAppTheme.body(color: WorkerAppTheme.textSecondary, size: 13),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 18),
-                  // Proof of Work: Mandatory After-Work Photo
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: hasAfterPhoto
-                          ? const Color(0xFF10B981).withValues(alpha: 0.08)
-                          : const Color(0xFFEF4444).withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: hasAfterPhoto
-                            ? const Color(0xFF10B981).withValues(alpha: 0.4)
-                            : const Color(0xFFEF4444).withValues(alpha: 0.4),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(3),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          hasAfterPhoto ? Icons.verified_rounded : Icons.photo_camera_front_rounded,
-                          color: hasAfterPhoto ? const Color(0xFF10B981) : const Color(0xFFDC2626),
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                hasAfterPhoto ? 'After Photo Verified ✓' : 'Mandatory After-Work Photo',
-                                style: WorkerAppTheme.heading(
-                                  size: 13,
-                                  color: hasAfterPhoto ? const Color(0xFF059669) : const Color(0xFFDC2626),
-                                ),
-                              ),
-                              Text(
-                                hasAfterPhoto
-                                    ? 'Anti-dispute shield activated for 7 days'
-                                    : 'Snap 1 photo of completed fix before PIN',
-                                style: WorkerAppTheme.body(size: 11, color: WorkerAppTheme.textSecondary),
-                              ),
-                            ],
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () async {
-                            await _captureAfterPhoto();
-                            setSheetState(() {});
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: hasAfterPhoto ? const Color(0xFF10B981) : const Color(0xFFDC2626),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            minimumSize: Size.zero,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          child: Text(hasAfterPhoto ? 'Retake' : 'Snap Photo', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!hasBeforePhoto) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 16),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      width: 56,
+                      height: 56,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                        color: WorkerAppTheme.primaryGreen.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check_circle_rounded,
+                          color: WorkerAppTheme.primaryGreen, size: 30),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Ready to Complete Job?',
+                      style: WorkerAppTheme.heading(color: WorkerAppTheme.textPrimary, size: 18),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '₹$amount will be added to your balance',
+                      style: WorkerAppTheme.display(
+                        size: 22,
+                        color: WorkerAppTheme.primaryGreen,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Proof of Work: Mandatory After-Work Photo
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: hasAfterPhoto
+                            ? const Color(0xFF10B981).withValues(alpha: 0.08)
+                            : const Color(0xFFEF4444).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: hasAfterPhoto
+                              ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                              : const Color(0xFFEF4444).withValues(alpha: 0.4),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 18),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Tip: Snap Before Photo too for full 7-day dispute shield.',
-                              style: TextStyle(fontSize: 11, color: Color(0xFF92400E)),
+                          Icon(
+                            hasAfterPhoto ? Icons.verified_rounded : Icons.photo_camera_front_rounded,
+                            color: hasAfterPhoto ? const Color(0xFF10B981) : const Color(0xFFDC2626),
+                            size: 24,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  hasAfterPhoto ? 'Work Proof Verified ✓' : 'Mandatory After-Work Photo',
+                                  style: WorkerAppTheme.heading(
+                                    size: 13,
+                                    color: hasAfterPhoto ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                                  ),
+                                ),
+                                Text(
+                                  hasAfterPhoto
+                                      ? 'Anti-dispute shield activated for 7 days'
+                                      : 'Snap 1 photo of completed fix before PIN',
+                                  style: WorkerAppTheme.body(size: 11, color: WorkerAppTheme.textSecondary),
+                                ),
+                              ],
                             ),
                           ),
-                          TextButton(
+                          ElevatedButton(
                             onPressed: () async {
-                              await _captureBeforePhoto();
+                              await _captureAfterPhoto();
                               setSheetState(() {});
                             },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: hasAfterPhoto ? const Color(0xFF10B981) : const Color(0xFFDC2626),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               minimumSize: Size.zero,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: const Text('Snap Now', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFD97706))),
+                            child: Text(hasAfterPhoto ? 'Retake' : 'Snap Photo', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: completionPinController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 4,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 14,
-                      color: Color(0xFF0F172A),
-                    ),
-                    decoration: InputDecoration(
-                      counterText: '',
-                      hintText: 'PIN ••••',
-                      hintStyle: const TextStyle(
-                        fontSize: 18,
-                        letterSpacing: 8,
-                        color: Color(0xFFCBD5E1),
-                      ),
-                      errorText: pinError,
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFF059669), width: 2),
-                      ),
-                    ),
-                    onChanged: (val) {
-                      if (pinError != null) setSheetState(() => pinError = null);
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  JugaadButton(
-                    text: isVerifying
-                        ? 'Verifying...'
-                        : (!hasAfterPhoto ? 'Snap Photo First' : 'Verify PIN & Complete'),
-                    isLoading: isVerifying,
-                    onPressed: isVerifying
-                        ? null
-                        : () async {
-                            if (!hasAfterPhoto) {
-                              await _captureAfterPhoto();
-                              setSheetState(() {});
-                              return;
-                            }
-                            final pin = completionPinController.text.trim();
-                            if (pin.length != 4) {
-                              setSheetState(() => pinError = 'Enter 4-digit Completion PIN');
-                              return;
-                            }
-                            setSheetState(() => isVerifying = true);
-                            await _verifyAndCompleteJob(
-                              pin,
-                              onSuccess: () => Navigator.pop(ctx),
-                              onError: (err) {
-                                setSheetState(() {
-                                  isVerifying = false;
-                                  pinError = err;
-                                });
+                    if (!hasBeforePhoto) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 16),
+                            const SizedBox(width: 6),
+                            const Expanded(
+                              child: Text(
+                                'Tip: Snap Before Photo too for full dispute protection.',
+                                style: TextStyle(fontSize: 11, color: Color(0xFF92400E)),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () async {
+                                await _captureBeforePhoto();
+                                setSheetState(() {});
                               },
-                            );
-                          },
-                  ),
-                  const SizedBox(height: 10),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _showBypassDialog(isStart: false);
-                    },
-                    child: Text(
-                      'Customer phone unavailable? Request manual bypass',
-                      style: WorkerAppTheme.body(
-                        size: 11,
-                        color: WorkerAppTheme.textSecondary,
-                        weight: FontWeight.w600,
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                              ),
+                              child: const Text('Snap Now', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFD97706))),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+
+                    // 4 PIN Boxes Display
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(4, (index) {
+                        final isFilled = index < completionPin.length;
+                        final isFocused = index == completionPin.length;
+                        final digitChar = isFilled ? completionPin[index] : '';
+
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          width: 58,
+                          height: 64,
+                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                          decoration: BoxDecoration(
+                            color: isFilled ? const Color(0xFFF0FDF4) : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: pinError != null
+                                  ? const Color(0xFFDC2626)
+                                  : (isFocused
+                                      ? const Color(0xFF059669)
+                                      : (isFilled ? const Color(0xFF10B981) : const Color(0xFFE2E8F0))),
+                              width: (isFocused || isFilled) ? 2.0 : 1.5,
+                            ),
+                            boxShadow: isFocused
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF059669).withValues(alpha: 0.2),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ]
+                                : [],
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            digitChar,
+                            style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    if (pinError != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        pinError!,
+                        style: const TextStyle(
+                          color: Color(0xFFDC2626),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+
+                    // Tactile Numpad
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildNumpadRow(['1', '2', '3'], onDigitPressed),
+                          const SizedBox(height: 8),
+                          _buildNumpadRow(['4', '5', '6'], onDigitPressed),
+                          const SizedBox(height: 8),
+                          _buildNumpadRow(['7', '8', '9'], onDigitPressed),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Expanded(child: SizedBox()),
+                              _buildNumpadKey('0', () => onDigitPressed('0')),
+                              _buildNumpadActionKey(
+                                icon: Icons.backspace_outlined,
+                                onTap: onDeletePressed,
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text(
-                      'Not yet',
-                      style: WorkerAppTheme.body(
-                        color: WorkerAppTheme.textSecondary,
-                        weight: FontWeight.w700,
+                    const SizedBox(height: 12),
+
+                    if (isVerifying)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: CircularProgressIndicator(color: Color(0xFF059669), strokeWidth: 2.5),
+                        ),
+                      ),
+
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showBypassDialog(isStart: false);
+                      },
+                      child: Text(
+                        'Customer phone unavailable? Request manual bypass',
+                        style: WorkerAppTheme.body(
+                          size: 12,
+                          color: WorkerAppTheme.textSecondary,
+                          weight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Cancel',
+                        style: WorkerAppTheme.body(
+                          color: WorkerAppTheme.textSecondary,
+                          weight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:jugaad_mvp/core/services/auth_service.dart';
 import 'package:jugaad_mvp/core/services/supabase_service.dart';
+import 'package:jugaad_mvp/core/services/sound_service.dart';
 
 class EarningsScreen extends StatefulWidget {
   const EarningsScreen({super.key});
@@ -175,6 +176,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
       );
 
       if (mounted) {
+        SoundService().playCashoutSuccess();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1338,56 +1340,155 @@ class _EarningsScreenState extends State<EarningsScreen> {
     );
   }
 
-  /// 6. Minimum ₹200 UPI Instant Transfer Card
+  /// 6. Glassmorphic Wallet Card & Instant Cashout
   Widget _buildUpiTransferBanner() {
-    return InkWell(
-      onTap: _requestPayout,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFBFDBFE), width: 1.2),
+    final hasUpi = _upiId != null && _upiId!.isNotEmpty;
+    final balanceToWithdraw = _withdrawableBalance > 0 ? _withdrawableBalance : 0.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFDBEAFE),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.credit_card_rounded, color: Color(0xFF2563EB), size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
                 children: [
-                  Text(
-                    'Minimum ₹200 · UPI instant transfer',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF1E3A8A),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
                     ),
+                    child: const Icon(Icons.account_balance_wallet_rounded,
+                        color: Color(0xFF34D399), size: 18),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(width: 10),
                   Text(
-                    'Your earnings are transferred directly to your UPI. Safe and secure.',
+                    'WITHDRAWABLE WALLET',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11.5,
-                      color: const Color(0xFF3B82F6),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white70,
+                      letterSpacing: 0.8,
                     ),
                   ),
                 ],
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669).withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF34D399).withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  '₹0 FEE',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF34D399),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '₹${balanceToWithdraw.toInt()}',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        hasUpi ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                        color: hasUpi ? const Color(0xFF34D399) : const Color(0xFFFBBF24),
+                        size: 13,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        hasUpi ? _upiId! : 'No UPI linked yet',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              ElevatedButton.icon(
+                onPressed: _requestPayout,
+                icon: const Icon(Icons.bolt_rounded, size: 18),
+                label: const Text('Instant Cashout'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF059669),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  textStyle: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                  elevation: 2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF2563EB), size: 14),
-          ],
-        ),
+            child: Row(
+              children: [
+                const Icon(Icons.security_rounded, size: 13, color: Colors.white60),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Direct 24x7 IMPS bank settlement · Processed via NPCI switch',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10.5,
+                      color: Colors.white60,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

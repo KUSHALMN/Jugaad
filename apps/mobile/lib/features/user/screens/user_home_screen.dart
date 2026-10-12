@@ -43,6 +43,17 @@ final recentJobsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
   );
 });
 
+final activeJobStreamProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final uid = AuthService().currentUser?.uid;
+  if (uid == null) return const Stream.empty();
+
+  return SupabaseService().userBookingsStream(
+    uid,
+    statuses: ['requested', 'matched', 'accepted', 'in_progress'],
+    limit: 1,
+  );
+});
+
 /// Streams the user's display name from Supabase, falling back to Firebase Auth.
 final userNameProvider = StreamProvider<String>((ref) {
   final user = AuthService().currentUser;
@@ -94,6 +105,70 @@ class _ScaleOnTapState extends State<ScaleOnTap> {
         scale: _scale,
         duration: const Duration(milliseconds: 100),
         child: widget.child,
+      ),
+    );
+  }
+}
+
+class _RotatingSearchPlaceholder extends StatefulWidget {
+  const _RotatingSearchPlaceholder();
+
+  @override
+  State<_RotatingSearchPlaceholder> createState() => _RotatingSearchPlaceholderState();
+}
+
+class _RotatingSearchPlaceholderState extends State<_RotatingSearchPlaceholder> {
+  static const List<String> _hints = [
+    "Search 'Electrician in 15 mins'...",
+    "Search 'AC cleaning & filter repair'...",
+    "Search 'Plumber at doorstep'...",
+    "Search 'Carpenter & furniture assembly'...",
+    "Search 'Appliance wiring & inverter'...",
+  ];
+  int _currentIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted) {
+        setState(() {
+          _currentIndex = (_currentIndex + 1) % _hints.length;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (child, animation) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.0, 0.4),
+            end: Offset.zero,
+          ).animate(animation),
+          child: FadeTransition(opacity: animation, child: child),
+        );
+      },
+      child: Text(
+        _hints[_currentIndex],
+        key: ValueKey<int>(_currentIndex),
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 13.5,
+          color: const Color(0xFF64748B),
+          fontWeight: FontWeight.w500,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -749,15 +824,8 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                                 ),
                               ),
                               const SizedBox(width: 12.0),
-                              Expanded(
-                                child: Text(
-                                  "Search electrician, AC repair, plumber...",
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13.5,
-                                    color: const Color(0xFF64748B),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
+                              const Expanded(
+                                child: _RotatingSearchPlaceholder(),
                               ),
                               GestureDetector(
                                 onTap: () {
@@ -993,6 +1061,109 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                 left: 0,
                 right: 0,
                 child: SyncAlertBanner(),
+              ),
+
+              // --- FLOATING LIVE ACTIVITY ISLAND (When an active booking is in progress)
+              Consumer(
+                builder: (context, ref, _) {
+                  final activeSnap = ref.watch(activeJobStreamProvider);
+                  final activeBookings = activeSnap.value ?? [];
+                  if (activeBookings.isEmpty) return const SizedBox.shrink();
+
+                  final booking = activeBookings.first;
+                  final jobId = booking['id'] as String? ?? '';
+                  final status = booking['status'] as String? ?? 'in_progress';
+                  final skill = booking['skill_required'] ?? booking['title'] ?? 'Service';
+
+                  String statusText = 'Partner Matched';
+                  if (status == 'in_progress') statusText = 'Partner Arrived · In Progress';
+                  if (status == 'accepted') statusText = 'Partner En Route';
+
+                  return Positioned(
+                    bottom: 16,
+                    left: 16,
+                    right: 16,
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        context.push('/user/track?jobId=$jobId');
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F172A),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF0F172A).withValues(alpha: 0.35),
+                              blurRadius: 18,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFF34D399),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '$skill · $statusText',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    'Tap to view live radar & partner details',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white.withValues(alpha: 0.7),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1D4ED8),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'Live Radar',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
