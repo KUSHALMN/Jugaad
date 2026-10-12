@@ -93,6 +93,15 @@ class ApiService {
     });
   }
 
+  /// Update user profile through the backend API using service role (bypasses RLS issues).
+  Future<void> updateUserProfile({required String name, Map<String, dynamic>? address}) async {
+    final payload = <String, dynamic>{'name': name};
+    if (address != null) {
+      payload['address'] = address;
+    }
+    await client.put('/v1/users/me', data: payload);
+  }
+
   /// Search workers nearby using POSTGIS and Redis caching.
   ///
   /// Returns raw `Map<String, dynamic>` from the backend.

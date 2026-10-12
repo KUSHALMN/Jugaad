@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:jugaad_mvp/core/config/supabase_config.dart';
+import 'package:jugaad_mvp/core/services/api_service.dart';
 import 'package:jugaad_mvp/core/theme/app_colors.dart';
 import 'package:jugaad_mvp/core/theme/app_text_styles.dart';
 
@@ -64,18 +65,32 @@ class _EditUserProfileScreenState extends State<EditUserProfileScreen> {
 
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-      await SupabaseConfig.client.from('users').upsert({
-        'id': uid,
-        'name': name,
-        'role': 'employer',
-        'address': {
-          'houseNo': houseNo,
-          'area': area,
-          'city': city,
-          'pincode': pincode,
-        },
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+      final addressData = {
+        'houseNo': houseNo,
+        'area': area,
+        'city': city,
+        'pincode': pincode,
+      };
+
+      // 1. Primary: Use backend API with Firebase token (service-role writes bypass RLS seamlessly)
+      bool savedViaApi = false;
+      try {
+        await ApiService().updateUserProfile(name: name, address: addressData);
+        savedViaApi = true;
+      } catch (apiErr) {
+        // Log API attempt and proceed to Supabase direct fallback
+      }
+
+      // 2. Secondary fallback: Direct Supabase upsert if API wasn't reached
+      if (!savedViaApi) {
+        await SupabaseConfig.client.from('users').upsert({
+          'id': uid,
+          'name': name,
+          'role': 'employer',
+          'address': addressData,
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

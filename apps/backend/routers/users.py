@@ -15,6 +15,7 @@ class UpdateUserProfileRequest(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     avatar_url: Optional[str] = None
+    address: Optional[dict] = None
 
 class FCMTokenPayload(BaseModel):
     token: str
@@ -38,6 +39,14 @@ def update_profile(body: UpdateUserProfileRequest, uid: str = Depends(verify_fir
 
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
     supabase.table("users").update(updates).eq("firebase_uid", uid).execute()
+    
+    # Invalidate Redis user cache so subsequent auth checks get the updated profile immediately
+    try:
+        from shared import redis_client
+        redis_client.delete_state(f"user_cache:{uid}")
+    except Exception:
+        pass
+
     return {"status": "success", "message": "Profile updated"}
 
 @router.post("/me/fcm-token")
