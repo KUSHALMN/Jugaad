@@ -27,8 +27,8 @@ void callbackDispatcher() {
           return Future.value(false);
         }
 
-        double lat = 12.3051;
-        double lng = 76.6551;
+        double? lat;
+        double? lng;
 
         try {
           final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -38,11 +38,11 @@ void callbackDispatcher() {
               permission != LocationPermission.denied &&
               permission != LocationPermission.deniedForever) {
             final lastKnown = await Geolocator.getLastKnownPosition();
-            if (lastKnown != null &&
-                DateTime.now().difference(lastKnown.timestamp) < const Duration(seconds: 60)) {
+            if (lastKnown != null) {
               lat = lastKnown.latitude;
               lng = lastKnown.longitude;
-            } else {
+            }
+            try {
               final position = await Geolocator.getCurrentPosition(
                 locationSettings: const LocationSettings(
                   accuracy: LocationAccuracy.medium,
@@ -51,12 +51,17 @@ void callbackDispatcher() {
               );
               lat = position.latitude;
               lng = position.longitude;
+            } catch (_) {
+              // Current position timed out, continue with lastKnown if available
             }
-          } else {
-            print('[HEARTBEAT] Location unavailable. Using Mysuru Center fallback.');
           }
         } catch (e) {
-          print('[HEARTBEAT] Note fetching GPS position: $e. Using Mysuru Center fallback.');
+          print('[HEARTBEAT] Error fetching GPS position: $e');
+        }
+
+        if (lat == null || lng == null) {
+          print('[HEARTBEAT] No valid GPS fix available. Skipping heartbeat to avoid false location.');
+          return Future.value(true);
         }
         final token = await FirebaseAuth.instance.currentUser?.getIdToken();
         if (token == null) {
