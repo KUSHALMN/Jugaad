@@ -11,6 +11,7 @@ import json
 from shared.models import FCMTokenUpdate
 from shared import redis_client
 from utils.security import mask_aadhaar, timing_safe_equal
+from services.spatial_telemetry import ingest_worker_telemetry, query_nearby_workers_fast
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -1196,6 +1197,16 @@ def search_workers_legacy(payload: dict):
     )
 
 
+# ─── GET /nearby/fast — High-Speed In-Memory Geospatial Search ─────────
+@router.get("/nearby/fast")
+def get_nearby_workers_fast(lat: float, lng: float, radius_km: float = 10.0, limit: int = 25):
+    """
+    Sub-millisecond geospatial query against the Redis Hot Telemetry layer.
+    Ideal for real-time map radar and continuous customer discovery.
+    """
+    return query_nearby_workers_fast(lat=lat, lng=lng, radius_km=radius_km, limit=limit)
+
+
 # ─── PATCH /location — Worker Location Update ────────────────────────────
 @router.patch("/location")
 def update_worker_location(
@@ -1227,6 +1238,9 @@ def update_worker_location(
     if not user_result.data:
         raise HTTPException(status_code=404, detail="Worker not found")
     worker_id = user_result.data["id"]
+
+    # 1. Ingest immediately into Redis Hot Geospatial layer
+    ingest_worker_telemetry(str(worker_id), payload.lat, payload.lng, is_available=payload.is_available)
 
     try:
         # Try the RPC function first (atomic PostGIS update)
