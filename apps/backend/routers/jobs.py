@@ -530,9 +530,21 @@ def start_job_with_pin(job_id: str, body: PinVerifyRequest, uid: str = Depends(v
     if job.get("status") not in ("accepted", "matched"):
         raise HTTPException(409, f"Cannot start job in status '{job.get('status')}'")
 
+    # Anti-Brute Force Lockout: Check failed attempts in Redis
+    fail_key = f"pin_fails:{job_id}:start"
+    failed_attempts = redis_client.get_state(fail_key)
+    if failed_attempts and int(failed_attempts) >= 5:
+        raise HTTPException(429, "Too many invalid PIN attempts. Doorstep verification is locked for 15 minutes for customer security.")
+
     expected_pin = str(job.get("start_pin") or redis_client.get_state(f"job_pin:{job_id}:start") or "")
-    if expected_pin and body.pin.strip() != expected_pin:
-        raise HTTPException(400, "Invalid Doorstep PIN. Please ask the customer for their 4-digit arrival PIN.")
+    if expected_pin:
+        # Constant-time comparison to prevent timing side-channels
+        if not hmac.compare_digest(body.pin.strip(), expected_pin.strip()):
+            new_fails = redis_client.incr_state(fail_key, ex=900)
+            remaining = max(0, 5 - new_fails)
+            raise HTTPException(400, f"Invalid Doorstep PIN. {remaining} attempt(s) remaining before 15-minute security lockout.")
+        else:
+            redis_client.delete_state(fail_key)
 
     now_iso = datetime.now(timezone.utc).isoformat()
     supabase.table("jobs").update({
@@ -561,16 +573,44 @@ def complete_job_with_pin(job_id: str, body: PinVerifyRequest, uid: str = Depend
     if job.get("status") not in ("in_progress", "accepted"):
         raise HTTPException(400, f"Cannot complete job in status '{job.get('status')}'")
 
+    # Anti-Brute Force Lockout: Check failed attempts in Redis
+    fail_key = f"pin_fails:{job_id}:completion"
+    failed_attempts = redis_client.get_state(fail_key)
+    if failed_attempts and int(failed_attempts) >= 5:
+        raise HTTPException(429, "Too many invalid PIN attempts. Completion verification is locked for 15 minutes for customer security.")
+
     expected_pin = str(job.get("completion_pin") or redis_client.get_state(f"job_pin:{job_id}:completion") or "")
-    if expected_pin and body.pin.strip() != expected_pin:
-        raise HTTPException(400, "Invalid Completion PIN. Please ask the customer to inspect the work and share their completion PIN.")
+    if expected_pin:
+        # Constant-time comparison to prevent timing side-channels
+        if not hmac.compare_digest(body.pin.strip(), expected_pin.strip()):
+            new_fails = redis_client.incr_state(fail_key, ex=900)
+            remaining = max(0, 5 - new_fails)
+            raise HTTPException(400, f"Invalid Completion PIN. {remaining} attempt(s) remaining before 15-minute security lockout.")
+        else:
+            redis_client.delete_state(fail_key)
 
     now_iso = datetime.now(timezone.utc).isoformat()
+
+    # Financial integrity: Automatically release escrowed upfront payments upon verified completion
+    current_payment_status = job.get("payment_status")
+    target_payment_status = "released" if current_payment_status == "escrowed" else current_payment_status
+
     supabase.table("jobs").update({
         "status": "completed",
+        "payment_status": target_payment_status,
         "completed_at": now_iso,
         "updated_at": now_iso,
     }).eq("id", job_id).execute()
+
+    if current_payment_status == "escrowed":
+        try:
+            supabase.table("payments").update({
+                "status": "released",
+                "updated_at": now_iso,
+            }).eq("job_id", job_id).execute()
+            logger.info(f"💰 Escrow payment automatically released for job {job_id} upon verified PIN completion")
+        except Exception as pay_err:
+            logger.warning(f"Could not update payments table escrow status: {pay_err}")
 
     employer_id = job.get("employer_id")
     if employer_id:
@@ -581,7 +621,7 @@ def complete_job_with_pin(job_id: str, body: PinVerifyRequest, uid: str = Depend
             data={"type": "JOB_COMPLETED", "job_id": job_id},
         )
 
-    return {"status": "completed", "job_id": job_id, "message": "Job completed successfully"}
+    return {"status": "completed", "job_id": job_id, "payment_status": target_payment_status, "message": "Job completed successfully"}
 
 # 9. Review Job
 class JobReviewRequest(BaseModel):

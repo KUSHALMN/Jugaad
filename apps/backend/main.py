@@ -68,7 +68,10 @@ _FALLBACK_SERVICES = [
     {"id": "stove_repair", "title": "Stove repair", "category": "Home", "icon": "local_fire_department_rounded", "image_url": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=400", "price_min": 150, "price_max": 350, "rating": 4.8, "sort_order": 7, "is_active": True},
 ]
 
-# In-memory caches for fast sub-millisecond responses
+# Distributed & in-memory caches for fast sub-millisecond responses
+import json
+from shared import redis_client
+
 _SERVICES_CACHE = {"data": None, "timestamp": 0.0, "ttl": 60.0}
 _CONFIG_CACHE = {"data": None, "timestamp": 0.0, "ttl": 30.0}
 _STATS_CACHE = {"data": None, "timestamp": 0.0, "ttl": 15.0}
@@ -81,6 +84,15 @@ _ALLOWED_SERVICE_IDS = {
 @app.get("/v1/services")
 @app.get("/api/v1/services")
 def list_services():
+    # 1. Check distributed Redis cache first
+    try:
+        cached_svc = redis_client.get_state("cache:services:catalog")
+        if cached_svc:
+            return {"services": json.loads(cached_svc)}
+    except Exception:
+        pass
+
+    # 2. Check local memory cache
     now = time.time()
     if _SERVICES_CACHE["data"] is not None and (now - _SERVICES_CACHE["timestamp"]) < _SERVICES_CACHE["ttl"]:
         return {"services": _SERVICES_CACHE["data"]}
@@ -93,6 +105,10 @@ def list_services():
             services = _FALLBACK_SERVICES
         _SERVICES_CACHE["data"] = services
         _SERVICES_CACHE["timestamp"] = now
+        try:
+            redis_client.set_state("cache:services:catalog", json.dumps(services), ex=60)
+        except Exception:
+            pass
         return {"services": services}
     except Exception:
         return {"services": _SERVICES_CACHE["data"] or _FALLBACK_SERVICES}
@@ -132,6 +148,15 @@ _DEFAULT_PLATFORM_CONFIG = {
 @app.get("/api/v1/platform/config")
 def get_platform_config():
     """Public endpoint — returns platform-wide config (surge fee, radius, etc.)."""
+    # 1. Check distributed Redis cache
+    try:
+        cached_conf = redis_client.get_state("cache:platform:config")
+        if cached_conf:
+            return json.loads(cached_conf)
+    except Exception:
+        pass
+
+    # 2. Check local memory cache
     now = time.time()
     if _CONFIG_CACHE["data"] is not None and (now - _CONFIG_CACHE["timestamp"]) < _CONFIG_CACHE["ttl"]:
         return _CONFIG_CACHE["data"]
@@ -151,6 +176,10 @@ def get_platform_config():
             }
             _CONFIG_CACHE["data"] = config_data
             _CONFIG_CACHE["timestamp"] = now
+            try:
+                redis_client.set_state("cache:platform:config", json.dumps(config_data), ex=60)
+            except Exception:
+                pass
             return config_data
     except Exception as e:
         logging.warning(f"Could not read platform_config table (may not exist yet): {e}")
@@ -175,9 +204,13 @@ def update_platform_config(body: dict, admin_id: str = Depends(_verify_admin_for
 
     try:
         supabase.table("platform_config").update(update_data).eq("id", 1).execute()
-        # Invalidate in-memory config cache
+        # Invalidate both local and distributed Redis cache so all workers stay synced
         _CONFIG_CACHE["data"] = None
         _CONFIG_CACHE["timestamp"] = 0.0
+        try:
+            redis_client.delete_state("cache:platform:config")
+        except Exception:
+            pass
     except Exception as e:
         logging.error(f"Failed to update platform_config: {e}")
         from fastapi import HTTPException

@@ -130,6 +130,35 @@ def get_state(key: str) -> str | None:
         return None
 
 
+def incr_state(key: str, ex: int = 300) -> int:
+    """Increment an integer state key with TTL. Returns current count."""
+    if not _ensure_redis():
+        return 1
+    try:
+        val = _redis_client.incr(key)
+        # Set expiry on first increment
+        if val == 1 and ex:
+            _redis_client.expire(key, ex)
+        return int(val)
+    except Exception as e:
+        log("redis", "incr_state", "error",
+            severity="WARNING", key=key, error=str(e))
+        return 1
+
+
+def delete_state(key: str) -> bool:
+    """Delete a state key."""
+    if not _ensure_redis():
+        return True
+    try:
+        _redis_client.delete(key)
+        return True
+    except Exception as e:
+        log("redis", "delete_state", "error",
+            severity="WARNING", key=key, error=str(e))
+        return False
+
+
 def count_by_pattern(pattern: str) -> dict[str, str]:
     """
     Scan keys matching a pattern and return {key: value} dict.

@@ -177,14 +177,23 @@ class DispatchService:
                     query = query.eq("emergency_available", True)
                 fallback_result = query.execute()
                 workers = fallback_result.data or []
-                ret_workers = []
-                for w in workers:
-                    w_id = str(w["id"])
-                    if w_id not in exclude_list:
-                        token_res = supabase.table("users").select("fcm_token").eq("id", w_id).execute()
-                        token = token_res.data[0]["fcm_token"] if token_res.data else ""
-                        ret_workers.append({"id": w_id, "fcm_token": token})
-                    return ret_workers[:10]
+                
+                # Filter out excluded workers
+                candidate_ids = [str(w["id"]) for w in workers if str(w["id"]) not in exclude_list][:10]
+                if not candidate_ids:
+                    return []
+
+                # Batch query FCM tokens for candidates instead of single queries in loop
+                token_map = {}
+                try:
+                    token_res = supabase.table("users").select("id, fcm_token").in_("id", candidate_ids).execute()
+                    if token_res and token_res.data:
+                        token_map = {str(u["id"]): u.get("fcm_token") or "" for u in token_res.data}
+                except Exception as t_err:
+                    logger.warning(f"Could not batch fetch FCM tokens: {t_err}")
+
+                ret_workers = [{"id": w_id, "fcm_token": token_map.get(w_id, "")} for w_id in candidate_ids]
+                return ret_workers
             except Exception as e2:
                 logger.error(f"Fallback query error: {e2}")
                 return []

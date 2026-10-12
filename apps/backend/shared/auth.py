@@ -55,13 +55,29 @@ def verify_token(authorization_header: str) -> dict:
 def ensure_db_user(uid: str, decoded_token: dict = None) -> dict:
     """
     Ensure a user record exists in the Supabase 'users' table.
+    Uses Redis L1/L2 caching to avoid redundant remote database calls on every request.
     If it doesn't exist, auto-provisions it using metadata from the decoded Firebase ID token.
     """
+    import json
+    from shared import redis_client
     from shared.database import supabase
+
+    cache_key = f"user_cache:{uid}"
+    try:
+        cached_str = redis_client.get_state(cache_key)
+        if cached_str:
+            return json.loads(cached_str)
+    except Exception as c_err:
+        log("auth", "ensure_db_user", "cache_read_warning", uid=uid, error=str(c_err), severity="DEBUG")
+
     try:
         # Query user safely checking if response is None
         res = supabase.table("users").select("*").eq("firebase_uid", uid).maybe_single().execute()
         if res and res.data:
+            try:
+                redis_client.set_state(cache_key, json.dumps(res.data), ex=1800)
+            except Exception:
+                pass
             return res.data
         
         # Provision new user
@@ -90,9 +106,12 @@ def ensure_db_user(uid: str, decoded_token: dict = None) -> dict:
         insert_res = supabase.table("users").insert(new_user).execute()
         log("auth", "ensure_db_user", "auto_provision_success", uid=uid)
         
-        if insert_res and insert_res.data:
-            return insert_res.data[0]
-        return new_user
+        user_to_cache = insert_res.data[0] if (insert_res and insert_res.data) else new_user
+        try:
+            redis_client.set_state(cache_key, json.dumps(user_to_cache), ex=1800)
+        except Exception:
+            pass
+        return user_to_cache
         
     except Exception as e:
         log("auth", "ensure_db_user", "auto_provision_failed", uid=uid, error=str(e), severity="ERROR")
