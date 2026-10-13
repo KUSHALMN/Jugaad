@@ -23,6 +23,9 @@ import '../../../core/services/platform_config_service.dart';
 import '../widgets/home_categories_grid.dart';
 import '../widgets/spotlight_carousel.dart';
 import '../widgets/jugaad_trust_matrix.dart';
+import '../widgets/symptom_discovery_carousel.dart';
+import '../widgets/live_activity_island.dart';
+
 
 // --- RIVERPOD PROVIDERS ---
 
@@ -858,12 +861,26 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
+                  // --- SYMPTOM-FIRST DISCOVERY CAROUSEL (Urban Company Problem Selector)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 20.0),
+                      child: SymptomDiscoveryCarousel(
+                        onSymptomTap: (symptom) {
+                          HapticFeedback.lightImpact();
+                          context.push('/user/worker-search?skill=${symptom.skillTarget}');
+                        },
+                      ),
+                    ),
+                  ),
+
                   // --- CATEGORIES GRID (7 Essential Services)
                   const SliverToBoxAdapter(
                     child: RepaintBoundary(
                       child: HomeCategoriesGrid(),
                     ),
                   ),
+
 
                   const SliverToBoxAdapter(child: SizedBox(height: 20.0)),
 
@@ -1074,97 +1091,41 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                   final jobId = booking['id'] as String? ?? '';
                   final status = booking['status'] as String? ?? 'in_progress';
                   final skill = booking['skill_required'] ?? booking['title'] ?? 'Service';
+                  final workerName = booking['worker_name'] ?? 'Verified Partner';
+                  final startPin = booking['start_pin'] as String? ?? '4821';
 
                   String statusText = 'Partner Matched';
-                  if (status == 'in_progress') statusText = 'Partner Arrived · In Progress';
-                  if (status == 'accepted') statusText = 'Partner En Route';
+                  if (status == 'in_progress') statusText = 'In Progress';
+                  if (status == 'accepted') statusText = 'En Route';
 
                   return Positioned(
                     bottom: 16,
-                    left: 16,
-                    right: 16,
-                    child: GestureDetector(
-                      onTap: () {
+                    left: 0,
+                    right: 0,
+                    child: LiveActivityIsland(
+                      workerName: workerName,
+                      skill: skill,
+                      startPin: startPin,
+                      status: statusText,
+                      etaText: '12-15 mins',
+                      distanceText: '1.4 km away',
+                      onCardTap: () {
                         HapticFeedback.mediumImpact();
                         context.push('/user/track?jobId=$jobId');
                       },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0F172A),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF0F172A).withValues(alpha: 0.35),
-                              blurRadius: 18,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 10,
-                              height: 10,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xFF34D399),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '$skill · $statusText',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    'Tap to view live radar & partner details',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white.withValues(alpha: 0.7),
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1D4ED8),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    'Live Radar',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      onCallTap: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/user/track?jobId=$jobId');
+                      },
+                      onShareTap: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/user/track?jobId=$jobId');
+                      },
                     ),
                   );
                 },
               ),
+
             ],
           ),
         ),

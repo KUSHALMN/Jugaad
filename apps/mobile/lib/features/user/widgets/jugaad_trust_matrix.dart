@@ -53,7 +53,7 @@ class JugaadTrustMatrix extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Unmatched doorstep service standards',
+                      'Urban Company-standard doorstep trust',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
@@ -64,9 +64,53 @@ class JugaadTrustMatrix extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
+            // High-Trust ₹10,000 Damage Insurance Shield Banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFEF3C7), Color(0xFFFDE68A)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.security_rounded, color: Color(0xFFB45309), size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '₹10,000 Free Damage Cover on all home repairs',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF78350F),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFB45309),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'INCLUDED',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
             const Divider(height: 1, color: Color(0xFFF1F5F9)),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
+
 
             // 2x2 Grid of Trust Features
             Row(
