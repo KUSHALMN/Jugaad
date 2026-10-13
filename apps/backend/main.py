@@ -370,7 +370,7 @@ async def upload_file(
 
 
 # Import routers
-from routers import auth, jobs, workers, dispatch, users, payments, admin, spare_parts
+from routers import auth, jobs, workers, dispatch, users, payments, admin, spare_parts, tracking
 
 # Mount routers under /api/v1 prefix
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
@@ -381,6 +381,7 @@ app.include_router(dispatch.router, prefix="/api/v1/dispatch", tags=["Dispatch"]
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(payments.router, prefix="/api/v1/payments", tags=["Payments"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
+app.include_router(tracking.router, prefix="/api/v1/tracking", tags=["Tracking"])
 
 # Mount routers under /v1 prefix for legacy client compatibility
 app.include_router(auth.router, prefix="/v1/auth", tags=["Auth"])
@@ -391,6 +392,8 @@ app.include_router(dispatch.router, prefix="/v1/dispatch", tags=["Dispatch"])
 app.include_router(users.router, prefix="/v1/users", tags=["Users"])
 app.include_router(payments.router, prefix="/v1/payments", tags=["Payments"])
 app.include_router(admin.router, prefix="/v1/admin", tags=["Admin"])
+app.include_router(tracking.router, prefix="/v1/tracking", tags=["Tracking"])
+
 
 if __name__ == "__main__":
     uvicorn.run(
