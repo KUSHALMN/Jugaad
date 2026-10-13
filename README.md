@@ -42,7 +42,23 @@
 - **Field & Offline Resilience**: In-flight mutation queues (`OfflineSyncManager`) for basements/elevators, coupled with mock GPS anti-spoofing detection.
 - **Google L6/L7 Backend Reliability**: Redis-backed attempt limiters against brute-force attacks, constant-time cryptographic checks, sub-millisecond user profile caching, and distributed multi-worker sync.
 
+### 🏛️ The 13 Production Architecture Pillars:
+1. `telemetry`: Android persistent foreground service & OEM battery optimizer whitelisting.
+2. `spatial`: Dual-tier Redis GEO hot storage with asynchronous PostgreSQL milestone snapshots.
+3. `state-machine`: Strict Directed Acyclic Graph (DAG) validation with offline conflict arbitration.
+4. `payouts`: Automated idempotent Razorpay / Cashfree UPI settlement queue with Section 194O compliance.
+5. `pricing`: Two-tier rate architecture (₹99 Visiting Fee + Standardized Digital Add-On Rate Card).
+6. `safety`: Cryptographic HMAC public tracking web links with one-tap WhatsApp family sharing.
+7. `liquidity`: Micro-cluster geofenced launch guardrails (Gokulam, Vijayanagar) with 60s SLA escalation.
+8. `trust`: Doorstep GPS proximity validation (<100m) & mandatory selfie proof on manual PIN bypass.
+9. `incentives`: Active on-duty supply guarantee (₹400/4h floor) and dynamic weather surge engine.
+10. `admin`: Real-time operational dispute console with split-settlement arbitration capabilities.
+11. `localization`: Spoken voice prompts in Kannada, Hindi, and Tamil for busy two-wheeler drivers.
+12. `testing`: Automated concurrency & resilience test suite (`test_production_resilience_suite.py`).
+13. `governance`: Google Staff PRD and Mysuru Pilot Operations Playbook (`docs/`).
+
 ---
+
 
 ## 🏗️ High-Level Architecture
 
