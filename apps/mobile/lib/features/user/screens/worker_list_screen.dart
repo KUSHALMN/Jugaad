@@ -480,7 +480,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                       color: const Color(0xFF94A3B8),
                       fontSize: 14,
                     ),
-                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF94A3B8), size: 20),
+                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF16A34A), size: 20),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear, size: 18),
@@ -524,7 +524,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                         ),
                       ),
                       selected: isSelected,
-                      selectedColor: const Color(0xFF1A56DB),
+                      selectedColor: const Color(0xFF16A34A),
                       backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(50.0),
@@ -533,6 +533,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                           width: 1.0,
                         ),
                       ),
+
                       padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 6.0),
                       labelPadding: EdgeInsets.zero,
                       showCheckmark: false,
@@ -918,7 +919,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                               children: [
                                 CircleAvatar(
                                   radius: 36,
-                                  backgroundColor: const Color(0xFFEFF6FF),
+                                  backgroundColor: const Color(0xFFF0FDF4),
                                   backgroundImage: (worker['id_document_url'] is String && (worker['id_document_url'] as String).isNotEmpty)
                                       ? CachedNetworkImageProvider(worker['id_document_url'] as String)
                                       : null,
@@ -926,13 +927,14 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                       ? Text(
                                           (worker['name'] as String? ?? 'W').substring(0, 1).toUpperCase(),
                                           style: GoogleFonts.plusJakartaSans(
-                                            color: const Color(0xFF1A56DB),
+                                            color: const Color(0xFF16A34A),
                                             fontWeight: FontWeight.bold,
                                             fontSize: 28,
                                           ),
                                         )
                                       : null,
                                 ),
+
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
@@ -998,7 +1000,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                         spacing: 6,
                                         runSpacing: 6,
                                         children: [
-                                          _buildVerificationChip('Phone', worker['phone_verified'] == true, Icons.phone_android_rounded, const Color(0xFF1A56DB)),
+                                          _buildVerificationChip('Phone', worker['phone_verified'] == true, Icons.phone_android_rounded, const Color(0xFF16A34A)),
                                           _buildVerificationChip('Identity', worker['identity_verified'] == true || worker['id_verified'] == true || worker['isVerified'] == true, Icons.verified_user_rounded, const Color(0xFF16A34A)),
                                           _buildVerificationChip('Skill', worker['skill_verified'] == true, Icons.star_rounded, const Color(0xFFEAB308)),
                                         ],
@@ -1029,7 +1031,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                                 const SizedBox(width: 12),
                                 _buildDetailStatCard(
                                   icon: Icons.work_history_rounded,
-                                  iconColor: const Color(0xFF1A56DB),
+                                  iconColor: const Color(0xFF16A34A),
                                   title: 'Experience',
                                   value: worker['experience'] ?? 'N/A',
                                 ),
@@ -1244,7 +1246,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                               icon: const Icon(Icons.call_rounded),
                               label: Text('Call ${worker['name'] ?? 'Worker'}'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1A56DB),
+                                backgroundColor: const Color(0xFF16A34A),
                                 foregroundColor: Colors.white,
                                 minimumSize: const Size(double.infinity, 50),
                                 shape: RoundedRectangleBorder(
@@ -1440,13 +1442,13 @@ class _WorkerCardState extends State<_WorkerCard> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _isHovered ? const Color(0xFF1A56DB).withValues(alpha: 0.3) : const Color(0xFFECEFF1),
+                color: _isHovered ? const Color(0xFF16A34A).withValues(alpha: 0.4) : const Color(0xFFECEFF1),
                 width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
                   color: _isHovered 
-                      ? const Color(0xFF1A56DB).withValues(alpha: 0.08)
+                      ? const Color(0xFF16A34A).withValues(alpha: 0.10)
                       : Colors.black.withValues(alpha: 0.02),
                   blurRadius: _isHovered ? 16 : 8,
                   offset: const Offset(0, 4),
@@ -1461,7 +1463,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                   children: [
                     CircleAvatar(
                       radius: 28,
-                      backgroundColor: const Color(0xFFEFF6FF),
+                      backgroundColor: const Color(0xFFF0FDF4),
                       backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
                           ? CachedNetworkImageProvider(photoUrl)
                           : null,
@@ -1469,7 +1471,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                           ? Text(
                               initials,
                               style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFF1A56DB),
+                                color: const Color(0xFF16A34A),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 20,
                               ),
@@ -1523,20 +1525,21 @@ class _WorkerCardState extends State<_WorkerCard> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: const Color(0xFFF0FDF4),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFDBEAFE)),
+                          border: Border.all(color: const Color(0xFFBBF7D0)),
                         ),
                         child: Text(
                           categoryText.toUpperCase(),
                           style: GoogleFonts.plusJakartaSans(
-                            color: const Color(0xFF1E40AF),
+                            color: const Color(0xFF15803D),
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 6),
 
                       // Rating & job count
@@ -1665,10 +1668,10 @@ Widget _buildVerificationStages(Map<String, dynamic> worker, {double size = 14})
           margin: const EdgeInsets.only(right: 4),
           padding: const EdgeInsets.all(3),
           decoration: const BoxDecoration(
-            color: Color(0xFFEFF6FF),
+            color: Color(0xFFF0FDF4),
             shape: BoxShape.circle,
           ),
-          child: Icon(Icons.phone_android_rounded, color: const Color(0xFF1D4ED8), size: size),
+          child: Icon(Icons.phone_android_rounded, color: const Color(0xFF16A34A), size: size),
         ),
       ],
       if (identity) ...[
