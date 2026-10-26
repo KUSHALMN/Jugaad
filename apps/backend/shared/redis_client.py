@@ -65,6 +65,11 @@ def get_client():
     return None
 
 
+def get_redis():
+    """Alias for get_client() for caller compatibility."""
+    return get_client()
+
+
 # ─── Distributed Lock ────────────────────────────────────────────
 
 def acquire_lock(key: str, value: str, ex: int = 10) -> bool:

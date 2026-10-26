@@ -12,7 +12,7 @@ from shared import redis_client
 router = APIRouter()
 
 def is_rate_limited(key: str, limit: int = 5, window: int = 60) -> bool:
-    r = redis_client.get_redis()
+    r = redis_client.get_client()
     if r:
         try:
             r_key = f"ratelimit:auth:{key}"
@@ -62,7 +62,7 @@ async def send_otp(request: Request, req: SendOtpRequest):
     otp = str(random.randint(100000, 999999))
     
     # Store OTP with 5 minute TTL in Redis
-    r = redis_client.get_redis()
+    r = redis_client.get_client()
     if r:
         try:
             r.set(f"otp:{req.phone}", otp, ex=300)
@@ -76,7 +76,7 @@ async def send_otp(request: Request, req: SendOtpRequest):
 @router.post("/verify-otp")
 async def verify_otp(req: VerifyOtpRequest):
     from core.config import settings
-    r = redis_client.get_redis()
+    r = redis_client.get_client()
     fail_key = f"otp_fails:{req.phone}"
     
     if r:
