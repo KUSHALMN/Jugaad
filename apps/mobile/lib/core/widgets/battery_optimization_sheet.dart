@@ -17,6 +17,7 @@ class BatteryOptimizationSheet extends StatelessWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => BatteryOptimizationSheet(
         onSettingsTap: onSettingsTap,
@@ -27,8 +28,10 @@ class BatteryOptimizationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      padding: EdgeInsets.fromLTRB(24, 20, 24, 20 + bottomInset),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
