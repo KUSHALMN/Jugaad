@@ -44,8 +44,12 @@ async def razorpay_webhook(request: Request):
             if existing.data:
                 return {"status": "already_processed"}
 
-            job_result = supabase.table("jobs").select("id, employer_id, worker_id, status").eq("razorpay_order_id", order_id).single().execute()
-            job = job_result.data or {}
+            job_result = supabase.table("jobs").select("id, employer_id, worker_id, status").eq("razorpay_order_id", order_id).maybe_single().execute()
+            if not job_result or not job_result.data:
+                logger.warning(f"Payment captured for unknown order: {order_id}")
+                return {"status": "order_not_found"}
+
+            job = job_result.data
             job_id = job.get("id")
 
             # Check escrow release constraints
