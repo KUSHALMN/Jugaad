@@ -1,8 +1,8 @@
 import '../network/environment_config.dart';
 
 class ApiConstants {
-  static String get baseUrl => EnvironmentConfig.baseUrl;
-  static String get apiV1 => EnvironmentConfig.apiV1;
+  static const String baseUrl = EnvironmentConfig.baseUrl;
+  static const String apiV1 = EnvironmentConfig.apiV1;
   
   // Endpoints
   static const String health = '$baseUrl/health';
