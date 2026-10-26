@@ -52,37 +52,58 @@ def get_public_tracking_view(token: str = Query(..., description="Signed trackin
     """
     Public web tracking endpoint accessible via WhatsApp links.
     Returns worker name, avatar, skill, live status, and coordinates.
+    Employs hot-cache to handle high-frequency location polls without hammering Postgres.
     """
     job_id = verify_tracking_token(token)
 
-    job_res = supabase.table("jobs").select("id, status, skill_required, address, worker_id, created_at").eq("id", job_id).maybe_single().execute()
-    if not job_res or not job_res.data:
-        raise HTTPException(404, "Job not found")
+    meta_cache_key = f"cache:public_track:meta:{job_id}"
+    cached_meta = None
+    try:
+        raw_cached = redis_client.get_state(meta_cache_key)
+        if raw_cached:
+            cached_meta = json.loads(raw_cached)
+    except Exception:
+        pass
 
-    job = job_res.data
-    worker_id = job.get("worker_id")
+    if cached_meta:
+        job = cached_meta["job"]
+        worker_info = cached_meta["worker_info"]
+        worker_id = job.get("worker_id")
+    else:
+        job_res = supabase.table("jobs").select("id, status, skill_required, address, worker_id, created_at").eq("id", job_id).maybe_single().execute()
+        if not job_res or not job_res.data:
+            raise HTTPException(404, "Job not found")
 
-    worker_info: Dict[str, Any] = {
-        "name": "Verified Pro",
-        "skill": job.get("skill_required", "Trade Expert"),
-        "rating": 4.9,
-        "is_id_verified": True
-    }
+        job = job_res.data
+        worker_id = job.get("worker_id")
 
-    if worker_id:
-        w_res = supabase.table("workers").select("name, rating, is_id_verified, avatar_url").eq("id", worker_id).maybe_single().execute()
-        if w_res and w_res.data:
-            worker_info.update(w_res.data)
+        worker_info: Dict[str, Any] = {
+            "name": "Verified Pro",
+            "skill": job.get("skill_required", "Trade Expert"),
+            "rating": 4.9,
+            "is_id_verified": True
+        }
 
-    # Fetch live location from Redis hot cache
+        if worker_id:
+            w_res = supabase.table("workers").select("name, rating, is_id_verified, avatar_url").eq("id", worker_id).maybe_single().execute()
+            if w_res and w_res.data:
+                worker_info.update(w_res.data)
+
+        # Cache job + worker metadata for 10 seconds
+        try:
+            redis_client.set_state(meta_cache_key, json.dumps({"job": job, "worker_info": worker_info}), ex=10)
+        except Exception:
+            pass
+
+    # Fetch live location from Redis hot cache (always fresh)
     live_coords = {"lat": 12.3051, "lng": 76.6551}
     try:
         if worker_id:
             raw_telemetry = redis_client.get_state(f"worker:telemetry:{worker_id}")
             if raw_telemetry:
                 tel = json.loads(raw_telemetry)
-                live_coords["lat"] = tel.get("lat", 12.3051)
-                live_coords["lng"] = tel.get("lng", 76.6551)
+                live_coords["lat"] = float(tel.get("lat", 12.3051))
+                live_coords["lng"] = float(tel.get("lng", 76.6551))
     except Exception:
         pass
 
