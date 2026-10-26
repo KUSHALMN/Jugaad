@@ -41,6 +41,20 @@ class CachedImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final trimmedUrl = imageUrl.trim();
+    if (trimmedUrl.isEmpty || trimmedUrl == 'null') {
+      final fallback = errorWidget ??
+          _ErrorFallback(
+            width: width,
+            height: height,
+            isCircle: isCircle,
+            borderRadius: borderRadius,
+          );
+      if (isCircle) return ClipOval(child: fallback);
+      if (borderRadius != null) return ClipRRect(borderRadius: borderRadius!, child: fallback);
+      return fallback;
+    }
+
     // Memory optimization: clamp decode dimensions to actual physical pixel display size
     // to prevent full-resolution multi-megabyte bitmap allocations in GPU memory.
     final dpr = MediaQuery.maybeOf(context)?.devicePixelRatio ?? 2.0;
@@ -50,7 +64,7 @@ class CachedImage extends StatelessWidget {
         (height != null ? (height! * dpr).clamp(32.0, 1200.0).round() : null);
 
     final image = CachedNetworkImage(
-      imageUrl: imageUrl,
+      imageUrl: trimmedUrl,
       width: width,
       height: height,
       fit: fit,
@@ -154,28 +168,30 @@ class _ShimmerPlaceholderState extends State<_ShimmerPlaceholder>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          width: widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            shape: widget.isCircle ? BoxShape.circle : BoxShape.rectangle,
-            borderRadius:
-                widget.isCircle ? null : (widget.borderRadius ?? BorderRadius.circular(8)),
-            gradient: LinearGradient(
-              begin: Alignment(-1.0 + 2.0 * _controller.value, 0),
-              end: Alignment(-1.0 + 2.0 * _controller.value + 1.0, 0),
-              colors: const [
-                Color(0xFFE8E8E8),
-                Color(0xFFF5F5F5),
-                Color(0xFFE8E8E8),
-              ],
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Container(
+            width: widget.width,
+            height: widget.height,
+            decoration: BoxDecoration(
+              shape: widget.isCircle ? BoxShape.circle : BoxShape.rectangle,
+              borderRadius:
+                  widget.isCircle ? null : (widget.borderRadius ?? BorderRadius.circular(8)),
+              gradient: LinearGradient(
+                begin: Alignment(-1.0 + 2.0 * _controller.value, 0),
+                end: Alignment(-1.0 + 2.0 * _controller.value + 1.0, 0),
+                colors: const [
+                  Color(0xFFE8E8E8),
+                  Color(0xFFF5F5F5),
+                  Color(0xFFE8E8E8),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
