@@ -144,7 +144,7 @@ class _DigitalRateCardSheetState extends State<DigitalRateCardSheet> {
           Expanded(
             child: ListView.separated(
               itemCount: _relevantItems.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final item = _relevantItems[index];
                 final isSelected = _selectedIds.contains(item.id);

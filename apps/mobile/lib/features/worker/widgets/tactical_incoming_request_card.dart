@@ -39,7 +39,6 @@ class _TacticalIncomingRequestCardState extends State<TacticalIncomingRequestCar
   @override
   Widget build(BuildContext context) {
     const double slideBarHeight = 64.0;
-    final double maxDrag = MediaQuery.of(context).size.width - 40.0 - slideBarHeight;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),

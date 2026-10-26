@@ -154,7 +154,7 @@ class SymptomDiscoveryCarousel extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             scrollDirection: Axis.horizontal,
             itemCount: _symptoms.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            separatorBuilder: (_, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final item = _symptoms[index];
               return InkWell(

@@ -72,7 +72,7 @@ void main() {
   group('User Theme & Assigned Screen Background Specs', () {
     test('Assigned screen light background color matches clean modern slate specification', () {
       const assignedBg = Color(0xFFF8FAFC);
-      expect(assignedBg.value, 0xFFF8FAFC);
+      expect(assignedBg.toARGB32(), 0xFFF8FAFC);
       // Ensures it is light (luminance > 0.8)
       expect(assignedBg.computeLuminance() > 0.8, isTrue);
     });
