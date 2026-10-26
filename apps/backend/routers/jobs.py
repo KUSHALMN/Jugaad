@@ -17,6 +17,7 @@ import hmac
 import hashlib
 import secrets
 
+import time
 from core.idempotency import extract_idempotency_key, get_cached_idempotency_response, cache_idempotency_response
 from utils.security import timing_safe_equal
 
@@ -28,13 +29,24 @@ class PinVerifyRequest(BaseModel):
 
 JOB_TIMEOUT_SECONDS = int(os.getenv("JOB_TIMEOUT_SECONDS", "120"))
 
+# Fast TTL in-memory cache for FCM tokens to avoid redundant Postgres queries during rapid job state transitions
+_USER_FCM_CACHE: dict[str, tuple[float, str]] = {}
+
 # Helper for FCM
 def _send_fcm_to_user(user_id: str, title: str, body: str, data: dict):
     try:
-        result = supabase.table("users").select("fcm_token").eq("id", user_id).maybe_single().execute()
-        if not result or not result.data:
-            return
-        fcm_token = result.data.get("fcm_token", "")
+        now = time.time()
+        cached = _USER_FCM_CACHE.get(user_id)
+        if cached and (now - cached[0]) < 300.0:
+            fcm_token = cached[1]
+        else:
+            result = supabase.table("users").select("fcm_token").eq("id", user_id).maybe_single().execute()
+            if not result or not result.data:
+                return
+            fcm_token = result.data.get("fcm_token", "")
+            if fcm_token:
+                _USER_FCM_CACHE[user_id] = (now, fcm_token)
+
         if not fcm_token:
             return
         message = messaging.Message(
