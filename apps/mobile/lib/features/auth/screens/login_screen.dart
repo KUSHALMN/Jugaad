@@ -696,32 +696,53 @@ class _LoginScreenState extends State<LoginScreen> {
     ).animate().fadeIn(delay: 80.ms, duration: 300.ms).slideY(begin: 0.1, end: 0);
   }
 
-  Widget _buildHeadline(bool isWorker) {
+  Widget _buildHeadline(bool isWorker, bool isWide) {
+    final double headlineSize = isWide ? 34.0 : 25.0;
     return RichText(
       textAlign: TextAlign.center,
       text: TextSpan(
         style: GoogleFonts.plusJakartaSans(
-          fontSize: 34.0,
+          fontSize: headlineSize,
           fontWeight: FontWeight.w800,
-          letterSpacing: -0.8,
+          letterSpacing: -0.6,
           color: const Color(0xFF0F172A),
+          height: 1.25,
         ),
         children: [
           TextSpan(text: isWorker ? 'Welcome Partner to ' : 'Welcome to '),
-          const TextSpan(
-            text: 'Jug',
-            style: TextStyle(color: Color(0xFF0D7844)),
-          ),
-          const TextSpan(
-            text: 'aad',
-            style: TextStyle(color: Color(0xFFF25C05)),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.baseline,
+            baseline: TextBaseline.alphabetic,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Jug',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: headlineSize,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                    color: const Color(0xFF0D7844),
+                  ),
+                ),
+                Text(
+                  'aad',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: headlineSize,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.6,
+                    color: const Color(0xFFF25C05),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     ).animate().fadeIn(delay: 130.ms, duration: 350.ms).slideY(begin: 0.15, end: 0.0);
   }
 
-  Widget _buildSubtitle(bool isWorker) {
+  Widget _buildSubtitle(bool isWorker, bool isWide) {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 560),
       child: Text(
@@ -730,10 +751,10 @@ class _LoginScreenState extends State<LoginScreen> {
             : 'Sign in to book trusted local professionals for fast, dependable home and office services.',
         textAlign: TextAlign.center,
         style: GoogleFonts.plusJakartaSans(
-          fontSize: 14.5,
+          fontSize: isWide ? 14.5 : 13.0,
           fontWeight: FontWeight.w400,
           color: const Color(0xFF64748B),
-          height: 1.5,
+          height: 1.45,
         ),
       ),
     ).animate().fadeIn(delay: 180.ms, duration: 350.ms).slideY(begin: 0.15, end: 0.0);
@@ -1478,32 +1499,49 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } else {
-      return Column(
-        children: [
-          _buildTrustItem(
-            icon: Icons.shield_rounded,
-            iconColor: const Color(0xFF16A34A),
-            bgColor: const Color(0xFFDCFCE7),
-            title: 'Verified Professionals',
-            subtitle: 'Trusted and rated by people near you',
-          ),
-          const SizedBox(height: 16),
-          _buildTrustItem(
-            icon: Icons.credit_card_rounded,
-            iconColor: const Color(0xFFEA580C),
-            bgColor: const Color(0xFFFFEDD5),
-            title: 'Secure Payments',
-            subtitle: 'Multiple payment options',
-          ),
-          const SizedBox(height: 16),
-          _buildTrustItem(
-            icon: Icons.location_on_rounded,
-            iconColor: const Color(0xFF16A34A),
-            bgColor: const Color(0xFFDCFCE7),
-            title: 'Local Service Network',
-            subtitle: 'Trusted professionals near you',
-          ),
-        ],
+      return Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(maxWidth: 480),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildTrustItem(
+              icon: Icons.shield_rounded,
+              iconColor: const Color(0xFF16A34A),
+              bgColor: const Color(0xFFDCFCE7),
+              title: 'Verified Professionals',
+              subtitle: 'Trusted and rated by people near you',
+            ),
+            const Divider(height: 18, color: Color(0xFFF1F5F9)),
+            _buildTrustItem(
+              icon: Icons.credit_card_rounded,
+              iconColor: const Color(0xFFEA580C),
+              bgColor: const Color(0xFFFFEDD5),
+              title: 'Secure Payments',
+              subtitle: 'Multiple payment options',
+            ),
+            const Divider(height: 18, color: Color(0xFFF1F5F9)),
+            _buildTrustItem(
+              icon: Icons.location_on_rounded,
+              iconColor: const Color(0xFF16A34A),
+              bgColor: const Color(0xFFDCFCE7),
+              title: 'Local Service Network',
+              subtitle: 'Trusted professionals near you',
+            ),
+          ],
+        ),
       );
     }
   }
@@ -1524,44 +1562,45 @@ class _LoginScreenState extends State<LoginScreen> {
           _showToast('$title: $subtitle');
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: bgColor,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
-                child: Icon(icon, color: iconColor, size: 20),
+                child: Icon(icon, color: iconColor, size: 19),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF0F172A),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF64748B),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF64748B),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
