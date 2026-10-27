@@ -20,6 +20,10 @@ class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: kIsWeb ? _webClientId : null,
     serverClientId: kIsWeb ? null : _webClientId,
+    scopes: const <String>[
+      'email',
+      'profile',
+    ],
   );
 
   // ─── Current state ───────────────────────────────────────
@@ -99,6 +103,9 @@ class AuthService {
         print('[AUTH] signInWithGoogle: Popup completed successfully');
       } else {
         print('[AUTH] signInWithGoogle: Using native flow');
+        try {
+          await _googleSignIn.signOut();
+        } catch (_) {}
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
         if (googleUser == null) {
           print('[AUTH] signInWithGoogle: User cancelled (native)');
@@ -107,6 +114,12 @@ class AuthService {
 
         final GoogleSignInAuthentication googleAuth =
             await googleUser.authentication;
+
+        print('[AUTH] signInWithGoogle: idToken present? ${googleAuth.idToken != null}, accessToken present? ${googleAuth.accessToken != null}');
+
+        if (googleAuth.idToken == null && googleAuth.accessToken == null) {
+          throw Exception('Google Sign-In failed: neither idToken nor accessToken was returned by Google Play Services.');
+        }
 
         final credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
