@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] - 2026-10-27
+### Fixed
+- **Google Play Services OAuth Certificate Alignment**: Configured Android Gradle `debug` build type to sign with production release keystore (`jugaad-release-key.jks`) matching registered Firebase / Google Cloud SHA-1 and SHA-256 fingerprints, eliminating `ApiException: 10`.
+- **ProGuard / R8 Obfuscation Rules**: Added keep rules for `com.google.android.gms.auth.api.**` and `signin.**` preventing minification stripping during production builds.
+- **Client Auth Flow Hardening**: Added explicit `email` and `profile` OAuth scopes, session cleanup with `signOut()` before login, and strict token presence assertions in `AuthService`.
+- **Mobile UI Alignment & Center Brand Lockup**: Restructured top app bar using centered `Stack` on `LoginScreen` and `RoleSelectScreen` to prevent asymmetric shifts caused by `spaceBetween`.
+- **Responsive Headlines & Non-Breaking Typography**: Adapted auth headlines to scale down smoothly on mobile screens with non-breaking `WidgetSpan` brand lockup preventing "Jugaad" from breaking across lines.
+- **Trust Shield Vertical Alignment**: Restructured mobile trust props into a unified container with `Expanded` text columns, ensuring all category icons vertically align.
+- **Worker Bottom Navigation Labels**: Added missing text labels and micro-indicators to Worker portal bottom navigation bar tabs.
+- **Onboarding Signature Branding**: Updated onboarding header to use signature dual-color `JUG`/`AAD` brand typography.
+- **Backend Tracking Telemetry Bounds**: Added strict latitude/longitude boundary checks (`-90..90`, `-180..180`) on public live worker telemetry polling.
+
+---
+
 ## [1.4.0] - 2026-09-17
 ### Added
 - **Multi-City & Division Geospatial Registry**: Comprehensive division-level bounding boxes and centroids for all divisions of Mysuru, Bengaluru, Mandya, Hassan, Hubli-Dharwad, Mangaluru, and dynamic upcoming expansion cities.
