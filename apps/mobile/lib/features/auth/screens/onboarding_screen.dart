@@ -83,13 +83,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'JUGAAD',
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
-                      fontSize: 20,
+                  RichText(
+                    text: const TextSpan(
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                        letterSpacing: 0.5,
+                      ),
+                      children: [
+                        TextSpan(text: 'JUG', style: TextStyle(color: AppColors.primary)),
+                        TextSpan(text: 'AAD', style: TextStyle(color: Color(0xFFF25C05))),
+                      ],
                     ),
                   ),
                   if (_currentIndex < _pages.length - 1)
