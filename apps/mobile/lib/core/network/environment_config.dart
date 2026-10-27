@@ -28,7 +28,7 @@ class EnvironmentConfig {
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: kReleaseMode ? _defaultProdUrl : _defaultDevUrl,
+    defaultValue: _defaultProdUrl,
   );
 
   static const String apiV1 = '$baseUrl/api/v1';

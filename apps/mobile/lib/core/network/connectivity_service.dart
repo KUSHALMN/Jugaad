@@ -79,9 +79,9 @@ class ConnectivityService {
     if (!hasInterface) {
       state.value = ConnectivityState.offline;
     } else {
-      // Device has network — ping server to check real connectivity
-      // and pre-warm Render from cold start
-      state.value = ConnectivityState.serverWaking;
+      // Device has network — start online so user does not see a false connecting banner
+      state.value = ConnectivityState.online;
+      // Pre-warm Render cold start silently in background
       _pingHealthEndpoint();
     }
 
@@ -101,9 +101,8 @@ class ConnectivityService {
         state.value = ConnectivityState.offline;
         debugPrint('[CONNECTIVITY] Network interface lost → offline');
       } else if (state.value == ConnectivityState.offline) {
-        // Came back online — verify with a real HTTP ping
-        debugPrint('[CONNECTIVITY] Network interface restored → verifying...');
-        state.value = ConnectivityState.serverWaking;
+        // Came back online — set online and verify in background
+        state.value = ConnectivityState.online;
         _pingHealthEndpoint();
       }
     });
