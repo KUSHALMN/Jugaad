@@ -102,10 +102,15 @@ def get_public_tracking_view(token: str = Query(..., description="Signed trackin
             raw_telemetry = redis_client.get_state(f"worker:telemetry:{worker_id}")
             if raw_telemetry:
                 tel = json.loads(raw_telemetry)
-                live_coords["lat"] = float(tel.get("lat", 12.3051))
-                live_coords["lng"] = float(tel.get("lng", 76.6551))
-    except Exception:
-        pass
+                lat = float(tel.get("lat", 12.3051))
+                lng = float(tel.get("lng", 76.6551))
+                if -90.0 <= lat <= 90.0 and -180.0 <= lng <= 180.0:
+                    live_coords["lat"] = lat
+                    live_coords["lng"] = lng
+                else:
+                    logger.warning(f"[TRACKING] Telemetry out of bounds for worker {worker_id}: lat={lat}, lng={lng}")
+    except Exception as telemetry_err:
+        logger.warning(f"[TRACKING] Failed to parse live telemetry: {telemetry_err}")
 
     return {
         "status": "ok",
