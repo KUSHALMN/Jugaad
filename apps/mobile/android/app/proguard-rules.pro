@@ -42,3 +42,9 @@
 # Play Core for Flutter Deferred Components
 -dontwarn com.google.android.play.core.**
 -keep class com.google.android.play.core.** { *; }
+
+# Google Sign In & Play Services Auth
+-keep class com.google.android.gms.auth.api.signin.** { *; }
+-keep class com.google.android.gms.auth.api.** { *; }
+-keep class com.google.android.gms.common.api.** { *; }
+-dontwarn com.google.android.gms.auth.api.**
