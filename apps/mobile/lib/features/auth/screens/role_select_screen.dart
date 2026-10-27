@@ -70,20 +70,27 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // ── 1. Top Navigation & Brand Header ───────────────────
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildBackButton(context),
-
-                          // Brand Center Logo Lockup
-                          _buildBrandHeader(),
-
-                          // Location Pill
-                          _buildLocationPill(),
-                        ],
+                      SizedBox(
+                        height: 48,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: _buildBackButton(context),
+                            ),
+                            Center(
+                              child: _buildBrandHeader(),
+                            ),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: _buildLocationPill(),
+                            ),
+                          ],
+                        ),
                       ).animate().fadeIn(duration: 300.ms),
 
-                      const SizedBox(height: 36.0),
+                      const SizedBox(height: 32.0),
 
                       // ── 2. Platform Access Pill ────────────────────────────
                       Container(
@@ -118,23 +125,41 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                         textAlign: TextAlign.center,
                         text: TextSpan(
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: isWide ? 38.0 : 28.0,
+                            fontSize: isWide ? 38.0 : 26.0,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.6,
                             color: const Color(0xFF0F172A),
-                            height: 1.15,
+                            height: 1.2,
                           ),
-                          children: const [
-                            TextSpan(text: 'How will you use '),
-                            TextSpan(
-                              text: 'Jug',
-                              style: TextStyle(color: Color(0xFF059669)),
+                          children: [
+                            const TextSpan(text: 'How will you use '),
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.baseline,
+                              baseline: TextBaseline.alphabetic,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Jug',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: isWide ? 38.0 : 26.0,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.6,
+                                      color: const Color(0xFF059669),
+                                    ),
+                                  ),
+                                  Text(
+                                    'aad?',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: isWide ? 38.0 : 26.0,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.6,
+                                      color: const Color(0xFFEA580C),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            TextSpan(
-                              text: 'aad',
-                              style: TextStyle(color: Color(0xFFEA580C)),
-                            ),
-                            TextSpan(text: '?'),
                           ],
                         ),
                       ).animate().fadeIn(delay: 140.ms, duration: 350.ms).slideY(begin: 0.15, end: 0.0),
@@ -238,7 +263,7 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
 
   Widget _buildLocationPill() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 7.0),
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20.0),
@@ -254,18 +279,18 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.location_on_rounded, color: Color(0xFF059669), size: 16),
-          const SizedBox(width: 6.0),
+          const Icon(Icons.location_on_rounded, color: Color(0xFF059669), size: 15),
+          const SizedBox(width: 4.0),
           Text(
             'Mysuru',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 13.0,
+              fontSize: 12.0,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF0F172A),
             ),
           ),
-          const SizedBox(width: 4.0),
-          const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 18),
+          const SizedBox(width: 2.0),
+          const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 16),
         ],
       ),
     );
