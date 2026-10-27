@@ -177,13 +177,23 @@ class _JugaadBottomNavState extends State<JugaadBottomNav>
         Icon(
           isActive ? item.activeIcon : item.icon,
           color: isActive ? activeColor : inactiveColor,
-          size: 24,
+          size: 23,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
+        Text(
+          item.label,
+          style: GoogleFonts.plusJakartaSans(
+            color: isActive ? activeColor : inactiveColor,
+            fontSize: 10.5,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            letterSpacing: -0.1,
+          ),
+        ),
+        const SizedBox(height: 3),
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          width: isActive ? 6 : 0,
-          height: isActive ? 6 : 0,
+          width: isActive ? 5 : 0,
+          height: isActive ? 5 : 0,
           decoration: BoxDecoration(
             color: activeColor,
             shape: BoxShape.circle,
