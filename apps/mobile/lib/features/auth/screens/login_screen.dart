@@ -461,20 +461,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           // 1. Top Navigation Bar
                           _buildTopNavigationBar(context),
 
-                          const SizedBox(height: 28.0),
+                          const SizedBox(height: 24.0),
 
                           // 2. Portal Access Pill
                           _buildPlatformAccessBadge(isWorker),
 
-                          const SizedBox(height: 14.0),
+                          const SizedBox(height: 12.0),
 
                           // 3. Welcome Headline
-                          _buildHeadline(isWorker),
+                          _buildHeadline(isWorker, isWide),
 
                           const SizedBox(height: 10.0),
 
                           // 4. Subtitle
-                          _buildSubtitle(isWorker),
+                          _buildSubtitle(isWorker, isWide),
 
                           const SizedBox(height: 36.0),
 
@@ -507,18 +507,24 @@ class _LoginScreenState extends State<LoginScreen> {
   // TOP NAVIGATION BAR
   // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildTopNavigationBar(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Rounded Back Button
-        _buildBackButton(context),
-
-        // JUGAAD Brand Identity & Tagline
-        _buildBrandIdentity(),
-
-        // Location Pill Selector
-        _buildLocationPill(),
-      ],
+    return SizedBox(
+      height: 48,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _buildBackButton(context),
+          ),
+          Center(
+            child: _buildBrandIdentity(),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: _buildLocationPill(),
+          ),
+        ],
+      ),
     ).animate().fadeIn(duration: 300.ms);
   }
 
@@ -573,20 +579,20 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             // Map pin emblem
             Container(
-              width: 32,
-              height: 32,
+              width: 30,
+              height: 30,
               decoration: const BoxDecoration(
                 color: Color(0xFF0D7844),
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: const Icon(Icons.person_pin_circle_rounded, color: Colors.white, size: 20),
+              child: const Icon(Icons.person_pin_circle_rounded, color: Colors.white, size: 18),
             ),
-            const SizedBox(width: 8.0),
+            const SizedBox(width: 7.0),
             RichText(
               text: TextSpan(
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22.0,
+                  fontSize: 20.0,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.5,
                 ),
@@ -598,11 +604,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 2.0),
+        const SizedBox(height: 1.0),
         Text(
           'Local Help. Anytime.',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 11.5,
+            fontSize: 10.5,
             fontWeight: FontWeight.w600,
             color: const Color(0xFF64748B),
           ),
@@ -619,7 +625,7 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(20.0),
         onTap: _showCitySelector,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 7.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20.0),
             border: Border.all(color: const Color(0xFFE2E8F0)),
@@ -634,18 +640,18 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.location_on_rounded, size: 16, color: Color(0xFF0F172A)),
-              const SizedBox(width: 6),
+              const Icon(Icons.location_on_rounded, size: 15, color: Color(0xFF0F172A)),
+              const SizedBox(width: 4),
               Text(
                 _selectedCity,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF0F172A),
                 ),
               ),
-              const SizedBox(width: 4),
-              const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF64748B)),
+              const SizedBox(width: 2),
+              const Icon(Icons.keyboard_arrow_down_rounded, size: 15, color: Color(0xFF64748B)),
             ],
           ),
         ),
