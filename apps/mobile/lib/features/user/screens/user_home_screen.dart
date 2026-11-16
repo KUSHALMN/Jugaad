@@ -623,6 +623,10 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
     final countsAsync = ref.watch(nearbyWorkersProvider);
@@ -633,6 +637,8 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
+        top: true,
+        bottom: false,
         child: NotificationListener<ScrollNotification>(
           onNotification: (ScrollNotification scroll) {
             if (scroll is ScrollUpdateNotification) {

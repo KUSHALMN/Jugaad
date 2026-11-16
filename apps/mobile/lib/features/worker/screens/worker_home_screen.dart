@@ -70,6 +70,10 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
 
@@ -769,7 +773,11 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
       );
 
     if (isMobile) {
-      content = SafeArea(child: content);
+      content = SafeArea(
+        top: true,
+        bottom: false,
+        child: content,
+      );
     }
 
     return ColoredBox(

@@ -15,6 +15,18 @@ class MainActivity : FlutterActivity() {
         enableHighRefreshRate()
     }
 
+    override fun onPostResume() {
+        super.onPostResume()
+        configureEdgeToEdge()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            configureEdgeToEdge()
+        }
+    }
+
     private fun configureEdgeToEdge() {
         // Transparent system status bar and navigation bar
         window.statusBarColor = Color.TRANSPARENT
@@ -38,8 +50,13 @@ class MainActivity : FlutterActivity() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val params = window.attributes
-            params.layoutInDisplayCutoutMode =
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                params.layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+            } else {
+                params.layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
             window.attributes = params
         }
     }
