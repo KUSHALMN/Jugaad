@@ -48,3 +48,13 @@
 -keep class com.google.android.gms.auth.api.** { *; }
 -keep class com.google.android.gms.common.api.** { *; }
 -dontwarn com.google.android.gms.auth.api.**
+
+# Supabase, GoRouter, Riverpod & Network DTOs
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keep class io.flutter.plugins.firebase.** { *; }
+-keep class com.google.android.play.core.integrity.** { *; }
+
