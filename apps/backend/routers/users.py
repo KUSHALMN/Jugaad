@@ -116,15 +116,28 @@ def delete_account(uid: str = Depends(verify_firebase_token)):
         }).eq("firebase_uid", uid).execute()
 
         try:
-            supabase.table("workers").update({
+            # Check worker by id = uid (standard) or user_id = uid
+            worker_update_data = {
                 "status": "deleted",
                 "is_active": False,
                 "is_available": False,
                 "phone": None,
                 "updated_at": now_str,
-            }).eq("user_id", uid).execute()
+            }
+            res_id = supabase.table("workers").update(worker_update_data).eq("id", uid).execute()
+            if not res_id or not res_id.data:
+                supabase.table("workers").update(worker_update_data).eq("user_id", uid).execute()
         except Exception as we:
             logger.warning(f"No worker record to update or table worker error: {we}")
+
+        # Evict any Redis user caches
+        try:
+            from shared import redis_client
+            r = redis_client.get_client()
+            if r:
+                r.delete(f"user_cache:{uid}")
+        except Exception:
+            pass
 
         return {"status": "success", "message": "Account and associated personal data successfully deleted"}
     except Exception as e:
