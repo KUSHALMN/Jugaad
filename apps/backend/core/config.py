@@ -2,9 +2,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 import os
 
+_backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_env_files = [
+    os.path.join(_backend_dir, ".env.local"),
+    os.path.join(_backend_dir, ".env"),
+    ".env.local",
+    ".env",
+]
+_active_env_file = next((f for f in _env_files if os.path.exists(f)), ".env.local")
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env.local",
+        env_file=_active_env_file,
         extra="ignore",
         case_sensitive=False,
     )
@@ -15,8 +24,8 @@ class Settings(BaseSettings):
     PORT: int = 8000
     
     # Supabase
-    SUPABASE_URL: str
-    SUPABASE_SERVICE_KEY: str
+    SUPABASE_URL: str = ""
+    SUPABASE_SERVICE_KEY: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
     
     # Redis
@@ -38,6 +47,9 @@ class Settings(BaseSettings):
     # JWT
     JWT_SECRET: str = "local_dev_secret_jugaad_2024"
     
+    # Sandbox & Reviewer Flags
+    ALLOW_REVIEWER_MOCK_LOCATION: bool = False
+    
     # CORS
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
@@ -56,6 +68,7 @@ class Settings(BaseSettings):
     ):
         return (
             init_settings,
+            env_settings,
             dotenv_settings,
             file_secret_settings,
         )

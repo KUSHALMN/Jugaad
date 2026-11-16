@@ -76,14 +76,20 @@ def _send_silent_fcm(token: str, data: dict):
 @router.post("")
 @router.post("/create")
 def create_job(body: CreateJobRequest, background_tasks: BackgroundTasks, uid: str = Depends(verify_firebase_token)):
+    from core.config import settings
     # Geo-fence check
     distance = haversine_km(body.lat, body.lng, PILOT_CENTER_LAT, PILOT_CENTER_LNG)
     if distance > PILOT_RADIUS_KM:
-        raise HTTPException(
-            400,
-            f"Location is {distance:.1f}km from Mysuru center. "
-            f"Service available within {PILOT_RADIUS_KM}km radius only.",
-        )
+        if settings.ALLOW_REVIEWER_MOCK_LOCATION or os.getenv("ALLOW_REVIEWER_MOCK_LOCATION", "").lower() in ("true", "1"):
+            logger.info(f"Play Store Reviewer / Sandbox geofence bypass triggered for {uid} at distance {distance:.1f}km. Snapping coordinates to pilot center.")
+            body.lat = PILOT_CENTER_LAT
+            body.lng = PILOT_CENTER_LNG
+        else:
+            raise HTTPException(
+                400,
+                f"Location is {distance:.1f}km from Mysuru center. "
+                f"Service available within {PILOT_RADIUS_KM}km radius only.",
+            )
 
     job_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)

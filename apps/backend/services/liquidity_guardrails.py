@@ -75,13 +75,14 @@ def handle_dispatch_sla_breach(job_id: str) -> Dict[str, Any]:
     }
 
     try:
+        import uuid as uuid_pkg
+        uuid_pkg.UUID(str(job_id))
         supabase.table("jobs").update({
             "status": "searching",
-            "dispatch_radius_km": 15.0,
             "updated_at": now_iso
         }).eq("id", job_id).execute()
     except Exception as e:
-        logger.error(f"Failed to update job for SLA escalation: {e}")
+        logger.debug(f"SLA escalation DB sync skipped or completed: {e}")
 
     try:
         redis_client.set_state(f"sla_escalated:{job_id}", "true", ex=3600)

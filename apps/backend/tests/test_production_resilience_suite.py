@@ -12,7 +12,20 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import pytest
+try:
+    import pytest
+except ImportError:
+    class _MockPytest:
+        class raises:
+            def __init__(self, expected_exception):
+                self.expected = expected_exception
+            def __enter__(self):
+                return self
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                if exc_type is None:
+                    raise AssertionError(f"Expected exception {self.expected}, but none was raised")
+                return issubclass(exc_type, self.expected)
+    pytest = _MockPytest()
 from core.state_machine import validate_transition, TERMINAL_STATES, VALID_TRANSITIONS
 
 from services.payout_service import PayoutService
@@ -78,7 +91,7 @@ def test_pilot_cluster_geofencing():
 
 def test_sla_dispatch_escalation():
     """Verify SLA breach escalates radius cleanly."""
-    job_id = "job_sla_test_999"
+    job_id = "00000000-0000-0000-0000-000000000999"
     res = handle_dispatch_sla_breach(job_id)
     assert res["action"] == "EXPAND_RADIUS_AND_NOTIFY_OPS"
     assert res["expanded_radius_km"] == 15.0
