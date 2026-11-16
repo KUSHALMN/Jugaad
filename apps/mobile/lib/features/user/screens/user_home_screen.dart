@@ -195,7 +195,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
 
   // Branded custom Pull to refresh state
   bool _isBrandedRefreshing = false;
-  double _pullOffset = 0.0;
+  final ValueNotifier<double> _pullOffsetNotifier = ValueNotifier<double>(0.0);
 
   @override
   void initState() {
@@ -608,6 +608,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
   @override
   void dispose() {
     _bellShakeController.dispose();
+    _pullOffsetNotifier.dispose();
     super.dispose();
   }
 
@@ -632,25 +633,19 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
             if (scroll is ScrollUpdateNotification) {
               if (scroll.metrics.pixels < 0) {
                 final newOffset = scroll.metrics.pixels.abs();
-                if ((newOffset - _pullOffset).abs() > 3.0) {
-                  setState(() {
-                    _pullOffset = newOffset;
-                  });
+                if ((newOffset - _pullOffsetNotifier.value).abs() > 3.0) {
+                  _pullOffsetNotifier.value = newOffset;
                 }
-              } else if (_pullOffset != 0.0) {
-                setState(() {
-                  _pullOffset = 0.0;
-                });
+              } else if (_pullOffsetNotifier.value != 0.0) {
+                _pullOffsetNotifier.value = 0.0;
               }
             }
             if (scroll is ScrollEndNotification) {
-              if (_pullOffset > 75.0 && !_isBrandedRefreshing) {
+              if (_pullOffsetNotifier.value > 75.0 && !_isBrandedRefreshing) {
                 _triggerBrandedRefresh();
               }
-              if (_pullOffset != 0.0) {
-                setState(() {
-                  _pullOffset = 0.0;
-                });
+              if (_pullOffsetNotifier.value != 0.0) {
+                _pullOffsetNotifier.value = 0.0;
               }
             }
             return false;
@@ -1034,43 +1029,50 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
               ),
 
               // --- PULL REFRESH SPINNER
-              if (_isBrandedRefreshing || _pullOffset > 5.0)
-                Positioned(
-                  top: 16.0,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 10.0,
-                            offset: Offset(0, 3.0),
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.refresh_rounded,
-                        color: UserAppTheme.primaryBlue,
-                        size: 26.0,
-                      )
-                      .animate(onPlay: (c) {
-                        if (_isBrandedRefreshing) c.repeat();
-                      })
-                      .rotate(
-                        begin: 0.0,
-                        end: 1.0,
-                        duration: 1000.ms,
+              ValueListenableBuilder<double>(
+                valueListenable: _pullOffsetNotifier,
+                builder: (context, pullOffset, _) {
+                  if (!_isBrandedRefreshing && pullOffset <= 5.0) {
+                    return const SizedBox.shrink();
+                  }
+                  return Positioned(
+                    top: 16.0,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 10.0,
+                              offset: Offset(0, 3.0),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.refresh_rounded,
+                          color: UserAppTheme.primaryBlue,
+                          size: 26.0,
+                        )
+                        .animate(onPlay: (c) {
+                          if (_isBrandedRefreshing) c.repeat();
+                        })
+                        .rotate(
+                          begin: 0.0,
+                          end: 1.0,
+                          duration: 1000.ms,
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
+              ),
 
               // --- FLOATING SYNC STATUS ALERT
               const Positioned(
