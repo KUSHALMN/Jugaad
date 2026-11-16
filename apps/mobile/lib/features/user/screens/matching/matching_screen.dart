@@ -73,6 +73,7 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
   Timer? _fallbackTimer;
   int _fallbackSecondsLeft = 90;
   Timer? _fallbackCountTimer;
+  Timer? _pollFallbackTimer;
 
   // ── 60s Accept Countdown ─────────────────────────────────
   late AnimationController _acceptCountdown;   // drains 1→0 in 60s
@@ -180,6 +181,13 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
         .subscribe();
 
     _fetchInitialJobState();
+
+    // Secondary resilience polling in case Indian cellular drops WebSocket silently
+    _pollFallbackTimer?.cancel();
+    _pollFallbackTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      _fetchInitialJobState();
+    });
   }
 
   Future<void> _fetchInitialJobState() async {
@@ -203,17 +211,20 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
     setState(() => _jobData = data);
 
     if (status == 'in_progress' || status == 'accepted') {
+      _pollFallbackTimer?.cancel();
       ref.invalidate(recentJobsProvider);
       ref.invalidate(nearbyWorkersProvider);
       if (mounted) context.go('/user/tracking?job_id=${widget.jobId}');
       return;
     } else if (status == 'completed') {
+      _pollFallbackTimer?.cancel();
       ref.invalidate(recentJobsProvider);
       ref.invalidate(nearbyWorkersProvider);
       final amount = data['payment_amount'] ?? data['amount'] ?? 0;
       if (mounted) context.go('/user/payment?job_id=${widget.jobId}&amount=$amount');
       return;
     } else if (status == 'cancelled' || status == 'scheduled') {
+      _pollFallbackTimer?.cancel();
       ref.invalidate(recentJobsProvider);
       ref.invalidate(nearbyWorkersProvider);
       if (mounted) context.go('/user/home');
@@ -415,6 +426,7 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
     _fallbackSecondsLeft = 90;
     _fallbackTimer?.cancel();
     _fallbackCountTimer?.cancel();
+    _pollFallbackTimer?.cancel();
 
     _fallbackTimer = Timer(const Duration(seconds: 90), () {
       if (!mounted) return;
@@ -652,6 +664,7 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
     }
     _fallbackTimer?.cancel();
     _fallbackCountTimer?.cancel();
+    _pollFallbackTimer?.cancel();
     _pulseController.dispose();
     _acceptCountdown.dispose();
     _acceptPulse.dispose();
