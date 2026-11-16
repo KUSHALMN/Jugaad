@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:jugaad_mvp/core/config/supabase_config.dart';
 import 'package:jugaad_mvp/core/services/api_service.dart';
 import 'package:jugaad_mvp/core/services/auth_service.dart';
 import 'package:jugaad_mvp/core/theme/user_app_theme.dart';
@@ -29,9 +30,13 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
   late AnimationController _shimmerController;
   late AnimationController _countUpController;
 
+  String _workerName = 'Specialist';
+  int _durationMinutes = 45;
+
   @override
   void initState() {
     super.initState();
+    _fetchJobWorkerInfo();
     
     _successController = AnimationController(vsync: this, duration: 1200.ms);
     _shimmerController = AnimationController(vsync: this, duration: 2000.ms)..repeat();
@@ -41,6 +46,32 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  Future<void> _fetchJobWorkerInfo() async {
+    try {
+      final res = await SupabaseConfig.client
+          .from('jobs')
+          .select('started_at, completed_at, workers(users(name))')
+          .eq('id', widget.jobId)
+          .maybeSingle();
+      if (res != null && mounted) {
+        final name = (res['workers'] as Map?)?['users']?['name']?.toString();
+        if (name != null && name.isNotEmpty) {
+          setState(() => _workerName = name);
+        }
+        final startedAt = res['started_at'] != null ? DateTime.tryParse(res['started_at'].toString()) : null;
+        final completedAt = res['completed_at'] != null ? DateTime.tryParse(res['completed_at'].toString()) : DateTime.now();
+        if (startedAt != null) {
+          final diff = completedAt.difference(startedAt).inMinutes;
+          if (diff > 0) {
+            setState(() => _durationMinutes = diff);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[PAYMENT] Info fetch note: $e');
+    }
   }
 
   @override
@@ -87,7 +118,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
 
     await Future.delayed(2200.ms); // Wait for celebration before navigation
     if (mounted) {
-      context.go('/user/completion?job_id=${widget.jobId}&worker_name=Ravi%20Kumar&duration=45');
+      context.go('/user/completion?job_id=${widget.jobId}&worker_name=${Uri.encodeComponent(_workerName)}&duration=$_durationMinutes');
     }
   }
 

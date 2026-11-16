@@ -3,6 +3,7 @@ import 'package:jugaad_mvp/core/config/supabase_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:math';
@@ -246,7 +247,6 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
       }
     } else if (status == 'no_workers_found') {
       newState = MatchingState.noWorkersFound;
-      _fetchTopRatedFallbackWorkers();
     } else if (fallback) {
       newState = MatchingState.expanding;
     } else {
@@ -490,43 +490,42 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
   Future<void> _acceptWorker() async {
     HapticFeedback.heavyImpact();
     setState(() => _isActioning = true);
-    print('[MATCHING] Accepting worker for job: ${widget.jobId}');
+    print('[MATCHING] Customer accepted worker for job: ${widget.jobId}');
     
     try {
-      final expectedVersion = _jobData['version'] as int? ?? 1;
-      await ApiService().acceptJob(widget.jobId, expectedVersion);
+      // 1. Launch dialer if worker phone number is available
+      final phone = _workerData?['phone']?.toString().replaceAll(RegExp(r'\s+'), '') ?? '';
+      if (phone.isNotEmpty) {
+        try {
+          final uri = Uri.parse('tel:$phone');
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri);
+          }
+        } catch (phoneErr) {
+          debugPrint('[MATCHING] Worker call dialer launch notice: $phoneErr');
+        }
+      }
+
+      // 2. Mark user confirmed in Supabase jobs table
+      try {
+        await SupabaseConfig.client.from('jobs').update({
+          'user_confirmed': true,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('id', widget.jobId);
+      } catch (dbErr) {
+        debugPrint('[MATCHING] Confirm job update notice: $dbErr');
+      }
+
+      // 3. Invalidate providers and navigate to tracking screen
       if (mounted) {
+        ref.invalidate(recentJobsProvider);
+        ref.invalidate(nearbyWorkersProvider);
         context.go('/user/tracking?job_id=${widget.jobId}');
       }
     } catch (e) {
       print('[MATCHING] Error accepting worker: $e');
       if (mounted) {
         setState(() => _isActioning = false);
-        if (context.mounted) {
-          try {
-            if (e.toString().contains('409')) {
-              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Version mismatch or job already modified.',
-                    style: UserAppTheme.body(color: Colors.white),
-                  ),
-                  backgroundColor: UserAppTheme.urgentRed,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              );
-            } else {
-              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                SnackBar(content: Text('Error: $e')),
-              );
-            }
-          } catch (_) {}
-        }
-        if (e.toString().contains('409')) {
-          setState(() => _matchingState = MatchingState.searching);
-          _startFallbackTimer();
-        }
       }
     }
   }
@@ -534,8 +533,23 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
   Future<void> _declineWorker() async {
     HapticFeedback.mediumImpact();
     setState(() => _isActioning = true);
+    final assignedWorkerId = _workerData?['id']?.toString();
     try {
-      await ApiService().declineJob(widget.jobId).timeout(const Duration(seconds: 4));
+      // Reset worker assignment in Supabase so matching engine resumes
+      await SupabaseConfig.client.from('jobs').update({
+        'worker_id': null,
+        'status': 'searching',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', widget.jobId);
+
+      if (assignedWorkerId != null && assignedWorkerId.isNotEmpty) {
+        try {
+          await ApiService().client.post('/v1/jobs/${widget.jobId}/reject', data: {
+            'worker_id': assignedWorkerId,
+            'reason': 'customer_declined',
+          }).timeout(const Duration(seconds: 4));
+        } catch (_) {}
+      }
     } catch (e) {
       print('[MATCHING] Error declining job: $e');
     }
