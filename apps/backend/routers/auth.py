@@ -11,6 +11,9 @@ from shared import redis_client
 
 router = APIRouter()
 
+# Resilient in-memory fallback store for OTPs if Redis is unreachable
+_FALLBACK_OTP_STORE: dict[str, tuple[float, str, int]] = {}
+
 def is_rate_limited(key: str, limit: int = 5, window: int = 60) -> bool:
     r = redis_client.get_client()
     if r:
@@ -61,13 +64,19 @@ async def send_otp(request: Request, req: SendOtpRequest):
     # Generate random 6-digit OTP
     otp = str(random.randint(100000, 999999))
     
-    # Store OTP with 5 minute TTL in Redis
+    # Store OTP with 5 minute TTL in Redis (or in-memory failover)
+    redis_stored = False
     r = redis_client.get_client()
     if r:
         try:
             r.set(f"otp:{req.phone}", otp, ex=300)
+            redis_stored = True
         except Exception:
             pass
+            
+    if not redis_stored:
+        # Fallback to local memory store
+        _FALLBACK_OTP_STORE[req.phone] = (time.time(), otp, 0)
 
     # Send via sms_service
     await sms_service.send_otp(req.phone, otp)
@@ -90,6 +99,7 @@ async def verify_otp(req: VerifyOtpRequest):
             if stored_otp and stored_otp == req.otp:
                 r.delete(f"otp:{req.phone}")
                 r.delete(fail_key)
+                _FALLBACK_OTP_STORE.pop(req.phone, None)
                 return {"message": "OTP verified successfully", "phone": req.phone}
             elif stored_otp:
                 r.incr(fail_key)
@@ -99,6 +109,21 @@ async def verify_otp(req: VerifyOtpRequest):
             raise
         except Exception:
             pass
+
+    # Check fallback memory store if Redis is unavailable
+    if req.phone in _FALLBACK_OTP_STORE:
+        created_at, valid_otp, fails = _FALLBACK_OTP_STORE[req.phone]
+        if (time.time() - created_at) < 300.0:
+            if fails >= 5:
+                raise HTTPException(status_code=429, detail="Too many invalid OTP attempts. Please request a new OTP.")
+            if req.otp == valid_otp:
+                del _FALLBACK_OTP_STORE[req.phone]
+                return {"message": "OTP verified successfully", "phone": req.phone}
+            else:
+                _FALLBACK_OTP_STORE[req.phone] = (created_at, valid_otp, fails + 1)
+                raise HTTPException(status_code=400, detail="Invalid OTP")
+        else:
+            del _FALLBACK_OTP_STORE[req.phone]
 
     # Strictly isolate dev fallback to local debug environments
     if settings.ENV == "local" and settings.DEBUG and req.otp in ("123456", "000000"):
