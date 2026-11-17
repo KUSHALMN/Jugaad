@@ -153,6 +153,110 @@ async def _reconcile_captured_payment(
     }
 
 
+async def _handle_payment_failed(
+    order_id: str,
+    payment_id: str,
+    error_desc: str,
+    notes: dict,
+    event_id: str
+) -> dict:
+    """Reconciles payment failure against jobs and alerts employer to retry."""
+    job = None
+    if order_id:
+        job_result = supabase.table("jobs").select("id, employer_id, status, payment_status").eq("razorpay_order_id", order_id).maybe_single().execute()
+        if job_result and job_result.data:
+            job = job_result.data
+
+    if not job and notes and notes.get("job_id"):
+        job_result = supabase.table("jobs").select("id, employer_id, status, payment_status").eq("id", notes["job_id"]).maybe_single().execute()
+        if job_result and job_result.data:
+            job = job_result.data
+
+    if not job:
+        logger.warning(f"Payment failed webhook for untracked order={order_id}")
+        return {"status": "job_not_found", "order_id": order_id}
+
+    job_id = job.get("id")
+    # Only mark failed if payment has not already been settled or released
+    if job.get("payment_status") not in ("released", "settled"):
+        supabase.table("jobs").update({
+            "payment_status": "failed",
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("id", job_id).execute()
+
+    # Alert employer via push notification to retry payment
+    try:
+        from services.fcm_service import fcm_service
+        employer_id = job.get("employer_id")
+        if employer_id:
+            emp_res = supabase.table("users").select("fcm_token").eq("id", employer_id).execute()
+            if emp_res.data and emp_res.data[0].get("fcm_token"):
+                await fcm_service.send_silent_fcm(emp_res.data[0]["fcm_token"], {
+                    "type": "PAYMENT_FAILED",
+                    "job_id": job_id,
+                    "error_description": error_desc or "Payment could not be completed"
+                })
+    except Exception as fcm_err:
+        logger.warning(f"Could not dispatch payment failed push notification: {fcm_err}")
+
+    logger.warning(f"⚠️ Payment failed for job {job_id} (order={order_id}): {error_desc}")
+    return {"status": "failed_reconciled", "job_id": job_id, "error": error_desc}
+
+
+async def _handle_refund_processed(
+    refund_id: str,
+    payment_id: str,
+    amount_paise: int,
+    notes: dict,
+    event_id: str
+) -> dict:
+    """Reconciles refund status on payments and jobs tables."""
+    # 1. Update payments table
+    updated_pmt = None
+    if payment_id:
+        res = supabase.table("payments").update({
+            "status": "refunded",
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("razorpay_payment_id", payment_id).execute()
+        if res and res.data:
+            updated_pmt = res.data[0]
+
+    # 2. Update jobs table
+    job_id = notes.get("job_id") if notes else None
+    if not job_id and updated_pmt:
+        job_id = updated_pmt.get("job_id")
+
+    if not job_id and payment_id:
+        job_res = supabase.table("jobs").select("id, employer_id").eq("razorpay_payment_id", payment_id).maybe_single().execute()
+        if job_res and job_res.data:
+            job_id = job_res.data["id"]
+
+    if job_id:
+        supabase.table("jobs").update({
+            "payment_status": "refunded",
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("id", job_id).execute()
+
+        # Send push notification to employer confirming refund
+        try:
+            from services.fcm_service import fcm_service
+            job_res = supabase.table("jobs").select("employer_id").eq("id", job_id).maybe_single().execute()
+            if job_res and job_res.data and job_res.data.get("employer_id"):
+                emp_res = supabase.table("users").select("fcm_token").eq("id", job_res.data["employer_id"]).execute()
+                if emp_res.data and emp_res.data[0].get("fcm_token"):
+                    await fcm_service.send_silent_fcm(emp_res.data[0]["fcm_token"], {
+                        "type": "REFUND_PROCESSED",
+                        "job_id": job_id,
+                        "refund_id": refund_id,
+                        "amount": str(float(amount_paise) / 100.0)
+                    })
+        except Exception as fcm_err:
+            logger.warning(f"Could not dispatch refund push notification: {fcm_err}")
+
+    logger.info(f"↩️ Refund {refund_id} reconciled for payment {payment_id}, job {job_id}")
+    return {"status": "refund_reconciled", "job_id": job_id, "refund_id": refund_id}
+
+
 @router.post("/webhooks/razorpay")
 async def razorpay_webhook(request: Request):
     body_bytes = await request.body()
@@ -205,6 +309,34 @@ async def razorpay_webhook(request: Request):
                 notes=notes,
                 event_id=event_id
             )
+        elif event_type == "payment.failed":
+            payment_entity = payload_data.get("payment", {}).get("entity", {})
+            order_id = payment_entity.get("order_id", "")
+            payment_id = payment_entity.get("id", "")
+            error_desc = payment_entity.get("error_description", "")
+            notes = payment_entity.get("notes") or {}
+
+            result = await _handle_payment_failed(
+                order_id=order_id,
+                payment_id=payment_id,
+                error_desc=error_desc,
+                notes=notes,
+                event_id=event_id
+            )
+        elif event_type in ("refund.processed", "refund.created"):
+            refund_entity = payload_data.get("refund", {}).get("entity", {})
+            refund_id = refund_entity.get("id", "")
+            payment_id = refund_entity.get("payment_id", "")
+            amount = refund_entity.get("amount", 0)
+            notes = refund_entity.get("notes") or {}
+
+            result = await _handle_refund_processed(
+                refund_id=refund_id,
+                payment_id=payment_id,
+                amount_paise=amount,
+                notes=notes,
+                event_id=event_id
+            )
 
         # Mark event as idempotently processed in Redis (7 days TTL)
         redis_client.set_state(idempotency_key, "processed", ex=604800)
@@ -216,9 +348,6 @@ async def razorpay_webhook(request: Request):
         raise HTTPException(500, "Internal webhook processing error")
     finally:
         redis_client.release_lock(lock_key)
-    except Exception as e:
-        logger.error(f"Webhook error: {e}")
-        raise HTTPException(500, "Internal error")
 
 @router.post("/verify")
 def verify_payment(body: dict, uid: str = Depends(verify_firebase_token)):
