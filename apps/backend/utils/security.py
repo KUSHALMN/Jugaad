@@ -81,11 +81,16 @@ def normalize_phone_e164(phone: Optional[str], default_country_code: str = "+91"
 
     # 10-digit standard Indian mobile
     if len(digits) == 10:
+        if default_country_code == "+91" and digits[0] not in "6789":
+            raise ValueError(f"Invalid Indian mobile number prefix: '{digits}'")
         return f"{default_country_code}{digits}"
 
     # 11-digit with leading 0 (STD trunk dial)
     if len(digits) == 11 and digits.startswith("0"):
-        return f"{default_country_code}{digits[1:]}"
+        national = digits[1:]
+        if default_country_code == "+91" and national[0] not in "6789":
+            raise ValueError(f"Invalid Indian mobile number prefix: '{national}'")
+        return f"{default_country_code}{national}"
 
     # 12-digit starting with 91
     if len(digits) == 12 and digits.startswith("91"):
