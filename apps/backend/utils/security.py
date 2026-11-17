@@ -52,3 +52,47 @@ def timing_safe_equal(a: Optional[str], b: Optional[str]) -> bool:
     str_a = str(a).strip()
     str_b = str(b).strip()
     return hmac.compare_digest(str_a.encode("utf-8"), str_b.encode("utf-8"))
+
+
+def normalize_phone_e164(phone: Optional[str], default_country_code: str = "+91") -> str:
+    """
+    Strict E.164 Phone Number Normalization.
+    Transforms raw inputs into canonical international format:
+      '9876543210' -> '+919876543210'
+      '09876543210' -> '+919876543210'
+      '+91 98765 43210' -> '+919876543210'
+      '919876543210' -> '+919876543210'
+    Raises ValueError on invalid numbers.
+    """
+    if not phone:
+        raise ValueError("Phone number is required")
+
+    raw = str(phone).strip()
+    # Remove whitespace, parentheses, dashes
+    cleaned = re.sub(r"[\s\-\(\)]", "", raw)
+
+    if cleaned.startswith("+"):
+        digits_only = re.sub(r"[^0-9]", "", cleaned)
+        if len(digits_only) < 10 or len(digits_only) > 15:
+            raise ValueError(f"Invalid international phone number length: {cleaned}")
+        return f"+{digits_only}"
+
+    digits = re.sub(r"[^0-9]", "", cleaned)
+
+    # 10-digit standard Indian mobile
+    if len(digits) == 10:
+        return f"{default_country_code}{digits}"
+
+    # 11-digit with leading 0 (STD trunk dial)
+    if len(digits) == 11 and digits.startswith("0"):
+        return f"{default_country_code}{digits[1:]}"
+
+    # 12-digit starting with 91
+    if len(digits) == 12 and digits.startswith("91"):
+        return f"+{digits}"
+
+    if 10 <= len(digits) <= 15:
+        return f"+{digits}"
+
+    raise ValueError(f"Cannot normalize phone number: '{phone}'")
+
