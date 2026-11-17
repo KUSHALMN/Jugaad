@@ -153,50 +153,112 @@ class DispatchService:
     
     async def _get_nearby_workers(self, lat, lng, radius_km, 
                                    service_type, exclude_ids, is_emergency: bool = False):
-        """PostGIS query for nearby available workers"""
+        """PostGIS query for nearby available workers with index-backed fallback"""
+        import math
         exclude_list = list(exclude_ids) if exclude_ids else ["none"]
         if not exclude_list:
             exclude_list = ["none"]
         
+        radius_meters = radius_km * 1000
+
+        # 1. Try 6-argument get_nearby_workers RPC
         try:
             result = supabase.rpc("get_nearby_workers", {
                 "user_lat": lat,
                 "user_lng": lng,
-                "radius_meters": radius_km * 1000,
+                "radius_meters": radius_meters,
                 "service_type": service_type,
                 "exclude_worker_ids": exclude_list,
                 "p_is_emergency": is_emergency
             }).execute()
-            return result.data or []
+            if result and result.data:
+                return result.data
         except Exception as e:
-            logger.error(f"Error querying nearby workers RPC: {e}")
-            # Fallback to basic query if RPC function isn't created/ready in local db
+            logger.warning(f"6-param get_nearby_workers RPC error, attempting 5-param fallback: {e}")
             try:
-                query = supabase.table("workers").select("id").eq("is_available", True)
-                if is_emergency:
-                    query = query.eq("emergency_available", True)
-                fallback_result = query.execute()
-                workers = fallback_result.data or []
-                
-                # Filter out excluded workers
-                candidate_ids = [str(w["id"]) for w in workers if str(w["id"]) not in exclude_list][:10]
-                if not candidate_ids:
-                    return []
+                result = supabase.rpc("get_nearby_workers", {
+                    "user_lat": lat,
+                    "user_lng": lng,
+                    "radius_meters": radius_meters,
+                    "service_type": service_type,
+                    "exclude_worker_ids": exclude_list
+                }).execute()
+                if result and result.data:
+                    # In emergency mode with 5-param RPC, verify emergency availability if present
+                    if is_emergency:
+                        return [w for w in result.data if w.get("emergency_available", True)]
+                    return result.data
+            except Exception as e5:
+                logger.error(f"5-param get_nearby_workers RPC error: {e5}")
 
-                # Batch query FCM tokens for candidates instead of single queries in loop
-                token_map = {}
-                try:
-                    token_res = supabase.table("users").select("id, fcm_token").in_("id", candidate_ids).execute()
-                    if token_res and token_res.data:
-                        token_map = {str(u["id"]): u.get("fcm_token") or "" for u in token_res.data}
-                except Exception as t_err:
-                    logger.warning(f"Could not batch fetch FCM tokens: {t_err}")
+        # 2. Resilient Python table scan fallback
+        try:
+            query = supabase.table("workers").select(
+                "id, name, phone, rating, category, skills, latitude, longitude, emergency_available"
+            ).eq("is_available", True).eq("is_online", True)
+            
+            if is_emergency:
+                query = query.eq("emergency_available", True)
+            fallback_result = query.execute()
+            workers = fallback_result.data or []
+            
+            # Filter excluded workers & category matches
+            candidate_workers = []
+            for w in workers:
+                w_id = str(w.get("id"))
+                if w_id in exclude_list:
+                    continue
+                skills = w.get("skills") or []
+                category = w.get("category") or ""
+                if service_type and service_type.lower() not in [category.lower()] + [s.lower() for s in skills]:
+                    continue
 
-                ret_workers = [{"id": w_id, "fcm_token": token_map.get(w_id, "")} for w_id in candidate_ids]
-                return ret_workers
-            except Exception as e2:
-                logger.error(f"Fallback query error: {e2}")
+                # Compute Haversine distance in meters if coords present
+                w_lat = w.get("latitude")
+                w_lng = w.get("longitude")
+                dist_m = 0.0
+                if w_lat is not None and w_lng is not None:
+                    d_lat = math.radians(w_lat - lat)
+                    d_lon = math.radians(w_lng - lng)
+                    a = math.sin(d_lat / 2)**2 + math.cos(math.radians(lat)) * math.cos(math.radians(w_lat)) * math.sin(d_lon / 2)**2
+                    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+                    dist_m = 6371000 * c
+                    if dist_m > radius_meters:
+                        continue
+                candidate_workers.append({**w, "distance_meters": dist_m})
+
+            # Sort by distance
+            candidate_workers.sort(key=lambda x: x.get("distance_meters", 0.0))
+            candidate_workers = candidate_workers[:15]
+            if not candidate_workers:
                 return []
+
+            candidate_ids = [str(w["id"]) for w in candidate_workers]
+
+            # Batch query FCM tokens
+            token_map = {}
+            try:
+                token_res = supabase.table("users").select("id, fcm_token").in_("id", candidate_ids).execute()
+                if token_res and token_res.data:
+                    token_map = {str(u["id"]): u.get("fcm_token") or "" for u in token_res.data}
+            except Exception as t_err:
+                logger.warning(f"Could not batch fetch FCM tokens: {t_err}")
+
+            return [
+                {
+                    "id": str(w["id"]),
+                    "name": w.get("name", ""),
+                    "phone": w.get("phone", ""),
+                    "rating": float(w.get("rating") or 5.0),
+                    "service_types": w.get("skills") or ([w.get("category")] if w.get("category") else []),
+                    "fcm_token": token_map.get(str(w["id"]), ""),
+                    "distance_meters": w.get("distance_meters", 0.0)
+                }
+                for w in candidate_workers
+            ]
+        except Exception as e_fallback:
+            logger.error(f"Fallback query error: {e_fallback}")
+            return []
     
     async def _update_job_status(self, job_id: str, status: str):
         supabase.table("jobs").update(
