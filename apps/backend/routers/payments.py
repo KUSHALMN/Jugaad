@@ -13,6 +13,36 @@ router = APIRouter()
 
 WHOOK = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
 
+
+def verify_razorpay_webhook_signature(body_bytes: bytes, signature: str, secret: str) -> bool:
+    """
+    Cryptographically verify incoming Razorpay webhook signature using HMAC SHA-256.
+    Uses timing-safe comparison to prevent side-channel timing attacks.
+    """
+    if not secret or not signature or not body_bytes:
+        return False
+    try:
+        expected = hmac.new(secret.encode("utf-8"), body_bytes, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected, signature)
+    except Exception as e:
+        logger.error(f"Error computing webhook HMAC signature: {e}")
+        return False
+
+
+def parse_razorpay_webhook_payload(body_bytes: bytes) -> dict:
+    """
+    Safely deserialize and validate Razorpay webhook payload structure.
+    """
+    try:
+        event = json.loads(body_bytes.decode("utf-8") if isinstance(body_bytes, bytes) else body_bytes)
+        if not isinstance(event, dict) or "event" not in event:
+            raise ValueError("Malformed Razorpay webhook structure: missing 'event' field")
+        return event
+    except Exception as e:
+        logger.error(f"Failed to parse Razorpay webhook payload: {e}")
+        raise HTTPException(400, f"Malformed webhook JSON: {str(e)}")
+
+
 @router.post("/webhooks/razorpay")
 async def razorpay_webhook(request: Request):
     body_bytes = await request.body()
@@ -24,16 +54,19 @@ async def razorpay_webhook(request: Request):
         raise HTTPException(500, "Webhook secret not configured")
 
     if not sig:
+        logger.warning("Received Razorpay webhook missing X-Razorpay-Signature header")
         raise HTTPException(400, "Missing webhook signature")
 
-    expected = hmac.new(whook_secret.encode(), body_bytes, hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(expected, sig):
+    if not verify_razorpay_webhook_signature(body_bytes, sig, whook_secret):
         logger.warning("Invalid Razorpay webhook signature attempt")
         raise HTTPException(400, "Invalid signature")
 
+    event = parse_razorpay_webhook_payload(body_bytes)
+    event_type = event.get("event", "")
+    event_id = event.get("id") or f"evt_{hashlib.md5(body_bytes).hexdigest()}"
+    logger.info(f"Verified Razorpay webhook received: type={event_type}, id={event_id}")
+
     try:
-        event = json.loads(body_bytes)
-        event_type = event.get("event", "")
         payment_entity = event.get("payload", {}).get("payment", {}).get("entity", {})
         order_id = payment_entity.get("order_id", "")
         payment_id = payment_entity.get("id", "")
