@@ -61,7 +61,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
           setState(() => _workerName = name);
         }
         final startedAt = res['started_at'] != null ? DateTime.tryParse(res['started_at'].toString()) : null;
-        final completedAt = res['completed_at'] != null ? DateTime.tryParse(res['completed_at'].toString()) : DateTime.now();
+        final completedAt = (res['completed_at'] != null ? DateTime.tryParse(res['completed_at'].toString()) : null) ?? DateTime.now();
         if (startedAt != null) {
           final diff = completedAt.difference(startedAt).inMinutes;
           if (diff > 0) {

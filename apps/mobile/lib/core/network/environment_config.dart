@@ -23,7 +23,6 @@ class EnvironmentConfig {
   // Pass at build time:
   //   flutter run --dart-define=API_BASE_URL=https://your-app.onrender.com
   //   flutter build apk --dart-define=API_BASE_URL=https://your-app.onrender.com --dart-define=ENV=production
-  static const String _defaultDevUrl = kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
   static const String _defaultProdUrl = 'https://jugaad-api.onrender.com';
 
   static const String baseUrl = String.fromEnvironment(

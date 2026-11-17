@@ -544,7 +544,7 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
 
       if (assignedWorkerId != null && assignedWorkerId.isNotEmpty) {
         try {
-          await ApiService().client.post('/v1/jobs/${widget.jobId}/reject', data: {
+          await ApiService.client.post('/v1/jobs/${widget.jobId}/reject', data: {
             'worker_id': assignedWorkerId,
             'reason': 'customer_declined',
           }).timeout(const Duration(seconds: 4));
