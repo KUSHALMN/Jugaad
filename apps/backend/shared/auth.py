@@ -18,18 +18,80 @@ from core.config import settings
 _DEV_UID = os.getenv("DEV_UID", "dev-test-user")
 _IS_LOCAL = settings.ENV == "local"
 
+# In-memory LRU fallback token cache (token_hash -> (decoded_dict, expire_timestamp))
+_LOCAL_TOKEN_CACHE: dict[str, tuple[dict, float]] = {}
+_MAX_LOCAL_CACHE_SIZE = 5000
+
+def _get_cached_token(token_hash: str) -> dict | None:
+    """Retrieve decoded claims from Redis or local in-memory cache."""
+    import time
+    import json
+    from shared import redis_client
+
+    # 1. Check Redis L1 cache
+    try:
+        cached_val = redis_client.get_state(f"auth:token_cache:{token_hash}")
+        if cached_val:
+            return json.loads(cached_val)
+    except Exception:
+        pass
+
+    # 2. Check local in-memory L2 cache
+    now = time.time()
+    if token_hash in _LOCAL_TOKEN_CACHE:
+        claims, exp_time = _LOCAL_TOKEN_CACHE[token_hash]
+        if exp_time > now:
+            return claims
+        else:
+            _LOCAL_TOKEN_CACHE.pop(token_hash, None)
+    return None
+
+def _cache_token(token_hash: str, claims: dict):
+    """Store validated claims in Redis and local cache with safety buffer TTL."""
+    import time
+    import json
+    from shared import redis_client
+
+    now = time.time()
+    exp = claims.get("exp")
+    if exp and isinstance(exp, (int, float)):
+        ttl = max(30, min(300, int(exp - now - 30)))
+    else:
+        ttl = 300
+
+    # Write to Redis
+    try:
+        redis_client.set_state(f"auth:token_cache:{token_hash}", json.dumps(claims), ex=ttl)
+    except Exception:
+        pass
+
+    # Write to in-memory cache with eviction guard
+    if len(_LOCAL_TOKEN_CACHE) > _MAX_LOCAL_CACHE_SIZE:
+        # Prune oldest 20%
+        keys_to_remove = list(_LOCAL_TOKEN_CACHE.keys())[:1000]
+        for k in keys_to_remove:
+            _LOCAL_TOKEN_CACHE.pop(k, None)
+    _LOCAL_TOKEN_CACHE[token_hash] = (claims, now + ttl)
+
 
 # ─── 1. Public Firebase token (Flutter app users + workers) ──────
 
 def verify_token(authorization_header: str) -> dict:
-    """Verify Firebase Auth ID token or Supabase Auth JWT from Authorization header value."""
+    """Verify Firebase Auth ID token or Supabase Auth JWT with Redis SHA-256 caching."""
     if not authorization_header.startswith("Bearer "):
         raise HTTPException(401, "Missing token")
     token = authorization_header.split(" ", 1)[1]
     
+    # 0. Check cache using cryptographic SHA-256 hash
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    cached = _get_cached_token(token_hash)
+    if cached:
+        return cached
+
     # 1. Try Firebase Auth ID token
     try:
         decoded = fb_auth.verify_id_token(token)
+        _cache_token(token_hash, decoded)
         log("auth", "verify_token", "ok_firebase", uid=decoded["uid"])
         return decoded
     except Exception as e_fb:
@@ -39,12 +101,14 @@ def verify_token(authorization_header: str) -> dict:
             sb_user = supabase.auth.get_user(token)
             if sb_user and sb_user.user:
                 u_id = str(sb_user.user.id)
-                log("auth", "verify_token", "ok_supabase", uid=u_id)
-                return {
+                claims = {
                     "uid": u_id,
                     "email": sb_user.user.email,
                     "provider": "supabase",
                 }
+                _cache_token(token_hash, claims)
+                log("auth", "verify_token", "ok_supabase", uid=u_id)
+                return claims
         except Exception as e_sb:
             pass
 
