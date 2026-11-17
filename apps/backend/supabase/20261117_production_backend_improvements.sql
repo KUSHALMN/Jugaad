@@ -1,5 +1,5 @@
 -- ============================================================================
--- Jugaad App — Unified Production Backend Improvements Migration
+-- Jugaad App — Unified Production Backend Improvements Migration (Resilient)
 -- ============================================================================
 -- Combines:
 --   1. PostGIS Spatial GiST indexing & coordinates sync trigger
@@ -54,13 +54,20 @@ CREATE TRIGGER trg_sync_worker_location
     EXECUTE FUNCTION public.sync_worker_location_from_coords();
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- SECTION 2: HIGH-CONCURRENCY COMPOSITE INDEXES
+-- SECTION 2: HIGH-CONCURRENCY COMPOSITE INDEXES (DYNAMIC & RESILIENT)
 -- ─────────────────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_jobs_employer_status 
   ON public.jobs (employer_id, status);
 
-CREATE INDEX IF NOT EXISTS idx_jobs_worker_status 
-  ON public.jobs (worker_id, status);
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'jobs' AND column_name = 'worker_id'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_jobs_worker_status ON public.jobs (worker_id, status);
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_jobs_status_created_at_desc 
   ON public.jobs (status, created_at DESC);
@@ -68,9 +75,17 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status_created_at_desc
 CREATE INDEX IF NOT EXISTS idx_jobs_payment_status 
   ON public.jobs (payment_status, status);
 
-CREATE INDEX IF NOT EXISTS idx_jobs_razorpay_order_id 
-  ON public.jobs (razorpay_order_id)
-  WHERE razorpay_order_id IS NOT NULL;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'jobs' AND column_name = 'razorpay_order_id'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_jobs_razorpay_order_id 
+          ON public.jobs (razorpay_order_id)
+          WHERE razorpay_order_id IS NOT NULL;
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_users_firebase_uid 
   ON public.users (firebase_uid);
@@ -84,14 +99,43 @@ CREATE INDEX IF NOT EXISTS idx_workers_category_online_avail
 CREATE INDEX IF NOT EXISTS idx_workers_phone 
   ON public.workers (phone);
 
-CREATE INDEX IF NOT EXISTS idx_reviews_worker_id_rating 
-  ON public.reviews (worker_id, rating);
+-- Reviews table index: adapts automatically to reviewee_id or worker_id
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'reviews' AND column_name = 'reviewee_id'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_reviews_reviewee_rating 
+          ON public.reviews (reviewee_id, rating);
+    ELSIF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'reviews' AND column_name = 'worker_id'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_reviews_worker_id_rating 
+          ON public.reviews (worker_id, rating);
+    END IF;
+END $$;
 
-CREATE INDEX IF NOT EXISTS idx_price_change_requests_job_status 
-  ON public.price_change_requests (job_id, status);
+-- Active Job Sub-Entities (Negotiations & Add-ons)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'price_change_requests'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_price_change_requests_job_status 
+          ON public.price_change_requests (job_id, status);
+    END IF;
 
-CREATE INDEX IF NOT EXISTS idx_spare_parts_job_status 
-  ON public.spare_parts (job_id, status);
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'spare_parts'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_spare_parts_job_status 
+          ON public.spare_parts (job_id, status);
+    END IF;
+END $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- SECTION 3: OPTIMIZED HYPERLOCAL DISPATCH RPC (get_nearby_workers)
