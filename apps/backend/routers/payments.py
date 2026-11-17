@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from shared.auth import verify_firebase_token
 from shared.database import supabase
+from shared import redis_client
 from datetime import datetime, timezone
 import logging
 import hmac
@@ -43,6 +44,115 @@ def parse_razorpay_webhook_payload(body_bytes: bytes) -> dict:
         raise HTTPException(400, f"Malformed webhook JSON: {str(e)}")
 
 
+async def _reconcile_captured_payment(
+    order_id: str,
+    payment_id: str,
+    amount_paise: int,
+    notes: dict,
+    event_id: str
+) -> dict:
+    """
+    Reconciles captured payment or paid order against the jobs database idempotently.
+    Updates escrow and releases payout if job criteria are satisfied.
+    """
+    # 1. Look up job by razorpay_order_id or notes.job_id
+    job = None
+    if order_id:
+        job_result = supabase.table("jobs").select("id, employer_id, worker_id, status, payment_status").eq("razorpay_order_id", order_id).maybe_single().execute()
+        if job_result and job_result.data:
+            job = job_result.data
+
+    if not job and notes and notes.get("job_id"):
+        job_result = supabase.table("jobs").select("id, employer_id, worker_id, status, payment_status").eq("id", notes["job_id"]).maybe_single().execute()
+        if job_result and job_result.data:
+            job = job_result.data
+
+    if not job:
+        logger.warning(f"Reconciliation target not found for order={order_id}, notes={notes}")
+        return {"status": "job_not_found", "order_id": order_id}
+
+    job_id = job.get("id")
+
+    # 2. Check if payment was already recorded in payments table
+    if payment_id:
+        existing_pmt = supabase.table("payments").select("id, status").eq("razorpay_payment_id", payment_id).execute()
+        if existing_pmt and existing_pmt.data:
+            logger.info(f"Payment {payment_id} already recorded in DB")
+            return {"status": "already_recorded", "job_id": job_id, "payment_id": payment_id}
+
+    # 3. Escrow rule evaluation:
+    # Release payout if and only if job is completed AND there are no unresolved price change requests
+    is_completed = job.get("status") == "completed"
+    has_pending_requests = False
+    if job_id:
+        pending_res = supabase.table("price_change_requests").select("id").eq("job_id", job_id).eq("status", "pending").execute()
+        has_pending_requests = bool(pending_res.data)
+
+    payment_release_status = "released" if (is_completed and not has_pending_requests) else "escrowed"
+
+    # 4. Insert payment record into payments ledger
+    try:
+        supabase.table("payments").insert({
+            "job_id": job_id,
+            "employer_id": job.get("employer_id"),
+            "worker_id": job.get("worker_id"),
+            "amount": float(amount_paise) / 100.0,
+            "razorpay_order_id": order_id or "",
+            "razorpay_payment_id": payment_id or "",
+            "status": payment_release_status,
+        }).execute()
+    except Exception as ins_err:
+        logger.warning(f"Payment ledger insert note: {ins_err}")
+
+    # 5. Atomically transition job payment status
+    if job_id:
+        update_data = {
+            "payment_status": payment_release_status,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if payment_id:
+            update_data["razorpay_payment_id"] = payment_id
+
+        supabase.table("jobs").update(update_data).eq("id", job_id).execute()
+        logger.info(f"✅ Job {job_id} payment auto-reconciled to '{payment_release_status}' via webhook")
+
+    # 6. Try to send FCM push notification to participants
+    try:
+        from services.fcm_service import fcm_service
+        employer_id = job.get("employer_id")
+        worker_id = job.get("worker_id")
+        amount_inr = float(amount_paise) / 100.0
+
+        if employer_id:
+            emp_res = supabase.table("users").select("fcm_token").eq("id", employer_id).execute()
+            if emp_res.data and emp_res.data[0].get("fcm_token"):
+                await fcm_service.send_silent_fcm(emp_res.data[0]["fcm_token"], {
+                    "type": "PAYMENT_CONFIRMED",
+                    "job_id": job_id,
+                    "payment_status": payment_release_status,
+                    "amount": str(amount_inr)
+                })
+
+        if worker_id and payment_release_status == "released":
+            w_res = supabase.table("users").select("fcm_token").eq("id", worker_id).execute()
+            if w_res.data and w_res.data[0].get("fcm_token"):
+                await fcm_service.send_silent_fcm(w_res.data[0]["fcm_token"], {
+                    "type": "PAYMENT_RELEASED",
+                    "job_id": job_id,
+                    "amount": str(amount_inr)
+                })
+    except Exception as fcm_err:
+        logger.warning(f"Optional FCM alert error on webhook reconciliation: {fcm_err}")
+
+    return {
+        "status": "reconciled",
+        "job_id": job_id,
+        "payment_status": payment_release_status,
+        "order_id": order_id,
+        "payment_id": payment_id
+    }
+
+
 @router.post("/webhooks/razorpay")
 async def razorpay_webhook(request: Request):
     body_bytes = await request.body()
@@ -66,53 +176,46 @@ async def razorpay_webhook(request: Request):
     event_id = event.get("id") or f"evt_{hashlib.md5(body_bytes).hexdigest()}"
     logger.info(f"Verified Razorpay webhook received: type={event_type}, id={event_id}")
 
+    # 1. Distributed idempotency check via Redis
+    idempotency_key = f"webhook:processed:{event_id}"
+    if redis_client.get_state(idempotency_key):
+        logger.info(f"Webhook event {event_id} already processed, skipping duplicate delivery")
+        return {"status": "already_processed", "event_id": event_id}
+
+    lock_key = f"webhook:lock:{event_id}"
+    acquired = redis_client.acquire_lock(lock_key, "processing", ex=30)
+
     try:
-        payment_entity = event.get("payload", {}).get("payment", {}).get("entity", {})
-        order_id = payment_entity.get("order_id", "")
-        payment_id = payment_entity.get("id", "")
-        amount = payment_entity.get("amount", 0)
+        payload_data = event.get("payload", {})
+        result = {"status": "ignored", "event": event_type}
 
-        if event_type == "payment.captured":
-            existing = supabase.table("payments").select("id").eq("razorpay_payment_id", payment_id).execute()
-            if existing.data:
-                return {"status": "already_processed"}
+        if event_type in ("payment.captured", "order.paid"):
+            payment_entity = payload_data.get("payment", {}).get("entity", {})
+            order_entity = payload_data.get("order", {}).get("entity", {})
+            
+            order_id = payment_entity.get("order_id") or order_entity.get("id", "")
+            payment_id = payment_entity.get("id", "")
+            amount = payment_entity.get("amount") or order_entity.get("amount_paid", 0)
+            notes = payment_entity.get("notes") or order_entity.get("notes") or {}
 
-            job_result = supabase.table("jobs").select("id, employer_id, worker_id, status").eq("razorpay_order_id", order_id).maybe_single().execute()
-            if not job_result or not job_result.data:
-                logger.warning(f"Payment captured for unknown order: {order_id}")
-                return {"status": "order_not_found"}
+            result = await _reconcile_captured_payment(
+                order_id=order_id,
+                payment_id=payment_id,
+                amount_paise=amount,
+                notes=notes,
+                event_id=event_id
+            )
 
-            job = job_result.data
-            job_id = job.get("id")
-
-            # Check escrow release constraints
-            is_completed = job.get("status") == "completed"
-            has_pending = False
-            if job_id:
-                pending_requests = supabase.table("price_change_requests").select("id").eq("job_id", job_id).eq("status", "pending").execute()
-                has_pending = bool(pending_requests.data)
-
-            # Release payout only if job is marked complete and there are no pending price requests
-            payment_release_status = "released" if (is_completed and not has_pending) else "escrowed"
-
-            supabase.table("payments").insert({
-                "job_id": job_id,
-                "employer_id": job.get("employer_id"),
-                "worker_id": job.get("worker_id"),
-                "amount": amount / 100,
-                "razorpay_order_id": order_id,
-                "razorpay_payment_id": payment_id,
-                "status": payment_release_status,
-            }).execute()
-
-            if job_id:
-                supabase.table("jobs").update({
-                    "payment_status": payment_release_status,
-                    "razorpay_payment_id": payment_id,
-                    "updated_at": datetime.now(timezone.utc).isoformat(),
-                }).eq("id", job_id).execute()
-
-        return {"status": "processed"}
+        # Mark event as idempotently processed in Redis (7 days TTL)
+        redis_client.set_state(idempotency_key, "processed", ex=604800)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Webhook processing error for {event_id}: {e}")
+        raise HTTPException(500, "Internal webhook processing error")
+    finally:
+        redis_client.release_lock(lock_key)
     except Exception as e:
         logger.error(f"Webhook error: {e}")
         raise HTTPException(500, "Internal error")
