@@ -38,8 +38,13 @@ class DioClient {
   static void initialize() {
     if (_initialized) return;
 
+    String effectiveBaseUrl = EnvironmentConfig.baseUrl;
+    if (kIsWeb && kDebugMode && !const bool.hasEnvironment('API_BASE_URL')) {
+      effectiveBaseUrl = 'http://localhost:8000';
+    }
+
     _dio = Dio(BaseOptions(
-      baseUrl: EnvironmentConfig.baseUrl,
+      baseUrl: effectiveBaseUrl,
       connectTimeout: EnvironmentConfig.connectTimeout,
       receiveTimeout: EnvironmentConfig.receiveTimeout,
       sendTimeout: EnvironmentConfig.sendTimeout,
@@ -60,11 +65,11 @@ class DioClient {
     _dio.interceptors.add(_ErrorInterceptor());
 
     _initialized = true;
-    debugPrint('[DIO] Initialized → ${EnvironmentConfig.baseUrl}');
+    debugPrint('[DIO] Initialized → $effectiveBaseUrl');
   }
 
   /// Base URL getter for external use (e.g. heartbeat service).
-  static String get baseUrl => EnvironmentConfig.baseUrl;
+  static String get baseUrl => _initialized ? _dio.options.baseUrl : EnvironmentConfig.baseUrl;
 }
 
 // ═══════════════════════════════════════════════════════════════════

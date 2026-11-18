@@ -24,13 +24,16 @@ class EnvironmentConfig {
   //   flutter run --dart-define=API_BASE_URL=https://your-app.onrender.com
   //   flutter build apk --dart-define=API_BASE_URL=https://your-app.onrender.com --dart-define=ENV=production
   static const String _defaultProdUrl = 'https://jugaad-api.onrender.com';
+  static const String _defaultDevWebUrl = 'http://localhost:8000';
 
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: _defaultProdUrl,
-  );
+  static String get baseUrl {
+    const fromEnv = String.fromEnvironment('API_BASE_URL');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    if (kIsWeb && kDebugMode) return _defaultDevWebUrl;
+    return _defaultProdUrl;
+  }
 
-  static const String apiV1 = '$baseUrl/api/v1';
+  static String get apiV1 => '$baseUrl/api/v1';
 
   // ─── Timeouts (tuned for Render free-tier cold start) ─────────
   /// Render cold start can take 50s. 60s gives margin.
@@ -47,16 +50,16 @@ class EnvironmentConfig {
   static const Duration retryBaseDelay = Duration(seconds: 2); // 2s, 4s, 8s
 
   // ─── Health Check ─────────────────────────────────────────────
-  static const String healthEndpoint = '$baseUrl/health';
+  static String get healthEndpoint => '$baseUrl/health';
 
   /// How long to wait for health ping before declaring server cold
   static const Duration healthTimeout = Duration(seconds: 10);
 
   // ─── Endpoints ────────────────────────────────────────────────
-  static const String jobs = '$apiV1/jobs';
-  static const String users = '$apiV1/users';
-  static const String workers = '$apiV1/workers';
-  static const String payments = '$apiV1/payments';
-  static const String dispatch = '$apiV1/dispatch';
-  static const String platformConfig = '$apiV1/platform/config';
+  static String get jobs => '$apiV1/jobs';
+  static String get users => '$apiV1/users';
+  static String get workers => '$apiV1/workers';
+  static String get payments => '$apiV1/payments';
+  static String get dispatch => '$apiV1/dispatch';
+  static String get platformConfig => '$apiV1/platform/config';
 }

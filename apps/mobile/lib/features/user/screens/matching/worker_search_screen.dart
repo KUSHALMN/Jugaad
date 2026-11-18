@@ -256,7 +256,11 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(category, style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                      Text(
+                        category,
+                        style: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -284,10 +288,16 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                               ),
                             ),
                           ],
-                          const SizedBox(width: 12),
-                          const Icon(Icons.near_me, color: AppColors.primary, size: 16),
+                          const SizedBox(width: 10),
+                          const Icon(Icons.near_me, color: AppColors.primary, size: 15),
                           const SizedBox(width: 4),
-                          Text(distanceText, style: GoogleFonts.plusJakartaSans(fontSize: 12)),
+                          Flexible(
+                            child: Text(
+                              distanceText,
+                              style: GoogleFonts.plusJakartaSans(fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -297,36 +307,65 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
             ),
             const SizedBox(height: 20),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Column(
-                    children: [
-                      Text('ESTIMATED ETA', style: GoogleFonts.plusJakartaSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text('~$etaMins mins', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                    ],
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          'ESTIMATED ETA',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '~$etaMins mins',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.primary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                   Container(width: 1, height: 30, color: Colors.blue.withValues(alpha: 0.2)),
-                  Column(
-                    children: [
-                      Text('RATE', style: GoogleFonts.plusJakartaSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(hourlyRate != null && hourlyRate > 0 ? '₹${hourlyRate.toInt()}/hr' : 'Standard', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
-                    ],
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          'RATE',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          hourlyRate != null && hourlyRate > 0 ? '₹${hourlyRate.toInt()}/hr' : 'Standard',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF10B981)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                   Container(width: 1, height: 30, color: Colors.blue.withValues(alpha: 0.2)),
-                  Column(
-                    children: [
-                      Text('STATUS', style: GoogleFonts.plusJakartaSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text('Available', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF10B981))),
-                    ],
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          'STATUS',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Available',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.bold, color: const Color(0xFF10B981)),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -719,16 +758,39 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    state.isCitywideFallback
-                        ? 'Top-Rated ${state.serviceType.isEmpty ? 'Workers' : state.serviceType} (${state.userCity})'
-                        : '${state.workers.length} ${state.serviceType.isEmpty ? 'Workers' : '${state.serviceType}s'} Available',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  Expanded(
+                    child: Text(
+                      state.isCitywideFallback
+                          ? 'Top-Rated ${state.serviceType.isEmpty ? 'Workers' : state.serviceType} (${state.userCity})'
+                          : '${state.workers.length} ${state.serviceType.isEmpty ? 'Workers' : '${state.serviceType}s'} Available',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  TextButton.icon(
-                    onPressed: _showManualLocationPicker,
-                    icon: const Icon(Icons.location_on, size: 16, color: AppColors.primary),
-                    label: Text(state.activeLocationName, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: TextButton.icon(
+                      onPressed: _showManualLocationPicker,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(Icons.location_on, size: 15, color: AppColors.primary),
+                      label: Text(
+                        state.activeLocationName,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -769,111 +831,175 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
       elevation: isSelected ? 3 : 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: isSelected ? AppColors.primary : const Color(0xFFEEEEEE), width: isSelected ? 2 : 1),
-      ),
-      child: ListTile(
-        onTap: () => _onWorkerCardTap(worker),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        leading: CircleAvatar(
-          radius: 26,
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-          backgroundImage: (profilePhoto != null && profilePhoto.isNotEmpty)
-              ? CachedNetworkImageProvider(profilePhoto)
-              : null,
-          child: (profilePhoto == null || profilePhoto.isEmpty)
-              ? Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : 'W',
-                  style: GoogleFonts.plusJakartaSans(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 18),
-                )
-              : null,
+        side: BorderSide(
+          color: isSelected ? AppColors.primary : const Color(0xFFEEEEEE),
+          width: isSelected ? 2 : 1,
         ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                name,
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15),
-                overflow: TextOverflow.ellipsis,
+      ),
+      child: InkWell(
+        onTap: () => _onWorkerCardTap(worker),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                backgroundImage: (profilePhoto != null && profilePhoto.isNotEmpty)
+                    ? CachedNetworkImageProvider(profilePhoto)
+                    : null,
+                child: (profilePhoto == null || profilePhoto.isEmpty)
+                    ? Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : 'W',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      )
+                    : null,
               ),
-            ),
-            if (isFallback || rating >= 4.9) ...[
-              Container(
-                margin: const EdgeInsets.only(right: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFFDE68A), width: 0.8),
-                ),
-                child: Row(
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star, size: 10, color: Color(0xFFD97706)),
-                    const SizedBox(width: 2),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isFallback || rating >= 4.9) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFFFDE68A), width: 0.8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.star, size: 10, color: Color(0xFFD97706)),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'Top-Rated',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF92400E),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        if (isVerified) ...[
+                          const SizedBox(width: 4),
+                          const Icon(Icons.verified, color: AppColors.primary, size: 16),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 3),
                     Text(
-                      'Top-Rated',
+                      '$category • ETA: ~$etaMins mins',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF92400E),
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (rating > 0 && completedJobs > 0) ...[
+                          const Icon(Icons.star, color: Colors.amber, size: 13),
+                          const SizedBox(width: 2),
+                          Text(
+                            rating.toStringAsFixed(1),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ] else ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'NEW',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        const Icon(Icons.near_me, color: AppColors.primary, size: 13),
+                        const SizedBox(width: 2),
+                        Flexible(
+                          child: Text(
+                            distanceText,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (hourlyRate != null && hourlyRate > 0) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            '• ₹${hourlyRate.toInt()}/hr',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF10B981),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
               ),
-            ],
-            if (isVerified) const Icon(Icons.verified, color: AppColors.primary, size: 16),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 2),
-            Text('$category • ETA: ~$etaMins mins', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.textSecondary)),
-            const SizedBox(height: 5),
-            Row(
-              children: [
-                if (rating > 0 && completedJobs > 0) ...[
-                  const Icon(Icons.star, color: Colors.amber, size: 14),
-                  const SizedBox(width: 2),
-                  Text(rating.toStringAsFixed(1), style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 12)),
-                  const SizedBox(width: 8),
-                ] else ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text('NEW', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                const Icon(Icons.near_me, color: AppColors.primary, size: 14),
-                const SizedBox(width: 2),
-                Expanded(
-                  child: Text(
-                    distanceText,
-                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: Colors.grey[600]),
-                    overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () => _onWorkerCardTap(worker),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  minimumSize: const Size(54, 34),
+                ),
+                child: Text(
+                  'Book',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 12,
                   ),
                 ),
-                if (hourlyRate != null && hourlyRate > 0) ...[
-                  const SizedBox(width: 8),
-                  Text('•  ₹${hourlyRate.toInt()}/hr', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF10B981))),
-                ],
-              ],
-            ),
-          ],
-        ),
-        trailing: ElevatedButton(
-          onPressed: () => _onWorkerCardTap(worker),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              ),
+            ],
           ),
-          child: Text('Book', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
         ),
       ),
     );
@@ -1054,13 +1180,16 @@ class _ScanningTelemetryHeaderState extends State<_ScanningTelemetryHeader> {
                 child: const Icon(Icons.radar_rounded, color: Colors.white, size: 16),
               ),
               const SizedBox(width: 10),
-              Text(
-                'RADAR TELEMETRY',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                  color: AppColors.primary,
+              Flexible(
+                child: Text(
+                  'RADAR TELEMETRY',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                    color: AppColors.primary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const Spacer(),
