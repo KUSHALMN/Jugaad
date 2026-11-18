@@ -633,6 +633,13 @@ class _EarningsScreenState extends State<EarningsScreen> {
                       // ═══════════════════════════════════════════════════════
                       _buildStreakBonusBanner(),
 
+                      const SizedBox(height: 18),
+
+                      // ═══════════════════════════════════════════════════════
+                      // ROW 3.5: WEEKLY EARNINGS ANALYTICS SPARKLINE
+                      // ═══════════════════════════════════════════════════════
+                      _buildWeeklyEarningsChart(),
+
                       const SizedBox(height: 22),
 
                       // ═══════════════════════════════════════════════════════
@@ -795,6 +802,147 @@ class _EarningsScreenState extends State<EarningsScreen> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  /// Weekly Earnings Analytics Sparkline Bar Chart
+  Widget _buildWeeklyEarningsChart() {
+    final List<Map<String, dynamic>> weekData = [
+      {'day': 'Mon', 'amount': 1850.0, 'jobs': 4},
+      {'day': 'Tue', 'amount': 2200.0, 'jobs': 5},
+      {'day': 'Wed', 'amount': 1400.0, 'jobs': 3},
+      {'day': 'Thu', 'amount': 2650.0, 'jobs': 6},
+      {'day': 'Fri', 'amount': 2100.0, 'jobs': 4},
+      {'day': 'Sat', 'amount': 3200.0, 'jobs': 7, 'isPeak': true},
+      {'day': 'Sun', 'amount': 2800.0, 'jobs': 6},
+    ];
+    const double maxAmt = 3500.0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Weekly Earnings Analytics',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '₹16,200 total earned this week • Sat was peak',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.trending_up_rounded, color: Color(0xFF059669), size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      '+18% vs last week',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF059669),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 120,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: weekData.map((d) {
+                final double amt = d['amount'] as double;
+                final bool isPeak = d['isPeak'] == true;
+                final double heightFactor = (amt / maxAmt).clamp(0.15, 1.0);
+
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      '₹${(amt / 1000).toStringAsFixed(1)}k',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: isPeak ? FontWeight.w800 : FontWeight.w600,
+                        color: isPeak ? const Color(0xFF059669) : const Color(0xFF94A3B8),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 28,
+                      height: 80 * heightFactor,
+                      decoration: BoxDecoration(
+                        gradient: isPeak
+                            ? const LinearGradient(
+                                colors: [Color(0xFF059669), Color(0xFF34D399)],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                              )
+                            : const LinearGradient(
+                                colors: [Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                              ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      d['day'] as String,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: isPeak ? FontWeight.w800 : FontWeight.w600,
+                        color: isPeak ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }

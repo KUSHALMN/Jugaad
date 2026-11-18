@@ -25,6 +25,7 @@ class SlideToConfirm extends StatefulWidget {
 
 class _SlideToConfirmState extends State<SlideToConfirm> {
   double _dragProgress = 0.0;
+  int _lastMilestone = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -76,12 +77,18 @@ class _SlideToConfirmState extends State<SlideToConfirm> {
                     setState(() {
                       _dragProgress += details.primaryDelta! / maxDragDistance;
                       _dragProgress = _dragProgress.clamp(0.0, 1.0);
+                      final currentMilestone = (_dragProgress * 4).floor();
+                      if (currentMilestone != _lastMilestone) {
+                        _lastMilestone = currentMilestone;
+                        HapticFeedback.selectionClick();
+                      }
                     });
                   },
                   onHorizontalDragEnd: (details) {
                     if (widget.isLoading) return;
+                    _lastMilestone = 0;
                     if (_dragProgress >= 0.85) {
-                      HapticFeedback.lightImpact();
+                      HapticFeedback.mediumImpact();
                       widget.onConfirm();
                       setState(() {
                         _dragProgress = 1.0;

@@ -416,10 +416,12 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildPriceRow('Service charge', '₹${serviceFee.toStringAsFixed(2)}', emoji: '🛠️'),
-                            const SizedBox(height: 14),
-                            _buildPriceRow('Platform fee', '₹${platformFee.toStringAsFixed(2)}', emoji: '📱'),
+                            const SizedBox(height: 12),
+                            _buildPriceRow('Platform safety fee', '₹${platformFee.toStringAsFixed(2)}', emoji: '🛡️'),
+                            const SizedBox(height: 12),
+                            _buildPriceRow('Damage insurance coverage (₹10,000)', 'FREE', emoji: '✨'),
                             const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16),
+                              padding: EdgeInsets.symmetric(vertical: 14),
                               child: Divider(color: UserAppTheme.divider, height: 1, thickness: 1),
                             ),
                             _buildPriceRow('Total Payable', '₹${displayTotal.toStringAsFixed(2)}', isTotal: true, emoji: '🧾'),
@@ -427,7 +429,55 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
                         ),
                       ),
                       
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 16),
+
+                      // Jugaad Assurance Guarantee Card
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0FDF4),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFBBF7D0)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFDCFCE7),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.verified_user_rounded, color: Color(0xFF16A34A), size: 18),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Jugaad SafePay & Damage Guarantee',
+                                    style: UserAppTheme.body(
+                                      size: 12,
+                                      weight: FontWeight.w800,
+                                      color: const Color(0xFF166534),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '100% verified technician. Free protection against damages up to ₹10,000.',
+                                    style: UserAppTheme.body(
+                                      size: 11,
+                                      color: const Color(0xFF15803D),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
 
                       // Payment methods header
                       Text(
@@ -440,12 +490,14 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
                       ),
                       const SizedBox(height: 14),
 
-                      _buildPaymentMethodTile('UPI', Icons.account_balance_rounded, 'upi'),
+                      _buildPaymentMethodTile('UPI (GPay / PhonePe / Paytm)', Icons.account_balance_rounded, 'upi'),
                       if (_paymentMethod == 'upi') _buildUpiAppsRow(),
                       const SizedBox(height: 12),
                       _buildPaymentMethodTile('Credit/Debit Card', Icons.credit_card_rounded, 'card'),
                       const SizedBox(height: 12),
                       _buildPaymentMethodTile('Net Banking / Wallet', Icons.account_balance_wallet_rounded, 'wallet'),
+                      const SizedBox(height: 12),
+                      _buildPaymentMethodTile('Cash After Service', Icons.money_rounded, 'cash'),
 
                       const SizedBox(height: 24),
                     ],

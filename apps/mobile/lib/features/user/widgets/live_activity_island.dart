@@ -12,6 +12,7 @@ class LiveActivityIsland extends StatelessWidget {
   final String distanceText;
   final String status;
   final VoidCallback? onCallTap;
+  final VoidCallback? onChatTap;
   final VoidCallback? onShareTap;
   final VoidCallback? onCardTap;
 
@@ -24,6 +25,7 @@ class LiveActivityIsland extends StatelessWidget {
     this.distanceText = '1.4 km away',
     this.status = 'En Route',
     this.onCallTap,
+    this.onChatTap,
     this.onShareTap,
     this.onCardTap,
   });
@@ -133,17 +135,29 @@ class LiveActivityIsland extends StatelessWidget {
                       ),
                       // Action buttons
                       IconButton(
-                        onPressed: onCallTap,
-                        icon: const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 20),
+                        onPressed: onChatTap,
+                        icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 19),
+                        tooltip: 'Chat with Technician',
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.white.withValues(alpha: 0.1),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        onPressed: onCallTap,
+                        icon: const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 19),
+                        tooltip: 'Call Technician',
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.1),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
                       IconButton(
                         onPressed: onShareTap,
-                        icon: const Icon(Icons.share_location_rounded, color: Color(0xFF4ADE80), size: 20),
+                        icon: const Icon(Icons.share_location_rounded, color: Color(0xFF4ADE80), size: 19),
+                        tooltip: 'Share Live Status',
                         style: IconButton.styleFrom(
                           backgroundColor: const Color(0xFF22C55E).withValues(alpha: 0.15),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

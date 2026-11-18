@@ -1524,6 +1524,19 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
                             .scale(begin: const Offset(0.5, 0.5), end: const Offset(2.0, 2.0), duration: 2.seconds, delay: 1.seconds, curve: Curves.easeOut)
                             .fadeOut(duration: 2.seconds),
 
+                            // Concentric primary pulse wave 3 (Ultra-wide ambient radar)
+                            Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: UserAppTheme.primaryBlue.withValues(alpha: 0.05),
+                              ),
+                            )
+                            .animate(onPlay: (controller) => controller.repeat())
+                            .scale(begin: const Offset(0.5, 0.5), end: const Offset(2.6, 2.6), duration: 2.5.seconds, delay: 1.5.seconds, curve: Curves.easeOut)
+                            .fadeOut(duration: 2.5.seconds),
+
                             // Main Scooter Icon Badge with smoothed Kalman bearing
                             Container(
                               padding: const EdgeInsets.all(8),

@@ -9,6 +9,7 @@ import 'rate_card_calculator_sheet.dart';
 class CategoryGridItem {
   final String id;
   final String title;
+  final String? vernacularTitle;
   final String? badge;
   final String imageUrl;
   final IconData icon;
@@ -20,6 +21,7 @@ class CategoryGridItem {
   const CategoryGridItem({
     required this.id,
     required this.title,
+    this.vernacularTitle,
     this.badge,
     required this.imageUrl,
     required this.icon,
@@ -39,6 +41,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
     CategoryGridItem(
       id: 'electrician',
       title: 'Electrician',
+      vernacularTitle: 'इलेक्ट्रीशियन',
       badge: '15 Min',
       imageUrl: 'assets/images/service_electrician.jpg',
       icon: Icons.electrical_services_rounded,
@@ -50,6 +53,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
     CategoryGridItem(
       id: 'plumber',
       title: 'Plumber',
+      vernacularTitle: 'प्लंबर',
       badge: 'Popular',
       imageUrl: 'assets/images/service_plumber.jpg',
       icon: Icons.plumbing_rounded,
@@ -61,6 +65,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
     CategoryGridItem(
       id: 'phone_repair',
       title: 'Phone Repair',
+      vernacularTitle: 'मोबाइल रिपेयर',
       badge: 'Doorstep',
       imageUrl: 'assets/images/banner_tech_apple.jpg',
       icon: Icons.phone_android_rounded,
@@ -71,6 +76,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
     CategoryGridItem(
       id: 'laptop_repair',
       title: 'Laptop Repair',
+      vernacularTitle: 'लैपटॉप सर्विस',
       badge: 'Top Rated',
       imageUrl: 'assets/images/service_laptop.jpg',
       icon: Icons.laptop_mac_rounded,
@@ -81,6 +87,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
     CategoryGridItem(
       id: 'ac_service',
       title: 'AC Service',
+      vernacularTitle: 'एसी सर्विस',
       badge: 'Trending',
       imageUrl: 'assets/images/banner_ac_apple.jpg',
       icon: Icons.ac_unit_rounded,
@@ -91,6 +98,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
     CategoryGridItem(
       id: 'carpenter',
       title: 'Carpenter',
+      vernacularTitle: 'बढ़ई / कारपेंटर',
       badge: 'Custom',
       imageUrl: 'assets/images/banner_tools_apple.jpg',
       icon: Icons.carpenter_rounded,
@@ -101,6 +109,7 @@ class HomeCategoriesGrid extends ConsumerWidget {
     CategoryGridItem(
       id: 'stove_repair',
       title: 'Stove Repair',
+      vernacularTitle: 'गैस चूल्हा रिपेयर',
       badge: 'Instant',
       imageUrl: 'assets/images/banner_stove_apple.jpg',
       icon: Icons.local_fire_department_rounded,
@@ -598,9 +607,24 @@ class _CategoryTileState extends State<_CategoryTile> {
                   letterSpacing: -0.2,
                   height: 1.15,
                 ),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+              if (cat.vernacularTitle != null && cat.vernacularTitle!.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  cat.vernacularTitle!,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.notoSansDevanagari(
+                    fontSize: (widget.titleFontSize - 2.0).clamp(8.5, 11.5),
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF64748B),
+                    height: 1.05,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
           ),
         ),

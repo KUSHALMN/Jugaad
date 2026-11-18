@@ -27,14 +27,14 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
   
   List<String> _history = [];
 
-  // Suggested search terms
+  // Suggested search terms with bilingual vernacular support
   final List<String> _suggestions = [
-    'Electrician',
-    'Plumber',
-    'Laptop Repair',
-    'Phone Repair',
-    'AC Service',
-    'Cleaning',
+    'Electrician / इलेक्ट्रीशियन',
+    'Plumber / प्लंबर',
+    'Fan Repair / पंखा रिपेयर',
+    'AC Cooling / एसी सर्विस',
+    'Laptop Repair / लैपटॉप',
+    'Stove Gas / चूल्हा रिपेयर',
   ];
 
   @override
@@ -329,7 +329,15 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
+
+              // Animated Soundwave Equalizer when listening
+              if (_isListening)
+                _AudioSoundwaveVisualizer(soundLevel: _soundLevel)
+              else
+                const SizedBox(height: 18),
+
+              const SizedBox(height: 16),
 
               // Transcribed/Speech Status Text
               Container(
@@ -490,6 +498,40 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AudioSoundwaveVisualizer extends StatelessWidget {
+  final double soundLevel;
+  const _AudioSoundwaveVisualizer({required this.soundLevel});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 38,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: List.generate(7, (i) {
+          final double baseHeight = 10.0 + (i % 3) * 6.0;
+          final double dynamicHeight = (baseHeight + (soundLevel * 3.5 * (i % 2 == 0 ? 1.2 : 0.8))).clamp(8.0, 36.0);
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: 4.5,
+            height: dynamicHeight,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(3),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFEA580C), Color(0xFFF97316)],
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+              ),
+            ),
+          );
+        }),
       ),
     );
   }

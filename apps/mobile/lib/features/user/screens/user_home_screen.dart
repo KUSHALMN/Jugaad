@@ -100,13 +100,17 @@ class _ScaleOnTapState extends State<ScaleOnTap> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _scale = 0.97),
+      onTapDown: (_) {
+        HapticFeedback.lightImpact();
+        setState(() => _scale = 0.95);
+      },
       onTapUp: (_) => setState(() => _scale = 1.0),
       onTapCancel: () => setState(() => _scale = 1.0),
       onTap: widget.onTap,
       child: AnimatedScale(
         scale: _scale,
-        duration: const Duration(milliseconds: 100),
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOutBack,
         child: widget.child,
       ),
     );
@@ -1129,6 +1133,10 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                       onCallTap: () {
                         HapticFeedback.lightImpact();
                         context.push('/user/track?jobId=$jobId');
+                      },
+                      onChatTap: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/chat/$jobId');
                       },
                       onShareTap: () {
                         HapticFeedback.lightImpact();
