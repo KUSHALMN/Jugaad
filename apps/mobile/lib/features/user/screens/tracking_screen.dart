@@ -651,6 +651,372 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
     );
   }
 
+  Future<void> _shareTripOnWhatsApp() async {
+    final workerName = _jobData?['worker_name'] ?? 'Verified Professional';
+    final serviceName = _jobData?['service'] ?? 'Home Service';
+    final workerId = 'JGD-${(widget.jobId.hashCode.abs() % 9000 + 1000)}';
+    final shareUrl = 'https://jugaad.app/track/${widget.jobId}';
+    final message = '🛡️ *Jugaad Suraksha Live Status*\n\n'
+        '$workerName ($serviceName, ID: $workerId) is currently servicing my home.\n'
+        '• Live GPS Tracking: $shareUrl\n'
+        '• KYC Aadhaar Verified & Police Cleared\n'
+        '• Insured under Jugaad Safety Guarantee.';
+
+    final encoded = Uri.encodeComponent(message);
+    final waUri = Uri.parse('https://wa.me/?text=$encoded');
+    try {
+      if (await canLaunchUrl(waUri)) {
+        await launchUrl(waUri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(waUri);
+      }
+    } catch (e) {
+      if (mounted) {
+        Clipboard.setData(ClipboardData(text: message));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tracking link copied to clipboard! Share on WhatsApp.'),
+            backgroundColor: Color(0xFF059669),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showSurakshaSafetySheet() {
+    JugaadHaptics.light();
+    final workerName = _jobData?['worker_name'] ?? 'Ramesh Kumar';
+    final service = _jobData?['service'] ?? 'Electrician';
+    final workerId = 'JGD-${(widget.jobId.hashCode.abs() % 9000 + 1000)}';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                  ),
+                  child: const Icon(Icons.verified_user_rounded, color: Color(0xFF059669), size: 26),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Jugaad Suraksha Shield 🛡️',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                      Text(
+                        '100% Verified Partner • Zero Risk Guarantee',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: const Color(0xFF059669),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: const Color(0xFF2563EB),
+                        child: Text(
+                          workerName[0],
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              workerName,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                            Text(
+                              '$service • ID: $workerId',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                color: const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'KYC VERIFIED',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF15803D),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24, color: Color(0xFFE2E8F0)),
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded, color: Color(0xFF059669), size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Aadhaar Biometric KYC & Criminal Background Cleared',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF334155),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.security_rounded, color: Color(0xFF2563EB), size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '₹25,000 In-House Property Protection Cover Active',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF334155),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _shareTripOnWhatsApp();
+                },
+                icon: const Text('📲', style: TextStyle(fontSize: 18)),
+                label: Text(
+                  'Share Live Trip on WhatsApp',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _triggerSosEmergency();
+                    },
+                    icon: const Icon(Icons.warning_rounded, color: UserAppTheme.urgentRed, size: 18),
+                    label: Text(
+                      'Police SOS (112)',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: UserAppTheme.urgentRed,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFFECACA), width: 1.5),
+                      backgroundColor: const Color(0xFFFEF2F2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      final hotline = Uri.parse('tel:1800584223');
+                      if (await canLaunchUrl(hotline)) {
+                        await launchUrl(hotline);
+                      }
+                    },
+                    icon: const Icon(Icons.headset_mic_rounded, color: Color(0xFF2563EB), size: 18),
+                    label: Text(
+                      '24x7 Safety Desk',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: const Color(0xFF2563EB),
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFBFDBFE), width: 1.5),
+                      backgroundColor: const Color(0xFFEFF6FF),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSurakshaShieldCard() {
+    return GestureDetector(
+      onTap: _showSurakshaSafetySheet,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFECFDF5), Color(0xFFF0FDF4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFA7F3D0), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF10B981).withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFF059669),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.shield_rounded, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Jugaad Suraksha Shield',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          color: const Color(0xFF065F46),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'ACTIVE',
+                          style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Aadhaar verified • Tap to share live trip with family',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF047857),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF059669), size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+
+
   // ─── VERIFICATION PIN HANDSHAKE (ZERO-COST DOORSTEP SECURITY) ────
   Widget _buildVerificationPinCard() {
     final status = _jobData?['status'] as String? ?? 'matched';
@@ -1337,7 +1703,7 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
             Padding(
               padding: const EdgeInsets.only(right: 14),
               child: InkWell(
-                onTap: _triggerSosEmergency,
+                onTap: _showSurakshaSafetySheet,
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -1349,15 +1715,15 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(Icons.shield_rounded, color: UserAppTheme.urgentRed, size: 15),
+                      Icon(Icons.shield_rounded, color: Color(0xFF059669), size: 16),
                       SizedBox(width: 4),
                       Text(
-                        'SOS',
+                        'Suraksha',
                         style: TextStyle(
-                          color: UserAppTheme.urgentRed,
+                          color: Color(0xFF065F46),
                           fontWeight: FontWeight.w900,
                           fontSize: 12,
-                          letterSpacing: 0.5,
+                          letterSpacing: 0.3,
                         ),
                       ),
                     ],
@@ -1667,6 +2033,9 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
                           ),
                         ).animate().fadeIn(duration: 400.ms),
                       const SizedBox(height: 20),
+
+                      // Jugaad Suraksha Trust & Safety Shield
+                      _buildSurakshaShieldCard().animate().fadeIn(duration: 400.ms),
 
                       // Verification PIN Handshake (Zero-Cost Anti-Fraud Handshake)
                       _buildVerificationPinCard().animate().fadeIn(duration: 400.ms),

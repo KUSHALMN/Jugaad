@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:jugaad_mvp/core/services/auth_service.dart';
 import 'package:jugaad_mvp/core/services/supabase_service.dart';
 import 'package:jugaad_mvp/core/services/sound_service.dart';
+import '../widgets/celebratory_cashout_dialog.dart';
 
 class EarningsScreen extends StatefulWidget {
   const EarningsScreen({super.key});
@@ -177,30 +178,15 @@ class _EarningsScreenState extends State<EarningsScreen> {
 
       if (mounted) {
         SoundService().playCashoutSuccess();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle_rounded,
-                    color: Colors.white, size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Instant UPI Payout requested! ₹${amount.toInt()} transferred to $upiId.',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: const Color(0xFF059669),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            duration: const Duration(seconds: 3),
-          ),
+        CelebratoryCashoutDialog.show(
+          context: context,
+          payoutAmount: amount,
+          upiVpa: upiId,
+          onDismiss: () {
+            setState(() {
+              _withdrawableBalance = 0;
+            });
+          },
         );
       }
     } catch (e) {
@@ -1597,18 +1583,20 @@ class _EarningsScreenState extends State<EarningsScreen> {
               ),
               ElevatedButton.icon(
                 onPressed: _requestPayout,
-                icon: const Icon(Icons.bolt_rounded, size: 18),
-                label: const Text('Instant Cashout'),
+                icon: const Icon(Icons.bolt_rounded, size: 20, color: Colors.white),
+                label: const Text('Transfer to UPI (₹0 Fee)'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF059669),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   textStyle: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
+                    letterSpacing: 0.2,
                   ),
-                  elevation: 2,
+                  elevation: 4,
+                  shadowColor: const Color(0xFF059669).withValues(alpha: 0.4),
                 ),
               ),
             ],

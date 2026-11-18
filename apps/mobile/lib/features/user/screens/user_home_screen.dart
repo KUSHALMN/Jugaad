@@ -1151,6 +1151,75 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
           ),
         ),
       ),
+      floatingActionButton: _buildBolKeBookKaroFab(),
+    );
+  }
+
+  Widget _buildBolKeBookKaroFab() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        showDialog(
+          context: context,
+          barrierColor: Colors.black.withValues(alpha: 0.3),
+          builder: (context) => const VoiceSearchOverlay(),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFEA580C), Color(0xFFC2410C)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: const Color(0xFFFDBA74), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFEA580C).withValues(alpha: 0.45),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.mic_rounded, color: Color(0xFFEA580C), size: 18),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bol Ke Book Karo 🎙️',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  'ಧ್ವನಿ ಬುಕಿಂಗ್ • Tap & Speak',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

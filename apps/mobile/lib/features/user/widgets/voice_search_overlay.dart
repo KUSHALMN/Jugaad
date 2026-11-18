@@ -26,6 +26,7 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
   bool _hasProcessed = false;
   
   List<String> _history = [];
+  Map<String, String>? _detectedBooking;
 
   // Suggested search terms with bilingual vernacular support
   final List<String> _suggestions = [
@@ -171,34 +172,60 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
     if (_hasProcessed || recognizedWords.trim().isEmpty) return;
     _hasProcessed = true;
     
-    // Clean and match with our services list
     final cleanWords = recognizedWords.trim().toLowerCase();
     
-    // Find closest service match
-    String matchedService = '';
-    for (final s in _suggestions) {
-      if (cleanWords.contains(s.toLowerCase()) || s.toLowerCase().contains(cleanWords)) {
-        matchedService = s;
-        break;
-      }
-    }
+    // 🧠 Multi-lingual Vernacular NLP Detection (Kannada, Hindi, English)
+    String matchedService = 'General Repair / ರಿಪೇರಿ';
+    String estimatedFare = '₹199 Base Fare';
+    String problemDesc = 'Service request detected';
+    String iconChar = '🛠️';
 
-    // Fallback if no matching suggestion is found: use the recognized words directly
-    if (matchedService.isEmpty) {
-      matchedService = recognizedWords.trim();
+    if (cleanWords.contains('pipe') || cleanWords.contains('leak') || cleanWords.contains('neeru') || 
+        cleanWords.contains('paani') || cleanWords.contains('tap') || cleanWords.contains('flush') || 
+        cleanWords.contains('plumber') || cleanWords.contains('valve') || cleanWords.contains('drain')) {
+      matchedService = 'Plumber / ಪ್ಲಂಬರ್';
+      estimatedFare = '₹199 Base Inspection';
+      problemDesc = 'Water leakage or pipe blockage detected';
+      iconChar = '🔧';
+    } else if (cleanWords.contains('light') || cleanWords.contains('switch') || cleanWords.contains('bijli') || 
+               cleanWords.contains('fan') || cleanWords.contains('pankha') || cleanWords.contains('current') || 
+               cleanWords.contains('karnt') || cleanWords.contains('mcb') || cleanWords.contains('electrician')) {
+      matchedService = 'Electrician / ಇಲೆಕ್ಟ್ರಿಷಿಯನ್';
+      estimatedFare = '₹149 Base Inspection';
+      problemDesc = 'Electrical appliance, switch or wiring issue';
+      iconChar = '⚡';
+    } else if (cleanWords.contains('ac') || cleanWords.contains('cooling') || cleanWords.contains('filter') || 
+               cleanWords.contains('gas') || cleanWords.contains('thanda') || cleanWords.contains('air conditioner')) {
+      matchedService = 'AC Repair / ಎಸಿ ರಿಪೇರ್';
+      estimatedFare = '₹399 Deep Service';
+      problemDesc = 'Cooling efficiency & coil servicing detected';
+      iconChar = '❄️';
+    } else if (cleanWords.contains('clean') || cleanWords.contains('safai') || cleanWords.contains('kitchen') || 
+               cleanWords.contains('bathroom') || cleanWords.contains('sofa')) {
+      matchedService = 'Home Cleaning / ಮನೆ ಸ್ವಚ್ಛತೆ';
+      estimatedFare = '₹499 Deep Clean';
+      problemDesc = 'Deep home sanitation & disinfection';
+      iconChar = '✨';
+    } else {
+      for (final s in _suggestions) {
+        if (cleanWords.contains(s.toLowerCase()) || s.toLowerCase().contains(cleanWords)) {
+          matchedService = s;
+          break;
+        }
+      }
+      if (matchedService.isEmpty) matchedService = recognizedWords.trim();
     }
 
     SearchHistoryService.instance.addTerm(matchedService);
+    HapticFeedback.heavyImpact();
 
-    HapticFeedback.mediumImpact();
-    
-    // Wait a brief moment to let user read recognized word, then navigate
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) {
-        Navigator.pop(context); // Close overlay
-        // Route to search page preloaded with service query
-        context.push('/user/worker-search?service=$matchedService');
-      }
+    setState(() {
+      _detectedBooking = {
+        'service': matchedService,
+        'fare': estimatedFare,
+        'desc': problemDesc,
+        'icon': iconChar,
+      };
     });
   }
 
@@ -239,20 +266,21 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
             children: [
               // Header title
               Text(
-                'Voice Search',
+                'Bol Ke Book Karo 🎙️',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                   color: const Color(0xFF0F172A),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
-                'Speak electrical, plumbing, laptop repair...',
+                'ಧ್ವನಿ ಬುಕಿಂಗ್ • Speak in Kannada, Hindi, or English',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
-                  color: const Color(0xFF64748B),
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFEA580C),
                 ),
               ),
               const SizedBox(height: 48),
@@ -354,6 +382,119 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                   ),
                 ),
               ),
+              
+              // 🤖 AI Smart Booking Confirmation Card
+              if (_detectedBooking != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFFBEB), Color(0xFFFEF3C7)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD97706),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              '⚡ 15-MIN EXPRESS',
+                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            _detectedBooking!['fare']!,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF92400E),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Text(
+                            _detectedBooking!['icon']!,
+                            style: const TextStyle(fontSize: 26),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _detectedBooking!['service']!,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF78350F),
+                                  ),
+                                ),
+                                Text(
+                                  _detectedBooking!['desc']!,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFFB45309),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 46,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            final service = _detectedBooking!['service']!;
+                            Navigator.pop(context);
+                            context.push('/user/worker-search?service=$service');
+                          },
+                          icon: const Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
+                          label: Text(
+                            'Confirm & Match Technician / ಖಚಿತಪಡಿಸಿ',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFEA580C),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 32),
 
               const Divider(color: Color(0xFFE2E8F0), height: 1),

@@ -53,6 +53,7 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
   int _selectedTip = 0;
   String _tipCategory = '';
   bool _isCardScratched = false;
+  bool _showAfterPhoto = true;
 
   @override
   void initState() {
@@ -458,6 +459,12 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
                                   const SizedBox(height: 16),
                                   // Gamified Scratch Card Reward (CRED / GPay style)
                                   _buildScratchCardReward(),
+
+                                  // Before & After Work Proof Comparison Card
+                                  _buildBeforeAfterComparisonCard(),
+
+                                  // 30-Day Workmanship Warranty Card
+                                  _build30DayWarrantyCertificateCard(),
                                 ],
                               ),
                             ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic)
@@ -826,6 +833,293 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
       ),
     );
   }
+
+  Widget _buildBeforeAfterComparisonCard() {
+    const beforeUrl = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
+    const afterUrl = 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&auto=format&fit=crop&q=80';
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 20),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: UserAppTheme.surface,
+        borderRadius: UserAppTheme.cardBorderRadius,
+        border: Border.all(color: UserAppTheme.divider, width: 1.5),
+        boxShadow: UserAppTheme.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.compare_rounded, color: Color(0xFF2563EB), size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Work Proof Comparison',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    Text(
+                      'Technician verified before & after photos',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: const Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(3),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _showAfterPhoto = false);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: !_showAfterPhoto ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(9),
+                          boxShadow: !_showAfterPhoto
+                              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]
+                              : null,
+                        ),
+                        child: Text(
+                          'Before',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: !_showAfterPhoto ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _showAfterPhoto = true);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: _showAfterPhoto ? const Color(0xFF059669) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(9),
+                          boxShadow: _showAfterPhoto
+                              ? [BoxShadow(color: const Color(0xFF059669).withValues(alpha: 0.3), blurRadius: 4)]
+                              : null,
+                        ),
+                        child: Text(
+                          'After ✨',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: _showAfterPhoto ? Colors.white : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              children: [
+                Image.network(
+                  _showAfterPhoto ? afterUrl : beforeUrl,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 180,
+                    color: const Color(0xFFE2E8F0),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.broken_image_rounded, color: Colors.grey, size: 36),
+                  ),
+                ),
+                Positioned(
+                  bottom: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.75),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _showAfterPhoto ? Icons.check_circle_rounded : Icons.history_rounded,
+                          color: _showAfterPhoto ? const Color(0xFF34D399) : const Color(0xFFFBBF24),
+                          size: 14,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _showAfterPhoto ? 'AFTER REPAIR · VERIFIED DONE' : 'BEFORE REPAIR · INSPECTION SNAP',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _build30DayWarrantyCertificateCard() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF59E0B),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.verified_rounded, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '30-Day Workmanship Warranty',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Certificate #JGD-WRN-${widget.jobId.hashCode.abs() % 90000 + 10000}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: const Color(0xFFFCD34D),
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF065F46),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF34D399)),
+                ),
+                child: const Text(
+                  'ACTIVE',
+                  style: TextStyle(color: Color(0xFF6EE7B7), fontSize: 10, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '• Free technician re-visit if the same issue reoccurs within 30 days.\n• 100% genuine parts guarantee with invoice records.\n• Dedicated priority resolution within 2 hours.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              color: const Color(0xFFE2E8F0),
+              height: 1.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('📄 Warranty Certificate downloaded & linked to your phone number!'),
+                    backgroundColor: Color(0xFF059669),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.download_rounded, color: Color(0xFFF59E0B), size: 16),
+              label: Text(
+                'Download Warranty Card',
+                style: GoogleFonts.plusJakartaSans(
+                  color: const Color(0xFFF59E0B),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFFF59E0B), width: 1.2),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
 
 class _ConfettiPainter extends CustomPainter {

@@ -97,6 +97,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String? _currentUid;
   bool _isWorker = false;
+  bool _isAutoTranslateOn = true;
 
   // 🎙️ Vernacular Voice Note State
   bool _isRecordingVoice = false;
@@ -1244,6 +1245,54 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
 
+              // Auto-Translate Toggle
+              InkWell(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _isAutoTranslateOn = !_isAutoTranslateOn);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_isAutoTranslateOn
+                          ? '🌐 Auto-Translate Active (ಕನ್ನಡ / हिंदी / Eng)'
+                          : 'Auto-Translate Disabled'),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: _isAutoTranslateOn ? const Color(0xFFEFF6FF) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _isAutoTranslateOn ? const Color(0xFF93C5FD) : const Color(0xFFCBD5E1),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.translate_rounded,
+                        size: 15,
+                        color: _isAutoTranslateOn ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _isAutoTranslateOn ? 'ಕನ್ನಡ/हिंदी' : 'Translate',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: _isAutoTranslateOn ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+
               // Action shortcuts (Call worker)
               IconButton(
                 icon: const Icon(Icons.call_rounded, color: AppColors.primary, size: 22),
@@ -1518,17 +1567,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildVernacularPresetsBar() {
     final workerPresets = [
-      {'label': 'Sir, main 5 min mein gate pe hoon, valve band kar lijiye', 'dur': 7},
-      {'label': 'ಸರ್, ನಾನು 5 ನಿಮಿಷದಲ್ಲಿ ಬರುತ್ತಿದ್ದೇನೆ, ಮೇನ್ ವಾಲ್ವ್ ಆಫ್ ಮಾಡಿ', 'dur': 6},
-      {'label': 'Hardware shop ja raha hoon spare part lene, 15 min lagega', 'dur': 9},
-      {'label': 'Sir, kaam check kar lijiye, testing done', 'dur': 5},
+      {'label': '🚪 Gate pe hoon / ಗೇಟ್ ಬಳಿ ಇದ್ದೇನೆ', 'dur': 4, 'isText': true},
+      {'label': '📞 Intercom pe call kijiye please', 'dur': 4, 'isText': true},
+      {'label': '🚦 Traffic mein phasa hoon (2-3 mins)', 'dur': 4, 'isText': true},
+      {'label': '✅ Work completed, please inspect & verify', 'dur': 5, 'isText': true},
+      {'label': 'Sir, main 5 min mein gate pe hoon, valve band kar lijiye', 'dur': 7, 'isText': false},
+      {'label': 'ಸರ್, ನಾನು 5 ನಿಮಿಷದಲ್ಲಿ ಬರುತ್ತಿದ್ದೇನೆ, ಮೇನ್ ವಾಲ್ವ್ ಆಫ್ ಮಾಡಿ', 'dur': 6, 'isText': false},
     ];
 
     final userPresets = [
-      {'label': 'Broken appliance humming sound clip (0:10)', 'dur': 10},
-      {'label': 'Gate pass approved, please come to Tower 4, Flat 302', 'dur': 6},
-      {'label': 'Bhaiya, main valve balcony ke paas hai', 'dur': 5},
-      {'label': 'ದಯವಿಟ್ಟು ಬೆಲ್ ಒತ್ತಿ, ಮನೆಯಲ್ಲಿದ್ದೇನೆ', 'dur': 5},
+      {'label': '🔔 Doorbell not working, please knock', 'dur': 4, 'isText': true},
+      {'label': '🏢 Gate pass approved, Flat 302', 'dur': 4, 'isText': true},
+      {'label': '⏱️ Please wait 2 mins in lobby', 'dur': 3, 'isText': true},
+      {'label': '💧 Main valve balcony ke paas hai', 'dur': 4, 'isText': true},
+      {'label': 'ದಯವಿಟ್ಟು ಬೆಲ್ ಒತ್ತಿ, ಮನೆಯಲ್ಲಿದ್ದೇನೆ', 'dur': 4, 'isText': true},
     ];
 
     final presets = _isWorker ? workerPresets : userPresets;
@@ -1568,7 +1620,14 @@ class _ChatScreenState extends State<ChatScreen> {
           final p = presets[index - 1];
           return Center(
             child: InkWell(
-              onTap: () => _sendVernacularVoicePreset(p['label'] as String, p['dur'] as int),
+              onTap: () {
+                if (p['isText'] == true) {
+                  _messageController.text = p['label'] as String;
+                  _sendMessage();
+                } else {
+                  _sendVernacularVoicePreset(p['label'] as String, p['dur'] as int);
+                }
+              },
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
