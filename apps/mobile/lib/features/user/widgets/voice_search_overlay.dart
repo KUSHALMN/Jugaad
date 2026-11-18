@@ -244,46 +244,81 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
       filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
       child: Dialog(
         backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         elevation: 0,
         child: Container(
           width: double.infinity,
-          constraints: const BoxConstraints(maxWidth: 400),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          constraints: const BoxConstraints(maxWidth: 420),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.92),
+            color: Colors.white.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.5),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 30,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header title
-              Text(
-                'Bol Ke Book Karo 🎙️',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'ಧ್ವನಿ ಬುಕಿಂಗ್ • Speak in Kannada, Hindi, or English',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFFEA580C),
-                ),
-              ),
-              const SizedBox(height: 48),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header title with close button
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Align(
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Bol Ke Book Karo 🎙️',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.of(context).pop();
+                          },
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF1F5F9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'ಧ್ವನಿ ಬುಕಿಂಗ್ • Speak in Kannada, Hindi, or English',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFEA580C),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
               // Ripple animated pulsing microphone button
               GestureDetector(
@@ -495,10 +530,10 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                   ),
                 ),
               ],
-              const SizedBox(height: 32),
+              const SizedBox(height: 18),
 
               const Divider(color: Color(0xFFE2E8F0), height: 1),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
 
               // Suggestions title
               Align(
@@ -513,7 +548,7 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
               // Suggestions chips
               Wrap(
@@ -543,9 +578,9 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
               ),
 
               if (_history.isNotEmpty) ...[
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
                 const Divider(color: Color(0xFFE2E8F0), height: 1),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -574,7 +609,7 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -640,7 +675,9 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 
