@@ -1,3 +1,4 @@
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
@@ -403,35 +404,116 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
                       
                       const SizedBox(height: 20),
 
-                      // Price breakdown
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: UserAppTheme.surface,
-                          borderRadius: UserAppTheme.cardBorderRadius,
-                          border: Border.all(color: UserAppTheme.divider, width: 1.0),
-                          boxShadow: UserAppTheme.cardShadow,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildPriceRow('Service charge', '₹${serviceFee.toStringAsFixed(2)}', emoji: '🛠️'),
-                            const SizedBox(height: 12),
-                            _buildPriceRow('Platform safety fee', '₹${platformFee.toStringAsFixed(2)}', emoji: '🛡️'),
-                            const SizedBox(height: 12),
-                            _buildPriceRow('Damage insurance coverage (₹10,000)', 'FREE', emoji: '✨'),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 14),
-                              child: Divider(color: UserAppTheme.divider, height: 1, thickness: 1),
+                      // Apple Wallet-Style Perforated Ticket Card
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(22),
+                            decoration: BoxDecoration(
+                              color: UserAppTheme.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: UserAppTheme.divider, width: 1.2),
+                              boxShadow: UserAppTheme.cardShadow,
                             ),
-                            _buildPriceRow('Total Payable', '₹${displayTotal.toStringAsFixed(2)}', isTotal: true, emoji: '🧾'),
-                          ],
-                        ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Text('🧾', style: TextStyle(fontSize: 16)),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'OFFICIAL SERVICE RECEIPT',
+                                          style: UserAppTheme.label(
+                                            size: 11,
+                                            weight: FontWeight.w800,
+                                            color: UserAppTheme.textSecondary,
+                                          ).copyWith(letterSpacing: 1.2),
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEFF6FF),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                                      ),
+                                      child: Text(
+                                        'ESCROW VERIFIED',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: const Color(0xFF1D4ED8),
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                _buildPriceRow('Base service fare', '₹${serviceFee.toStringAsFixed(2)}', emoji: '🛠️'),
+                                const SizedBox(height: 12),
+                                _buildPriceRow('Platform safety fee', '₹${platformFee.toStringAsFixed(2)}', emoji: '🛡️'),
+                                const SizedBox(height: 12),
+                                _buildPriceRow('Damage insurance coverage (₹10,000)', 'FREE', emoji: '✨'),
+                                
+                                // Perforated Dashed Line Divider
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  child: Row(
+                                    children: List.generate(
+                                      32,
+                                      (index) => Expanded(
+                                        child: Container(
+                                          color: index % 2 == 0 ? Colors.transparent : const Color(0xFFCBD5E1),
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                _buildPriceRow('Total Payable', '₹${displayTotal.toStringAsFixed(2)}', isTotal: true, emoji: '💳'),
+                              ],
+                            ),
+                          ),
+                          // Left Scalloped Cutout
+                          Positioned(
+                            left: -8,
+                            top: 154,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF8FAFC),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                          // Right Scalloped Cutout
+                          Positioned(
+                            right: -8,
+                            top: 154,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF8FAFC),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       
                       const SizedBox(height: 16),
 
-                      // Jugaad Assurance Guarantee Card
+                      // Jugaad Assurance Guarantee Card with OTP escrow release badge
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
@@ -464,7 +546,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '100% verified technician. Free protection against damages up to ₹10,000.',
+                                    '🔒 Funds released to technician only after your approval OTP. Includes free ₹10,000 damage protection.',
                                     style: UserAppTheme.body(
                                       size: 11,
                                       color: const Color(0xFF15803D),

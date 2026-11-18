@@ -1,3 +1,4 @@
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -407,6 +408,19 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
     }
     final url = Uri.parse('tel:$phone');
     if (await canLaunchUrl(url)) await launchUrl(url);
+  }
+
+  Future<void> _openInMaps() async {
+    HapticFeedback.lightImpact();
+    final address = _jobData?['address'] as String? ?? _jobData?['location_address'] as String? ?? 'Mysuru';
+    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      print('[MAPS] Error opening map: $e');
+    }
   }
 
 
@@ -2724,40 +2738,73 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+          // 64dp High-Contrast One-Thumb Road Mode Action Hub
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _callCustomer,
-                  icon: const Icon(Icons.phone_rounded, color: WorkerAppTheme.primaryGreen, size: 16),
-                  label: Text(
-                    'Call',
-                    style: WorkerAppTheme.label(color: WorkerAppTheme.primaryGreen, size: 14),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: WorkerAppTheme.primaryGreen, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                flex: 52,
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _callCustomer,
+                    icon: const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 20),
+                    label: Text(
+                      'Call',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF059669),
+                      elevation: 3,
+                      shadowColor: const Color(0xFF059669).withValues(alpha: 0.35),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: OutlinedButton.icon(
+                flex: 48,
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _openInMaps,
+                    icon: const Icon(Icons.navigation_rounded, color: Colors.white, size: 20),
+                    label: Text(
+                      'Maps',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      elevation: 3,
+                      shadowColor: const Color(0xFF2563EB).withValues(alpha: 0.35),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 56,
+                width: 56,
+                child: OutlinedButton(
                   onPressed: () {
                     context.go('/worker/chat?job_id=${widget.jobId}');
                   },
-                  icon: const Icon(Icons.chat_bubble_rounded, color: WorkerAppTheme.trustBlue, size: 16),
-                  label: Text(
-                    'Chat',
-                    style: WorkerAppTheme.label(color: WorkerAppTheme.trustBlue, size: 14),
-                  ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: WorkerAppTheme.trustBlue, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    padding: EdgeInsets.zero,
                   ),
+                  child: const Icon(Icons.chat_bubble_rounded, color: WorkerAppTheme.trustBlue, size: 20),
                 ),
               ),
             ],

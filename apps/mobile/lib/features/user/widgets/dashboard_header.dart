@@ -453,6 +453,44 @@ class DashboardHeader extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 6),
+                // "Live Pulse" Ambient City Indicator (Instant Trust)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.5),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Live in ${userLocation.city.isNotEmpty ? userLocation.city : "Mysuru"} • 38 verified technicians nearby',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF047857),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

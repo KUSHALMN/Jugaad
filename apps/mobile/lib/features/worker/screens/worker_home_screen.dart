@@ -574,6 +574,13 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                   const SizedBox(height: 14),
 
                   // ═══════════════════════════════════════════════════════════
+                  // ROW 1.5: MILESTONE INCENTIVE RADIAL GAUGE CARD
+                  // ═══════════════════════════════════════════════════════════
+                  _buildMilestoneIncentiveRingCard(),
+
+                  const SizedBox(height: 14),
+
+                  // ═══════════════════════════════════════════════════════════
                   // ROW 2: 4 PERFORMANCE METRIC CARDS
                   // ═══════════════════════════════════════════════════════════
                   _buildFourMetricCards(screenWidth),
@@ -1556,6 +1563,109 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
             onChanged: (val) {
               _setAvailabilityState(_isOnline, val);
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Milestone Incentive Radial Ring Gauge Card (Gamified field motivation)
+  Widget _buildMilestoneIncentiveRingCard() {
+    const int completedJobs = 4;
+    const int targetJobs = 5;
+    const double progress = completedJobs / targetJobs;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF334155), width: 1.2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A000000),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Circular Radial Progress Gauge
+          SizedBox(
+            width: 54,
+            height: 54,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 5.5,
+                  backgroundColor: Color(0xFF334155),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+                ),
+                Text(
+                  '$completedJobs/$targetJobs',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'DAILY TARGET',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFFFBBF24),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '80% Achieved',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Complete 1 more job to earn ₹300 bonus! 🎉',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

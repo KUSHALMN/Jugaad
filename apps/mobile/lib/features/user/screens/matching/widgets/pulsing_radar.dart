@@ -155,6 +155,64 @@ class _PulsingRadarState extends State<PulsingRadar> with TickerProviderStateMix
               );
             },
           ),
+
+          // 4. Orbiting live technician profile preview avatars
+          ...List.generate(3, (index) {
+            final double initialOffset = index * (2 * pi / 3);
+            return AnimatedBuilder(
+              animation: _sweepController,
+              builder: (context, child) {
+                final double currentAngle = (_sweepController.value * 2 * pi) + initialOffset;
+                const double radius = 108.0;
+                final double dx = radius * cos(currentAngle);
+                final double dy = radius * sin(currentAngle);
+
+                final technicians = [
+                  {'name': 'Ramesh', 'rating': '4.9★', 'initial': 'R', 'color': const Color(0xFF16A34A)},
+                  {'name': 'Suresh', 'rating': '4.8★', 'initial': 'S', 'color': const Color(0xFF2563EB)},
+                  {'name': 'Kiran', 'rating': '5.0★', 'initial': 'K', 'color': const Color(0xFFEA580C)},
+                ];
+                final tech = technicians[index];
+
+                return Transform.translate(
+                  offset: Offset(dx, dy),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: tech['color'] as Color, width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (tech['color'] as Color).withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          radius: 8,
+                          backgroundColor: tech['color'] as Color,
+                          child: Text(
+                            tech['initial'] as String,
+                            style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          tech['rating'] as String,
+                          style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
         ],
       ),
     );

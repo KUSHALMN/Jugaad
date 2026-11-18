@@ -1,3 +1,4 @@
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -51,6 +52,7 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
   final List<_ConfettiParticle> _particles = [];
   int _selectedTip = 0;
   String _tipCategory = '';
+  bool _isCardScratched = false;
 
   @override
   void initState() {
@@ -453,6 +455,9 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
                                       color: UserAppTheme.textSecondary,
                                     ),
                                   ),
+                                  const SizedBox(height: 16),
+                                  // Gamified Scratch Card Reward (CRED / GPay style)
+                                  _buildScratchCardReward(),
                                 ],
                               ),
                             ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic)
@@ -519,19 +524,15 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
                           Row(
                             children: [
                               Expanded(
-                                child: _buildTipChip(30, '☕ +₹30', 'Chai & Fuel'),
+                                child: _buildTipChip(20, '☕ +₹20', 'Chai & Fuel'),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 8),
                               Expanded(
-                                child: _buildTipChip(50, '⭐ +₹50', 'Great Work'),
+                                child: _buildTipChip(50, '🥤 +₹50', 'Cool Drink'),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 8),
                               Expanded(
-                                child: _buildTipChip(100, '👑 +₹100', 'Master Pro'),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: _buildTipChip(150, '🚀 +₹150', 'Super Speed'),
+                                child: _buildTipChip(100, '🌟 +₹100', 'Superstar'),
                               ),
                             ],
                           ),
@@ -714,6 +715,112 @@ class _CompletionScreenState extends State<CompletionScreen> with TickerProvider
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScratchCardReward() {
+    return GestureDetector(
+      onTap: () {
+        if (!_isCardScratched) {
+          HapticFeedback.heavyImpact();
+          _confettiController.reset();
+          _confettiController.forward();
+          setState(() {
+            _isCardScratched = true;
+          });
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: _isCardScratched
+              ? const LinearGradient(
+                  colors: [Color(0xFFFEF3C7), Color(0xFFFDE68A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : const LinearGradient(
+                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _isCardScratched ? const Color(0xFFF59E0B) : const Color(0xFF334155),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: (_isCardScratched ? const Color(0xFFF59E0B) : Colors.black).withValues(alpha: 0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: _isCardScratched ? const Color(0xFFF59E0B) : const Color(0xFF334155),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                _isCardScratched ? '🎁' : '✨',
+                style: const TextStyle(fontSize: 22),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _isCardScratched ? '🎉 YOU WON ₹50 JUGAAD CASH!' : 'TAP TO SCRATCH & REVEAL REWARD',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: _isCardScratched ? const Color(0xFF92400E) : const Color(0xFFF8FAFC),
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _isCardScratched
+                        ? 'Promo code JUGAAD50 applied to your next service booking!'
+                        : 'Instant cashback reward for rating your verified technician.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: _isCardScratched ? const Color(0xFFB45309) : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (!_isCardScratched)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Scratch',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
