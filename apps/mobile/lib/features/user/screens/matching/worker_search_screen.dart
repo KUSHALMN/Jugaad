@@ -8,6 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/category_utils.dart';
 import 'worker_search_provider.dart';
 
 class WorkerSearchScreen extends ConsumerStatefulWidget {
@@ -50,10 +51,14 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await ref.read(workerSearchProvider.notifier).checkAndResolveLocation();
-      if (mounted && widget.initialService != null && widget.initialService!.isNotEmpty) {
-        ref.read(workerSearchProvider.notifier).updateServiceType(widget.initialService!);
+      final initialRaw = widget.initialService ?? '';
+      final canonical = CategoryUtils.normalize(initialRaw);
+
+      if (canonical.isNotEmpty) {
+        ref.read(workerSearchProvider.notifier).setInitialServiceType(canonical);
       }
+
+      await ref.read(workerSearchProvider.notifier).checkAndResolveLocation();
     });
 
     _scrollController.addListener(() {
@@ -408,7 +413,8 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                 itemBuilder: (context, index) {
                   final service = _services[index];
                   final filterVal = service == 'All' ? '' : service;
-                  final isSelected = state.serviceType == filterVal;
+                  final isSelected = CategoryUtils.normalize(state.serviceType) ==
+                      CategoryUtils.normalize(filterVal);
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ChoiceChip(

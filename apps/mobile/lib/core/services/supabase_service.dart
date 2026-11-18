@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/category_utils.dart';
 
 
 /// Replaces FirestoreService — single source of truth for all Supabase
@@ -172,9 +173,9 @@ class SupabaseService {
       }
 
       if (category != null && category.trim().isNotEmpty) {
-        final normalizedCat = category.trim().toLowerCase().replaceAll(' ', '_');
-        final genericTerms = {'all', 'service', 'services', 'general', 'service_specialist', 'pro', 'helper', 'specialists'};
-        if (!genericTerms.contains(normalizedCat)) {
+        final canonical = CategoryUtils.normalize(category);
+        if (canonical.isNotEmpty) {
+          final normalizedCat = canonical.toLowerCase().replaceAll(' ', '_');
           final filtered = workers.where((w) {
             final cat = (w['category'] ?? w['work_category'] ?? '').toString().toLowerCase();
             final skills = List<String>.from(w['skills'] as List? ?? []).map((s) => s.toLowerCase().replaceAll(' ', '_')).toList();
@@ -186,9 +187,7 @@ class SupabaseService {
                    specs.any((s) => s.contains(normalizedCat) || normalizedCat.contains(s));
           }).toList();
 
-          if (filtered.isNotEmpty) {
-            workers = filtered;
-          }
+          workers = filtered;
         }
       }
 
@@ -416,9 +415,9 @@ class SupabaseService {
 
     List<Map<String, dynamic>> filtered = allMysoreWorkers;
     if (category != null && category.trim().isNotEmpty) {
-      final clean = category.trim().toLowerCase().replaceAll(' ', '_');
-      final genericTerms = {'all', 'service', 'services', 'general', 'service_specialist', 'pro', 'helper'};
-      if (!genericTerms.contains(clean)) {
+      final canonical = CategoryUtils.normalize(category);
+      if (canonical.isNotEmpty) {
+        final clean = canonical.toLowerCase().replaceAll(' ', '_');
         final matches = allMysoreWorkers.where((w) {
           final cat = (w['category'] ?? w['work_category'] ?? '').toString().toLowerCase();
           final skills = List<String>.from(w['skills'] as List? ?? []).map((s) => s.toLowerCase().replaceAll(' ', '_')).toList();
@@ -427,9 +426,7 @@ class SupabaseService {
                  skills.any((s) => s.contains(clean) || clean.contains(s)) ||
                  specs.any((s) => s.contains(clean) || clean.contains(s));
         }).toList();
-        if (matches.isNotEmpty) {
-          filtered = matches;
-        }
+        filtered = matches;
       }
     }
 

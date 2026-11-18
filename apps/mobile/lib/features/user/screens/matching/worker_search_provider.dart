@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../core/services/api_service.dart';
 import '../../../../core/services/supabase_service.dart';
+import '../../../../core/utils/category_utils.dart';
 
 class WorkerSearchState {
   final List<dynamic> workers;
@@ -212,12 +213,14 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
       state = state.copyWith(isLoadingMore: true);
     }
 
+    final canonicalService = CategoryUtils.normalize(state.serviceType);
+
     try {
       final res = await ApiService().searchWorkers(
         lat: state.lat,
         lng: state.lng,
         radiusKm: state.radiusKm,
-        serviceType: state.serviceType.toLowerCase().replaceAll(' ', '_'),
+        serviceType: canonicalService.toLowerCase().replaceAll(' ', '_'),
         division: state.activeLocationName,
         page: targetPage,
         limit: 8,
@@ -235,21 +238,21 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
       // Fallback: If 0 workers found nearby, load Top-Rated Workers sorted by highest rating
       if (fetchedWorkers.isEmpty) {
         final dbWorkers = await SupabaseService().fetchTopRatedWorkersByCategory(
-          category: state.serviceType,
+          category: canonicalService,
           limit: 12,
         );
         if (dbWorkers.isNotEmpty) {
           fetchedWorkers = dbWorkers;
         } else {
-          fetchedWorkers = _getMysoreWorkersForService(state.serviceType);
+          fetchedWorkers = _getMysoreWorkersForService(canonicalService);
         }
         isFallback = true;
         if (advisory == null || advisory.isEmpty) {
-          final catLabel = state.serviceType.isNotEmpty ? state.serviceType : 'Service';
+          final catLabel = canonicalService.isNotEmpty ? canonicalService : 'Service';
           advisory = 'Workers in your region ($resolvedDiv) are currently busy. You can book these high-rated $catLabel workers across the entire city of $resolvedCity!';
         }
       } else if (isFallback && (advisory == null || advisory.isEmpty)) {
-        final catLabel = state.serviceType.isNotEmpty ? state.serviceType : 'Service';
+        final catLabel = canonicalService.isNotEmpty ? canonicalService : 'Service';
         advisory = 'Workers in your region ($resolvedDiv) are currently busy. You can book these high-rated $catLabel workers across the entire city of $resolvedCity!';
       }
 
@@ -275,16 +278,16 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
       List<dynamic> mysoreWorkers = [];
       try {
         mysoreWorkers = await SupabaseService().fetchTopRatedWorkersByCategory(
-          category: state.serviceType,
+          category: canonicalService,
           limit: 12,
         );
       } catch (_) {}
 
       if (mysoreWorkers.isEmpty) {
-        mysoreWorkers = _getMysoreWorkersForService(state.serviceType);
+        mysoreWorkers = _getMysoreWorkersForService(canonicalService);
       }
 
-      final catLabel = state.serviceType.isNotEmpty ? state.serviceType : 'Service';
+      final catLabel = canonicalService.isNotEmpty ? canonicalService : 'Service';
       final fallbackAdvisory = 'Workers in your region (${state.activeLocationName}) are currently busy. You can book these high-rated $catLabel workers across the entire city of Mysuru!';
 
       state = state.copyWith(
@@ -307,9 +310,16 @@ class WorkerSearchNotifier extends Notifier<WorkerSearchState> {
     return SupabaseService.getMysoreFallbackWorkers(category: serviceType, limit: 12);
   }
 
+  /// Preset the service type before initial search runs (avoids race condition)
+  void setInitialServiceType(String type) {
+    final canonical = CategoryUtils.normalize(type);
+    state = state.copyWith(serviceType: canonical, page: 0);
+  }
+
   /// Set the selected service type filtering chip
   void updateServiceType(String type) {
-    state = state.copyWith(serviceType: type, page: 0);
+    final canonical = CategoryUtils.normalize(type);
+    state = state.copyWith(serviceType: canonical, page: 0);
     search(refresh: true);
   }
 

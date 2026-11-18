@@ -256,7 +256,10 @@ class AppRouter {
         GoRoute(
           path: '/user/worker-search',
           pageBuilder: (context, state) {
-            final service = state.uri.queryParameters['service'] ?? '';
+            final service = state.uri.queryParameters['service'] ??
+                state.uri.queryParameters['skill'] ??
+                state.uri.queryParameters['category'] ??
+                '';
             return _fadeTransition(
               context,
               state,

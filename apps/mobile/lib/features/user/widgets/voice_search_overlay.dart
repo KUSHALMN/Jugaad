@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/speech/speech_recognition_base.dart';
 import '../../../../core/services/search_history_service.dart';
+import '../../../../core/utils/category_utils.dart';
 
 class VoiceSearchOverlay extends StatefulWidget {
   const VoiceSearchOverlay({super.key});
@@ -171,57 +172,85 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
   void _processSpeechResult(String recognizedWords) {
     if (_hasProcessed || recognizedWords.trim().isEmpty) return;
     _hasProcessed = true;
-    
+
     final cleanWords = recognizedWords.trim().toLowerCase();
-    
+
     // 🧠 Multi-lingual Vernacular NLP Detection (Kannada, Hindi, English)
-    String matchedService = 'General Repair / ರಿಪೇರಿ';
-    String estimatedFare = '₹199 Base Fare';
+    final canonical = CategoryUtils.normalize(cleanWords);
+    String displayLabel;
+    String estimatedFare = '₹199 Base Inspection';
     String problemDesc = 'Service request detected';
     String iconChar = '🛠️';
 
-    if (cleanWords.contains('pipe') || cleanWords.contains('leak') || cleanWords.contains('neeru') || 
-        cleanWords.contains('paani') || cleanWords.contains('tap') || cleanWords.contains('flush') || 
-        cleanWords.contains('plumber') || cleanWords.contains('valve') || cleanWords.contains('drain')) {
-      matchedService = 'Plumber / ಪ್ಲಂಬರ್';
-      estimatedFare = '₹199 Base Inspection';
-      problemDesc = 'Water leakage or pipe blockage detected';
-      iconChar = '🔧';
-    } else if (cleanWords.contains('light') || cleanWords.contains('switch') || cleanWords.contains('bijli') || 
-               cleanWords.contains('fan') || cleanWords.contains('pankha') || cleanWords.contains('current') || 
-               cleanWords.contains('karnt') || cleanWords.contains('mcb') || cleanWords.contains('electrician')) {
-      matchedService = 'Electrician / ಇಲೆಕ್ಟ್ರಿಷಿಯನ್';
-      estimatedFare = '₹149 Base Inspection';
-      problemDesc = 'Electrical appliance, switch or wiring issue';
-      iconChar = '⚡';
-    } else if (cleanWords.contains('ac') || cleanWords.contains('cooling') || cleanWords.contains('filter') || 
-               cleanWords.contains('gas') || cleanWords.contains('thanda') || cleanWords.contains('air conditioner')) {
-      matchedService = 'AC Repair / ಎಸಿ ರಿಪೇರ್';
-      estimatedFare = '₹399 Deep Service';
-      problemDesc = 'Cooling efficiency & coil servicing detected';
-      iconChar = '❄️';
-    } else if (cleanWords.contains('clean') || cleanWords.contains('safai') || cleanWords.contains('kitchen') || 
-               cleanWords.contains('bathroom') || cleanWords.contains('sofa')) {
-      matchedService = 'Home Cleaning / ಮನೆ ಸ್ವಚ್ಛತೆ';
-      estimatedFare = '₹499 Deep Clean';
-      problemDesc = 'Deep home sanitation & disinfection';
-      iconChar = '✨';
-    } else {
-      for (final s in _suggestions) {
-        if (cleanWords.contains(s.toLowerCase()) || s.toLowerCase().contains(cleanWords)) {
-          matchedService = s;
-          break;
-        }
-      }
-      if (matchedService.isEmpty) matchedService = recognizedWords.trim();
+    switch (canonical) {
+      case 'Plumber':
+        displayLabel = 'Plumber / ಪ್ಲಂಬರ್';
+        estimatedFare = '₹199 Base Inspection';
+        problemDesc = 'Water leakage or pipe blockage detected';
+        iconChar = '🔧';
+        break;
+      case 'Electrician':
+        displayLabel = 'Electrician / ಇಲೆಕ್ಟ್ರಿಷಿಯನ್';
+        estimatedFare = '₹149 Base Inspection';
+        problemDesc = 'Electrical appliance, switch or wiring issue';
+        iconChar = '⚡';
+        break;
+      case 'AC Service':
+        displayLabel = 'AC Service / ಎಸಿ ಸರ್ವಿಸ್';
+        estimatedFare = '₹399 Deep Service';
+        problemDesc = 'Cooling efficiency & coil servicing detected';
+        iconChar = '❄️';
+        break;
+      case 'Cleaning':
+        displayLabel = 'Home Cleaning / ಮನೆ ಸ್ವಚ್ಛತೆ';
+        estimatedFare = '₹499 Deep Clean';
+        problemDesc = 'Deep home sanitation & disinfection';
+        iconChar = '✨';
+        break;
+      case 'Laptop Repair':
+        displayLabel = 'Laptop Repair / ಲ್ಯಾಪ್ಟಾಪ್';
+        estimatedFare = '₹299 Base Inspection';
+        problemDesc = 'Hardware or software diagnosis';
+        iconChar = '💻';
+        break;
+      case 'Phone Repair':
+        displayLabel = 'Phone Repair / ಮೊಬೈಲ್';
+        estimatedFare = '₹199 Inspection';
+        problemDesc = 'Screen, battery, or hardware servicing';
+        iconChar = '📱';
+        break;
+      case 'Carpenter':
+        displayLabel = 'Carpenter / ಕಾರ್ಪೆಂಟರ್';
+        estimatedFare = '₹249 Base Visit';
+        problemDesc = 'Woodwork, door lock & furniture repair';
+        iconChar = '🪚';
+        break;
+      case 'Painter':
+        displayLabel = 'Painter / ಪೇಂಟರ್';
+        estimatedFare = '₹349 Visit';
+        problemDesc = 'Wall painting & touchup service';
+        iconChar = '🎨';
+        break;
+      case 'RO Service':
+        displayLabel = 'Water Purifier / ವಾಟರ್ ಪ್ಯೂರಿಫೈಯರ್';
+        estimatedFare = '₹249 Service';
+        problemDesc = 'RO filter replacement & TDS balancing';
+        iconChar = '💧';
+        break;
+      default:
+        displayLabel = canonical.isNotEmpty ? '$canonical / ರಿಪೇರಿ' : 'General Repair / ರಿಪೇರಿ';
+        estimatedFare = '₹199 Base Visit';
+        problemDesc = recognizedWords.trim();
+        iconChar = '🔧';
     }
 
-    SearchHistoryService.instance.addTerm(matchedService);
+    SearchHistoryService.instance.addTerm(displayLabel);
     HapticFeedback.heavyImpact();
 
     setState(() {
       _detectedBooking = {
-        'service': matchedService,
+        'canonical': canonical,
+        'service': displayLabel,
         'fare': estimatedFare,
         'desc': problemDesc,
         'icon': iconChar,
@@ -232,8 +261,9 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
   void _onSuggestionTap(String service) {
     SearchHistoryService.instance.addTerm(service);
     HapticFeedback.lightImpact();
+    final canonical = CategoryUtils.normalize(service);
     Navigator.pop(context);
-    context.push('/user/worker-search?service=$service');
+    context.push('/user/worker-search?service=${Uri.encodeComponent(canonical)}');
   }
 
   @override
@@ -506,9 +536,10 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                         child: ElevatedButton.icon(
                           onPressed: () {
                             HapticFeedback.mediumImpact();
-                            final service = _detectedBooking!['service']!;
+                            final canonical = _detectedBooking!['canonical'] ??
+                                CategoryUtils.normalize(_detectedBooking!['service']);
                             Navigator.pop(context);
-                            context.push('/user/worker-search?service=$service');
+                            context.push('/user/worker-search?service=${Uri.encodeComponent(canonical)}');
                           },
                           icon: const Icon(Icons.bolt_rounded, color: Colors.white, size: 18),
                           label: Text(
