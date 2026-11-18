@@ -133,31 +133,22 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                           ),
                           children: [
                             const TextSpan(text: 'How will you use '),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.baseline,
-                              baseline: TextBaseline.alphabetic,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'Jug',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: isWide ? 38.0 : 26.0,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.6,
-                                      color: const Color(0xFF059669),
-                                    ),
-                                  ),
-                                  Text(
-                                    'aad?',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: isWide ? 38.0 : 26.0,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.6,
-                                      color: const Color(0xFFEA580C),
-                                    ),
-                                  ),
-                                ],
+                            TextSpan(
+                              text: 'Jug',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: isWide ? 38.0 : 26.0,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.6,
+                                color: const Color(0xFF059669),
+                              ),
+                            ),
+                            TextSpan(
+                              text: 'aad?',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: isWide ? 38.0 : 26.0,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.6,
+                                color: const Color(0xFFEA580C),
                               ),
                             ),
                           ],

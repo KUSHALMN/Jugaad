@@ -25,6 +25,8 @@ import '../widgets/spotlight_carousel.dart';
 import '../widgets/jugaad_trust_matrix.dart';
 import '../widgets/symptom_discovery_carousel.dart';
 import '../widgets/live_activity_island.dart';
+import '../widgets/jugaad_stories_tray.dart';
+import '../widgets/rate_card_calculator_sheet.dart';
 
 
 // --- RIVERPOD PROVIDERS ---
@@ -870,6 +872,78 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                       ),
                     ),
                   ),
+
+                  // --- JUGAAD STORIES (30s Video Diagnosis Tray)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: 16.0),
+                      child: JugaadStoriesTray(),
+                    ),
+                  ),
+
+                  // --- RATE CARD & COST ESTIMATOR TRANSPARENCY BAR
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.mediumImpact();
+                          RateCardCalculatorSheet.show(context);
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFEFF6FF), Color(0xFFF8FAFC)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFBFDBFE), width: 1.2),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF2563EB),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.calculate_rounded, color: Colors.white, size: 16),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Rate Card & Cost Calculator',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF1E3A8A),
+                                      ),
+                                    ),
+                                    Text(
+                                      'Calculate exact repair cost before booking • Zero surprises',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 10.5,
+                                        color: const Color(0xFF3B82F6),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF2563EB), size: 14),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 12.0)),
 
                   // --- SYMPTOM-FIRST DISCOVERY CAROUSEL (Urban Company Problem Selector)
                   SliverToBoxAdapter(

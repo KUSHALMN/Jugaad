@@ -710,31 +710,22 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         children: [
           TextSpan(text: isWorker ? 'Welcome Partner to ' : 'Welcome to '),
-          WidgetSpan(
-            alignment: PlaceholderAlignment.baseline,
-            baseline: TextBaseline.alphabetic,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Jug',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: headlineSize,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.6,
-                    color: const Color(0xFF0D7844),
-                  ),
-                ),
-                Text(
-                  'aad',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: headlineSize,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.6,
-                    color: const Color(0xFFF25C05),
-                  ),
-                ),
-              ],
+          TextSpan(
+            text: 'Jug',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: headlineSize,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.6,
+              color: const Color(0xFF0D7844),
+            ),
+          ),
+          TextSpan(
+            text: 'aad',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: headlineSize,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.6,
+              color: const Color(0xFFF25C05),
             ),
           ),
         ],

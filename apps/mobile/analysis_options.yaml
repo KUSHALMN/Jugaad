@@ -13,9 +13,6 @@ analyzer:
 linter:
   rules:
     avoid_print: false
-    prefer_const_constructors: true
-    prefer_const_literals_to_create_immutables: true
-    prefer_final_locals: true
     unnecessary_const: true
     unnecessary_new: true
     unnecessary_string_interpolations: true
