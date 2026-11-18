@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -274,11 +275,14 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
       filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
       child: Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         elevation: 0,
         child: Container(
           width: double.infinity,
-          constraints: const BoxConstraints(maxWidth: 420),
+          constraints: BoxConstraints(
+            maxWidth: 420,
+            maxHeight: math.min(620, MediaQuery.sizeOf(context).height - 40),
+          ),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(32),
@@ -295,7 +299,7 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
             borderRadius: BorderRadius.circular(32),
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

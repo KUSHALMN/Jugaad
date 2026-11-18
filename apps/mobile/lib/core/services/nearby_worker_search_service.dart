@@ -247,15 +247,19 @@ class NearbyWorkerSearchService {
         return (_fallbackLat, _fallbackLng);
       }
 
-      // 2. Check if a recent last known position is available (instant 0ms resolution)
-      final lastKnown = await Geolocator.getLastKnownPosition();
-      if (lastKnown != null &&
-          DateTime.now().difference(lastKnown.timestamp) < const Duration(seconds: 45)) {
-        final coords = (lastKnown.latitude, lastKnown.longitude);
-        _cachedCoords = coords;
-        _cachedCoordsTime = DateTime.now();
-        debugPrint('[LOCATION] Used recent last-known position: (${lastKnown.latitude}, ${lastKnown.longitude})');
-        return coords;
+      // 2. Check if a recent last known position is available (instant 0ms resolution) on non-web
+      if (!kIsWeb) {
+        try {
+          final lastKnown = await Geolocator.getLastKnownPosition();
+          if (lastKnown != null &&
+              DateTime.now().difference(lastKnown.timestamp) < const Duration(seconds: 45)) {
+            final coords = (lastKnown.latitude, lastKnown.longitude);
+            _cachedCoords = coords;
+            _cachedCoordsTime = DateTime.now();
+            debugPrint('[LOCATION] Used recent last-known position: (${lastKnown.latitude}, ${lastKnown.longitude})');
+            return coords;
+          }
+        } catch (_) {}
       }
 
       // 3. Fast GPS fix with 4s timeout (medium accuracy locks much faster than high)
@@ -273,15 +277,17 @@ class NearbyWorkerSearchService {
       return coords;
     } catch (e) {
       debugPrint('[LOCATION] Error or timeout acquiring position: $e. Checking last known...');
-      try {
-        final fallbackLast = await Geolocator.getLastKnownPosition();
-        if (fallbackLast != null) {
-          final coords = (fallbackLast.latitude, fallbackLast.longitude);
-          _cachedCoords = coords;
-          _cachedCoordsTime = DateTime.now();
-          return coords;
-        }
-      } catch (_) {}
+      if (!kIsWeb) {
+        try {
+          final fallbackLast = await Geolocator.getLastKnownPosition();
+          if (fallbackLast != null) {
+            final coords = (fallbackLast.latitude, fallbackLast.longitude);
+            _cachedCoords = coords;
+            _cachedCoordsTime = DateTime.now();
+            return coords;
+          }
+        } catch (_) {}
+      }
       return (_fallbackLat, _fallbackLng);
     }
   }

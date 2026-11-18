@@ -38,11 +38,15 @@ void callbackDispatcher() {
           if (serviceEnabled &&
               permission != LocationPermission.denied &&
               permission != LocationPermission.deniedForever) {
-            final lastKnown = await Geolocator.getLastKnownPosition();
-            if (lastKnown != null) {
-              lat = lastKnown.latitude;
-              lng = lastKnown.longitude;
-              isMocked = lastKnown.isMocked;
+            if (!kIsWeb) {
+              try {
+                final lastKnown = await Geolocator.getLastKnownPosition();
+                if (lastKnown != null) {
+                  lat = lastKnown.latitude;
+                  lng = lastKnown.longitude;
+                  isMocked = lastKnown.isMocked;
+                }
+              } catch (_) {}
             }
             try {
               final position = await Geolocator.getCurrentPosition(

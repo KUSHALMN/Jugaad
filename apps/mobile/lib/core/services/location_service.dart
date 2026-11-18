@@ -104,13 +104,15 @@ class LocationService {
         return pos;
       }
 
-      // Step 3: Fast resolution using lastKnownPosition if fresh (<45s)
-      final lastKnown = await Geolocator.getLastKnownPosition();
-      if (lastKnown != null &&
-          DateTime.now().difference(lastKnown.timestamp) < const Duration(seconds: 45)) {
-        _currentPosition = lastKnown;
-        _lastPosition = lastKnown;
-        return lastKnown;
+      // Step 3: Fast resolution using lastKnownPosition if fresh (<45s) on non-web platforms
+      if (!kIsWeb) {
+        final lastKnown = await Geolocator.getLastKnownPosition();
+        if (lastKnown != null &&
+            DateTime.now().difference(lastKnown.timestamp) < const Duration(seconds: 45)) {
+          _currentPosition = lastKnown;
+          _lastPosition = lastKnown;
+          return lastKnown;
+        }
       }
 
       // Step 4: Get position with balanced accuracy and 5s timeout
@@ -127,14 +129,16 @@ class LocationService {
 
     } catch (e) {
       print('❌ Location acquisition note: $e — using fallback or last known');
-      try {
-        final last = await Geolocator.getLastKnownPosition();
-        if (last != null) {
-          _currentPosition = last;
-          _lastPosition = last;
-          return last;
-        }
-      } catch (_) {}
+      if (!kIsWeb) {
+        try {
+          final last = await Geolocator.getLastKnownPosition();
+          if (last != null) {
+            _currentPosition = last;
+            _lastPosition = last;
+            return last;
+          }
+        } catch (_) {}
+      }
       final pos = _getFallbackPosition();
       _currentPosition = pos;
       _lastPosition = pos;

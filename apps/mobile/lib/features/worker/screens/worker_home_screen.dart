@@ -3019,10 +3019,10 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
       final response = await SupabaseConfig.client
           .from('jobs')
           .select('id')
-          .eq('status', 'searching');
-      debugPrint('[WORKER_HOME] Checked searching jobs: ${response.length} active in pool');
+          .eq('status', 'open');
+      debugPrint('[WORKER_HOME] Checked open jobs: ${response.length} active in pool');
     } catch (e) {
-      debugPrint('[WORKER_HOME] Error checking existing searching jobs: $e');
+      debugPrint('[WORKER_HOME] Error checking existing open jobs: $e');
     }
   }
 

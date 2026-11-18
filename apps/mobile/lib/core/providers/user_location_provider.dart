@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -137,7 +138,11 @@ class UserLocationNotifier extends Notifier<UserLocationState> {
           ),
         );
       } catch (_) {
-        position = await Geolocator.getLastKnownPosition();
+        if (!kIsWeb) {
+          try {
+            position = await Geolocator.getLastKnownPosition();
+          } catch (_) {}
+        }
       }
 
       if (position == null) {
