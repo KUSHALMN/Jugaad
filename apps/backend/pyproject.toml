@@ -1,0 +1,45 @@
+[project]
+name = "jugaad-backend"
+version = "2.1.0"
+description = "Hyperlocal on-demand home service marketplace backend API with escrow payments and spatial matching"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Jugaad Engineering Team", email = "dev@jugaad.app" }
+]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers"
+testpaths = [
+    "tests",
+]
+python_files = [
+    "test_*.py",
+    "*_test.py",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults (FastAPI Depends)
+]
+
+[tool.ruff.isort]
+known-first-party = ["core", "services", "routers"]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
