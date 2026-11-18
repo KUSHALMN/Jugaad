@@ -11,6 +11,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'api_error.dart';
 import 'environment_config.dart';
@@ -48,12 +49,13 @@ class DioClient {
       },
     ));
 
-    // Order matters: logging → cache → auth → retry → error
+    // Order matters: logging → cache → auth → performance → retry → error
     if (EnvironmentConfig.isDebug) {
       _dio.interceptors.add(_LoggingInterceptor());
     }
     _dio.interceptors.add(_CacheInterceptor());
     _dio.interceptors.add(_AuthInterceptor());
+    _dio.interceptors.add(_PerformanceMetricsInterceptor());
     _dio.interceptors.add(_RetryInterceptor(_dio));
     _dio.interceptors.add(_ErrorInterceptor());
 
@@ -274,5 +276,62 @@ class _LoggingInterceptor extends Interceptor {
   String _truncate(String text, int maxLength) {
     if (text.length <= maxLength) return text;
     return '${text.substring(0, maxLength)}...';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 5. PERFORMANCE METRICS INTERCEPTOR — p99 latency & edge transitions
+// ═══════════════════════════════════════════════════════════════════
+
+class _PerformanceMetricsInterceptor extends Interceptor {
+  static const String _startKey = 'req_start_ts';
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    options.extra[_startKey] = DateTime.now().millisecondsSinceEpoch;
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    _recordLatency(response.requestOptions, response.statusCode ?? 200);
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    _recordLatency(err.requestOptions, err.response?.statusCode ?? 0, error: err);
+    handler.next(err);
+  }
+
+  void _recordLatency(RequestOptions options, int statusCode, {DioException? error}) {
+    final start = options.extra[_startKey] as int?;
+    if (start == null) return;
+
+    final durationMs = DateTime.now().millisecondsSinceEpoch - start;
+    final path = options.path;
+    final method = options.method.toUpperCase();
+
+    // Classification of network tier / quality across Indian mobile transitions
+    final String quality = durationMs < 400
+        ? '5G/WiFi_Fast'
+        : durationMs < 1200
+            ? '4G_Normal'
+            : 'Edge_Slow_2G_3G';
+
+    if (durationMs > 1500) {
+      debugPrint('[PERF/ALERT] High API Latency ($quality): $method $path took ${durationMs}ms (HTTP $statusCode)');
+    }
+
+    if (!kIsWeb) {
+      try {
+        FirebaseCrashlytics.instance.setCustomKey('last_api_endpoint', '$method $path');
+        FirebaseCrashlytics.instance.setCustomKey('last_api_latency_ms', durationMs);
+        FirebaseCrashlytics.instance.setCustomKey('last_network_tier', quality);
+        if (durationMs > 3000) {
+          FirebaseCrashlytics.instance.log('[HIGH_LATENCY] $method $path took ${durationMs}ms in tier $quality');
+        }
+      } catch (_) {}
+    }
   }
 }

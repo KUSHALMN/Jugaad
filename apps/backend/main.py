@@ -1,5 +1,5 @@
 import shared.firebase_init  # noqa: F401 — must be first
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import RedirectResponse
@@ -9,12 +9,31 @@ from shared.logging import log
 import uvicorn
 import logging
 import time
+import os
 from datetime import datetime, timezone
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 )
+logger = logging.getLogger(__name__)
+
+# Optional Sentry initialization for APM performance monitoring
+SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.starlette import StarletteIntegration
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[FastApiIntegration(), StarletteIntegration()],
+            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2")),
+            environment=settings.ENV
+        )
+        logger.info("🛡️ Sentry APM performance monitoring initialized")
+    except Exception as s_err:
+        logger.warning(f"Sentry init notice: {s_err}")
 
 app = FastAPI(
     title="Jugaad API — Local Dev",
@@ -22,6 +41,22 @@ app = FastAPI(
     version="1.0.0",
     debug=settings.DEBUG
 )
+
+# APM Latency and Process Time tracing middleware
+@app.middleware("http")
+async def add_process_time_and_latency_tracing(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    response.headers["X-Process-Time"] = f"{process_time:.4f}"
+    
+    # Alert on slow requests (> 500ms) for p95/p99 monitoring
+    if process_time > 0.5:
+        logger.warning(
+            f"⚡ [APM/SLOW_REQUEST] {request.method} {request.url.path} "
+            f"completed in {process_time * 1000:.1f}ms (HTTP {response.status_code})"
+        )
+    return response
 
 # Enable GZip compression for all responses > 1KB (reduces network transfer by 60-80%)
 app.add_middleware(GZipMiddleware, minimum_size=1000)

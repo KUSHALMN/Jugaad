@@ -1,0 +1,71 @@
+name: 🛡️ Verify & Protect (CI Test Matrix)
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile-tests:
+    name: 📱 Flutter Analyze & Test Suite
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.x'
+          channel: 'stable'
+          cache: true
+          cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+
+      - name: 📦 Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: 🔍 Static Code Analysis
+        run: flutter analyze
+
+      - name: 🧪 Run Mobile Unit & Widget Tests
+        run: flutter test
+
+  backend-tests:
+    name: ⚙️ Python Backend Test Suite
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🛡️ Run Resilience & Advanced Backend Tests
+        env:
+          SUPABASE_URL: https://mock-project.supabase.co
+          SUPABASE_SERVICE_KEY: mock-service-key-for-ci
+          ALLOW_REVIEWER_MOCK_LOCATION: "true"
+        run: |
+          python tests/test_advanced_backend_improvements.py
+          python tests/test_production_resilience_suite.py
+          python tests/test_rating_aggregation.py
