@@ -559,7 +559,7 @@ class _RateCardCalculatorSheetState extends ConsumerState<RateCardCalculatorShee
 
               // ── BOTTOM ESTIMATE BAR (STICKY) ──
               Container(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
@@ -570,6 +570,32 @@ class _RateCardCalculatorSheetState extends ConsumerState<RateCardCalculatorShee
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Price Lock Guarantee Badge
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFA7F3D0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.lock_rounded, size: 14, color: Color(0xFF059669)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Price Lock Guarantee: Partner cannot charge a rupee more without your in-app OTP approval.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF065F46),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

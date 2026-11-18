@@ -670,12 +670,17 @@ class _VoiceSearchOverlayState extends State<VoiceSearchOverlay> {
                                   color: Color(0xFF0D7844),
                                 ),
                                 const SizedBox(width: 4),
-                                Text(
-                                  term,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF0D7844),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 160),
+                                  child: Text(
+                                    term,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF0D7844),
+                                    ),
                                   ),
                                 ),
                               ],
