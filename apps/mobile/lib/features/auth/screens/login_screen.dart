@@ -1472,28 +1472,44 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildTrustItem(
-              icon: Icons.shield_rounded,
-              iconColor: const Color(0xFF16A34A),
-              bgColor: const Color(0xFFDCFCE7),
-              title: 'Verified Professionals',
-              subtitle: 'Trusted and rated by people near you',
+            Expanded(
+              child: _buildTrustItem(
+                icon: Icons.shield_rounded,
+                iconColor: const Color(0xFF16A34A),
+                bgColor: const Color(0xFFDCFCE7),
+                title: 'Verified Professionals',
+                subtitle: 'Trusted and rated by people near you',
+              ),
             ),
-            Container(width: 1, height: 36, color: const Color(0xFFE2E8F0)),
-            _buildTrustItem(
-              icon: Icons.credit_card_rounded,
-              iconColor: const Color(0xFFEA580C),
-              bgColor: const Color(0xFFFFEDD5),
-              title: 'Secure Payments',
-              subtitle: 'Multiple payment options',
+            Container(
+              width: 1,
+              height: 36,
+              color: const Color(0xFFE2E8F0),
+              margin: const EdgeInsets.symmetric(horizontal: 12),
             ),
-            Container(width: 1, height: 36, color: const Color(0xFFE2E8F0)),
-            _buildTrustItem(
-              icon: Icons.location_on_rounded,
-              iconColor: const Color(0xFF16A34A),
-              bgColor: const Color(0xFFDCFCE7),
-              title: 'Local Service Network',
-              subtitle: 'Trusted professionals near you',
+            Expanded(
+              child: _buildTrustItem(
+                icon: Icons.credit_card_rounded,
+                iconColor: const Color(0xFFEA580C),
+                bgColor: const Color(0xFFFFEDD5),
+                title: 'Secure Payments',
+                subtitle: 'Multiple payment options',
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 36,
+              color: const Color(0xFFE2E8F0),
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            Expanded(
+              child: _buildTrustItem(
+                icon: Icons.location_on_rounded,
+                iconColor: const Color(0xFF16A34A),
+                bgColor: const Color(0xFFDCFCE7),
+                title: 'Local Service Network',
+                subtitle: 'Trusted professionals near you',
+              ),
             ),
           ],
         ),
@@ -1565,6 +1581,7 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 38,
@@ -1577,7 +1594,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Icon(icon, color: iconColor, size: 19),
               ),
               const SizedBox(width: 12),
-              Expanded(
+              Flexible(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
