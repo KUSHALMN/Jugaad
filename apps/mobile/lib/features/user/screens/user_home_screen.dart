@@ -27,6 +27,7 @@ import '../widgets/symptom_discovery_carousel.dart';
 import '../widgets/live_activity_island.dart';
 import '../widgets/jugaad_stories_tray.dart';
 import '../widgets/rate_card_calculator_sheet.dart';
+import '../widgets/trusted_technicians_tray.dart';
 
 
 // --- RIVERPOD PROVIDERS ---
@@ -876,8 +877,16 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                   // --- JUGAAD STORIES (30s Video Diagnosis Tray)
                   const SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.only(bottom: 16.0),
+                      padding: EdgeInsets.only(bottom: 12.0),
                       child: JugaadStoriesTray(),
+                    ),
+                  ),
+
+                  // --- MANE TECHNICIAN (1-Tap Trusted Rebooking Tray)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: 16.0),
+                      child: TrustedTechniciansTray(),
                     ),
                   ),
 
