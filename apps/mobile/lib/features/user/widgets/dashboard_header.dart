@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/providers/user_location_provider.dart';
+import '../../../core/providers/locale_provider.dart';
+import '../../../core/utils/haptic_feedback_utils.dart';
 
 class DashboardHeader extends ConsumerWidget {
   final String name;
@@ -21,16 +23,28 @@ class DashboardHeader extends ConsumerWidget {
     required this.onNotificationTap,
   });
 
-  String _getDynamicGreeting() {
+  String _getDynamicGreeting(AppLanguage lang) {
     final hour = DateTime.now().hour;
-    if (hour >= 5 && hour < 12) {
-      return "Good morning ";
-    } else if (hour >= 12 && hour < 17) {
-      return "Good afternoon ";
-    } else if (hour >= 17 && hour < 22) {
-      return "Good evening ";
+    if (lang == AppLanguage.kannada) {
+      if (hour >= 5 && hour < 12) return "ಶುಭೋದಯ ";
+      if (hour >= 12 && hour < 17) return "ಶುಭ ಮಧ್ಯಾಹ್ನ ";
+      if (hour >= 17 && hour < 22) return "ಶುಭ ಸಂಜೆ ";
+      return "ಶುಭ ರಾತ್ರಿ ";
+    } else if (lang == AppLanguage.hindi) {
+      if (hour >= 5 && hour < 12) return "सुप्रभात ";
+      if (hour >= 12 && hour < 17) return "शुभ दोपहर ";
+      if (hour >= 17 && hour < 22) return "शुभ संध्या ";
+      return "शुभ रात्रि ";
     } else {
-      return "Good night ";
+      if (hour >= 5 && hour < 12) {
+        return "Good morning ";
+      } else if (hour >= 12 && hour < 17) {
+        return "Good afternoon ";
+      } else if (hour >= 17 && hour < 22) {
+        return "Good evening ";
+      } else {
+        return "Good night ";
+      }
     }
   }
 
@@ -328,7 +342,8 @@ class DashboardHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final greeting = _getDynamicGreeting();
+    final activeLang = ref.watch(localeProvider);
+    final greeting = _getDynamicGreeting(activeLang);
     final userLocation = ref.watch(userLocationProvider);
 
     return Container(
@@ -538,6 +553,47 @@ class DashboardHeader extends ConsumerWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Instant Bilingual Language Toggle Pill
+              GestureDetector(
+                onTap: () {
+                  AppHaptics.lightTick();
+                  ref.read(localeProvider.notifier).cycleLanguage();
+                },
+                child: Container(
+                  height: 42,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.0),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0A000000),
+                        blurRadius: 10,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.translate_rounded, size: 14, color: Color(0xFF2563EB)),
+                      const SizedBox(width: 5),
+                      Text(
+                        activeLang.label,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
               // Notification Bell button
               GestureDetector(
                 onTap: onNotificationTap,
