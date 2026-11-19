@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/services/sound_service.dart';
+import '../../../../core/utils/haptic_feedback_utils.dart';
 
 /// Full-screen Tactical Incoming Request Card designed for two-wheeler motorcycle drivers.
 /// High contrast, sunlight-readable, with a full-width 64px Slide-to-Accept gesture
@@ -35,6 +38,36 @@ class _TacticalIncomingRequestCardState extends State<TacticalIncomingRequestCar
     with SingleTickerProviderStateMixin {
   double _dragPosition = 0.0;
   bool _isAccepted = false;
+  int _secondsRemaining = 30;
+  Timer? _countdownTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Play attention alert sound & haptic
+    SoundService().playJobAlert();
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      if (_secondsRemaining > 1) {
+        setState(() => _secondsRemaining--);
+      } else {
+        timer.cancel();
+        if (!_isAccepted) {
+          widget.onDecline();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,16 +117,74 @@ class _TacticalIncomingRequestCardState extends State<TacticalIncomingRequestCar
                   ],
                 ),
               ),
-              IconButton(
-                onPressed: widget.onDecline,
-                icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8), size: 22),
-                style: IconButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E293B),
-                ),
+              Row(
+                children: [
+                  // 30-Second Circular Countdown Timer
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: _secondsRemaining / 30.0,
+                          strokeWidth: 3.5,
+                          backgroundColor: const Color(0xFF334155),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            _secondsRemaining <= 10 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                          ),
+                        ),
+                        Text(
+                          '${_secondsRemaining}s',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: widget.onDecline,
+                    icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8), size: 22),
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E293B),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+
+          // Regional Audio Prompt Announcement Banner
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF334155)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.volume_up_rounded, size: 14, color: Color(0xFF38BDF8)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'ಹೊಸ ${widget.skill} ಬುಕಿಂಗ್ ಬಂದಿದೆ • Mysore Radar',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF7DD3FC),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // Guaranteed Net Earnings Hero Badge
           Text(
