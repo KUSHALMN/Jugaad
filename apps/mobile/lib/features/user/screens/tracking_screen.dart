@@ -15,6 +15,7 @@ import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
 import 'package:jugaad_mvp/core/services/api_service.dart';
 import 'package:jugaad_mvp/core/utils/kalman_filter.dart';
 import 'package:jugaad_mvp/core/utils/smooth_location_interpolator.dart';
+import '../widgets/landmark_route_tracker.dart';
 
 class TrackingScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -1937,6 +1938,16 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Landmark Route Milestones Tracker & Vehicle Pill
+                      LandmarkRouteTracker(
+                        workerName: workerName,
+                        vehicleInfo: _jobData!['worker_vehicle'] as String?,
+                        currentStep: isWorking ? 3 : 1,
+                        landmarkText: (_jobData!['worker_landmark'] as String?) ?? 'Near Saraswathipuram Fire Station',
+                        etaMinutes: eta is int ? eta : 6,
+                      ),
+                      const SizedBox(height: 12),
+
                       // Status pill or Cancelled Banner
                       if (_jobData!['status'] == 'cancelled' && _jobData!['canceller'] == 'worker')
                         Container(
