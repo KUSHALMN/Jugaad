@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/category_utils.dart';
+import '../../../shared/widgets/shimmer_skeletons.dart';
 import 'worker_search_provider.dart';
 
 class WorkerSearchScreen extends ConsumerStatefulWidget {
@@ -1023,14 +1024,18 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
         const SizedBox(height: 20),
         _ScanningTelemetryHeader(serviceType: state.serviceType),
         const SizedBox(height: 20),
-        _buildShimmerWorkerCard(),
+        ShimmerSkeletons.workerCard(),
         const SizedBox(height: 12),
-        _buildShimmerWorkerCard(),
+        ShimmerSkeletons.workerCard(),
+        const SizedBox(height: 12),
+        ShimmerSkeletons.workerCard(),
       ],
     );
   }
 
   Widget _buildShimmerWorkerCard() {
+    return ShimmerSkeletons.workerCard();
+  }
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
