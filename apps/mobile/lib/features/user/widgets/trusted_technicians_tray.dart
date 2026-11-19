@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/utils/haptic_feedback_utils.dart';
 
 /// "Mane Technician" (ನನ್ನ ಮೆಕ್ಯಾನಿಕ್) - 1-Tap Quick-Dial Rebooking Tray.
 /// In Indian households, familiar workers build immense long-term trust.
-class TrustedTechniciansTray extends StatelessWidget {
+class TrustedTechniciansTray extends ConsumerWidget {
   const TrustedTechniciansTray({super.key});
 
   static final List<Map<String, dynamic>> _trustedWorkers = [
@@ -45,7 +47,9 @@ class TrustedTechniciansTray extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tr = ref.watch(translationsProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -71,7 +75,7 @@ class TrustedTechniciansTray extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Mane Technician / ನನ್ನ ಟೆಕ್ನಿಷಿಯನ್',
+                    tr.maneTechnicianTitle,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,

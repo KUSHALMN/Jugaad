@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/services/sound_service.dart';
-import '../../../../core/utils/haptic_feedback_utils.dart';
 
 /// Full-screen Tactical Incoming Request Card designed for two-wheeler motorcycle drivers.
 /// High contrast, sunlight-readable, with a full-width 64px Slide-to-Accept gesture

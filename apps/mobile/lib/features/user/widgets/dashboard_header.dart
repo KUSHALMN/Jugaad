@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/providers/user_location_provider.dart';
 import '../../../core/providers/locale_provider.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/utils/haptic_feedback_utils.dart';
 
 class DashboardHeader extends ConsumerWidget {
@@ -24,28 +25,7 @@ class DashboardHeader extends ConsumerWidget {
   });
 
   String _getDynamicGreeting(AppLanguage lang) {
-    final hour = DateTime.now().hour;
-    if (lang == AppLanguage.kannada) {
-      if (hour >= 5 && hour < 12) return "ಶುಭೋದಯ ";
-      if (hour >= 12 && hour < 17) return "ಶುಭ ಮಧ್ಯಾಹ್ನ ";
-      if (hour >= 17 && hour < 22) return "ಶುಭ ಸಂಜೆ ";
-      return "ಶುಭ ರಾತ್ರಿ ";
-    } else if (lang == AppLanguage.hindi) {
-      if (hour >= 5 && hour < 12) return "सुप्रभात ";
-      if (hour >= 12 && hour < 17) return "शुभ दोपहर ";
-      if (hour >= 17 && hour < 22) return "शुभ संध्या ";
-      return "शुभ रात्रि ";
-    } else {
-      if (hour >= 5 && hour < 12) {
-        return "Good morning ";
-      } else if (hour >= 12 && hour < 17) {
-        return "Good afternoon ";
-      } else if (hour >= 17 && hour < 22) {
-        return "Good evening ";
-      } else {
-        return "Good night ";
-      }
-    }
+    return AppTranslations.of(lang).greeting(DateTime.now().hour);
   }
 
   void _showLocationSheet(BuildContext context, WidgetRef ref) {

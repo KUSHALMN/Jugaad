@@ -12,6 +12,8 @@ import '../../../core/config/services_list.dart';
 import '../../../core/providers/services_provider.dart';
 import '../../../core/config/supabase_config.dart';
 import 'user_notification_settings_screen.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/user_app_theme.dart';
 import '../widgets/voice_search_overlay.dart';
 import '../widgets/dashboard_header.dart';
@@ -120,21 +122,38 @@ class _ScaleOnTapState extends State<ScaleOnTap> {
   }
 }
 
-class _RotatingSearchPlaceholder extends StatefulWidget {
+class _RotatingSearchPlaceholder extends ConsumerStatefulWidget {
   const _RotatingSearchPlaceholder();
 
   @override
-  State<_RotatingSearchPlaceholder> createState() => _RotatingSearchPlaceholderState();
+  ConsumerState<_RotatingSearchPlaceholder> createState() => _RotatingSearchPlaceholderState();
 }
 
-class _RotatingSearchPlaceholderState extends State<_RotatingSearchPlaceholder> {
-  static const List<String> _hints = [
+class _RotatingSearchPlaceholderState extends ConsumerState<_RotatingSearchPlaceholder> {
+  static const List<String> _englishHints = [
     "Search 'Electrician in 15 mins'...",
     "Search 'AC cleaning & filter repair'...",
     "Search 'Plumber at doorstep'...",
     "Search 'Carpenter & furniture assembly'...",
     "Search 'Appliance wiring & inverter'...",
   ];
+
+  static const List<String> _kannadaHints = [
+    "15 ನಿಮಿಷಗಳಲ್ಲಿ 'ಎಲೆಕ್ಟ್ರಿಷಿಯನ್' ಹುಡುಕಿ...",
+    "'ಪ್ಲಂಬರ್' ಬಾಗಿಲಿಗೆ ಸೇವೆ...",
+    "'ಕಾರ್ಪೆಂಟರ್' & ಪೀಠೋಪಕರಣ ರಿಪೇರಿ...",
+    "'ಎಸಿ ಸರ್ವಿಸ್' & ಫಿಲ್ಟರ್ ಸ್ವಚ್ಛತೆ...",
+    "'ವಾಟರ್ ಪ್ಯೂರಿಫೈಯರ್' ಸರ್ವಿಸ್...",
+  ];
+
+  static const List<String> _hindiHints = [
+    "15 मिनट में 'इलेक्ट्रीशियन' खोजें...",
+    "'प्लंबर' घर बैठे बुलाएं...",
+    "'बढ़ई' और फर्नीचर रिपेयर...",
+    "'एसी सर्विस' और कूलिंग चेक...",
+    "'आरओ वाटर' फ़िल्टर सर्विस...",
+  ];
+
   int _currentIndex = 0;
   Timer? _timer;
 
@@ -144,7 +163,7 @@ class _RotatingSearchPlaceholderState extends State<_RotatingSearchPlaceholder> 
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted) {
         setState(() {
-          _currentIndex = (_currentIndex + 1) % _hints.length;
+          _currentIndex = (_currentIndex + 1) % 5;
         });
       }
     });
@@ -158,6 +177,12 @@ class _RotatingSearchPlaceholderState extends State<_RotatingSearchPlaceholder> 
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(localeProvider);
+    final hints = lang == AppLanguage.kannada
+        ? _kannadaHints
+        : (lang == AppLanguage.hindi ? _hindiHints : _englishHints);
+    final hint = hints[_currentIndex % hints.length];
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       transitionBuilder: (child, animation) {
@@ -170,8 +195,8 @@ class _RotatingSearchPlaceholderState extends State<_RotatingSearchPlaceholder> 
         );
       },
       child: Text(
-        _hints[_currentIndex],
-        key: ValueKey<int>(_currentIndex),
+        hint,
+        key: ValueKey<String>('${lang.code}_$_currentIndex'),
         style: GoogleFonts.plusJakartaSans(
           fontSize: 13.5,
           color: const Color(0xFF64748B),
@@ -1239,6 +1264,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
   }
 
   Widget _buildBolKeBookKaroFab() {
+    final tr = ref.watch(translationsProvider);
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
@@ -1283,7 +1309,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Bol Ke Book Karo 🎙️',
+                  tr.voiceBookingTitle,
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
@@ -1291,7 +1317,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                   ),
                 ),
                 Text(
-                  'ಧ್ವನಿ ಬುಕಿಂಗ್ • Tap & Speak',
+                  tr.voiceTapToSpeak,
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.white.withValues(alpha: 0.85),
                     fontWeight: FontWeight.w600,

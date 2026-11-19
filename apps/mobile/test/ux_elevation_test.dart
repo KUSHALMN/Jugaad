@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:jugaad_mvp/core/utils/haptic_feedback_utils.dart';
 import 'package:jugaad_mvp/core/services/sound_service.dart';
+import 'package:jugaad_mvp/core/localization/app_localizations.dart';
 import 'package:jugaad_mvp/core/providers/locale_provider.dart';
 import 'package:jugaad_mvp/core/theme/worker_app_theme.dart';
 import 'package:jugaad_mvp/features/shared/widgets/shimmer_skeletons.dart';
@@ -115,7 +116,25 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Mane Technician / ನನ್ನ ಟೆಕ್ನಿಷಿಯನ್'), findsOneWidget);
+      expect(find.text('Mane Technician'), findsOneWidget);
+    });
+
+    test('AppTranslations verifies complete Kannada and Hindi dictionary', () {
+      final kn = AppTranslations.of(AppLanguage.kannada);
+      expect(kn.electrician, 'ಎಲೆಕ್ಟ್ರಿಷಿಯನ್');
+      expect(kn.plumber, 'ಪ್ಲಂಬರ್');
+      expect(kn.dutyOnline, 'ಆನ್‌ಲೈನ್ · ಕೆಲಸಗಳನ್ನು ಸ್ವೀಕರಿಸಲಾಗುತ್ತಿದೆ');
+      expect(kn.priceLockGuarantee, contains('ಬೆಲೆ ಲಾಕ್ ಭರವಸೆ'));
+      expect(kn.popularSearches, 'ಜನಪ್ರಿಯ ಸೇವೆಗಳು');
+      expect(kn.recentSearches, 'ಇತ್ತೀಚಿನ ಹುಡುಕಾಟಗಳು');
+
+      final hi = AppTranslations.of(AppLanguage.hindi);
+      expect(hi.electrician, 'इलेक्ट्रीशियन');
+      expect(hi.plumber, 'प्लंबर');
+      expect(hi.dutyOnline, 'ऑनलाइन · नए काम उपलब्ध');
+      expect(hi.priceLockGuarantee, contains('प्राइस लॉक गारंटी'));
+      expect(hi.popularSearches, 'लोकप्रिय सेवाएं');
+      expect(hi.recentSearches, 'हाल की खोजें');
     });
 
     testWidgets('SparePartsQuotationSheet renders digital quotation breakdown', (tester) async {
