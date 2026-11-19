@@ -6,17 +6,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:jugaad_mvp/core/theme/worker_app_theme.dart';
+import 'package:jugaad_mvp/core/utils/haptic_feedback_utils.dart';
 
 class SlideToConfirm extends StatefulWidget {
   final String label;
   final VoidCallback onConfirm;
   final bool isLoading;
+  final Color? trackColor;
+  final IconData icon;
 
   const SlideToConfirm({
     super.key,
     required this.label,
     required this.onConfirm,
     this.isLoading = false,
+    this.trackColor,
+    this.icon = Icons.arrow_forward_rounded,
   });
 
   @override
@@ -42,13 +47,14 @@ class _SlideToConfirmState extends State<SlideToConfirm> {
           width: double.infinity,
           height: 56,
           decoration: BoxDecoration(
-            color: widget.isLoading
-                ? WorkerAppTheme.primaryGreen.withValues(alpha: 0.6)
-                : WorkerAppTheme.primaryGreen,
+            color: widget.trackColor ??
+                (widget.isLoading
+                    ? WorkerAppTheme.primaryGreen.withValues(alpha: 0.6)
+                    : WorkerAppTheme.primaryGreen),
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: WorkerAppTheme.primaryGreen.withValues(alpha: 0.3),
+                color: (widget.trackColor ?? WorkerAppTheme.primaryGreen).withValues(alpha: 0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -80,7 +86,7 @@ class _SlideToConfirmState extends State<SlideToConfirm> {
                       final currentMilestone = (_dragProgress * 4).floor();
                       if (currentMilestone != _lastMilestone) {
                         _lastMilestone = currentMilestone;
-                        HapticFeedback.selectionClick();
+                        AppHaptics.sliderNotch();
                       }
                     });
                   },
@@ -88,13 +94,13 @@ class _SlideToConfirmState extends State<SlideToConfirm> {
                     if (widget.isLoading) return;
                     _lastMilestone = 0;
                     if (_dragProgress >= 0.85) {
-                      HapticFeedback.mediumImpact();
+                      AppHaptics.heavySuccess();
                       widget.onConfirm();
                       setState(() {
                         _dragProgress = 1.0;
                       });
                     } else {
-                      HapticFeedback.selectionClick();
+                      AppHaptics.lightTick();
                       setState(() {
                         _dragProgress = 0.0;
                       });
