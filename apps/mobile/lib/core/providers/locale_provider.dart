@@ -12,11 +12,13 @@ enum AppLanguage {
   const AppLanguage(this.code, this.label, this.localeStr);
 }
 
-class LocaleNotifier extends StateNotifier<AppLanguage> {
+class LocaleNotifier extends Notifier<AppLanguage> {
   static const String _prefKey = 'jugaad_app_language_code';
 
-  LocaleNotifier() : super(AppLanguage.english) {
+  @override
+  AppLanguage build() {
     _loadLanguage();
+    return AppLanguage.english;
   }
 
   Future<void> _loadLanguage() async {
@@ -46,6 +48,6 @@ class LocaleNotifier extends StateNotifier<AppLanguage> {
   }
 }
 
-final localeProvider = StateNotifierProvider<LocaleNotifier, AppLanguage>((ref) {
-  return LocaleNotifier();
-});
+final localeProvider = NotifierProvider<LocaleNotifier, AppLanguage>(
+  LocaleNotifier.new,
+);
