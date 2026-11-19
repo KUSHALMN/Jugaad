@@ -67,6 +67,35 @@ class SoundService {
     }
   }
 
+  /// Reassuring security handshake chirp when Doorstep OTP matches
+  /// or worker verified badge is validated.
+  Future<void> playSecurityChirp() async {
+    if (!_isSoundEnabled) return;
+    try {
+      await HapticFeedback.mediumImpact();
+      await SystemSound.play(SystemSoundType.click);
+      await Future.delayed(const Duration(milliseconds: 90));
+      await HapticFeedback.lightImpact();
+      await SystemSound.play(SystemSoundType.click);
+    } catch (e) {
+      debugPrint('[SoundService] Error playing security chirp: $e');
+    }
+  }
+
+  /// Celebratory sound when worker completes milestone or levels up.
+  Future<void> playMilestoneUnlocked() async {
+    if (!_isSoundEnabled) return;
+    try {
+      await HapticFeedback.heavyImpact();
+      await SystemSound.play(SystemSoundType.alert);
+      await Future.delayed(const Duration(milliseconds: 140));
+      await HapticFeedback.mediumImpact();
+      await SystemSound.play(SystemSoundType.click);
+    } catch (e) {
+      debugPrint('[SoundService] Error playing milestone unlocked: $e');
+    }
+  }
+
   /// Cash register celebratory cue when instant UPI cashout is executed.
   Future<void> playCashoutSuccess() async {
     if (!_isSoundEnabled) return;
