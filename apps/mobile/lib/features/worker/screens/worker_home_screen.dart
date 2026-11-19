@@ -38,6 +38,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
   int _strikesCount = 0;
   int _serviceRadius = 15;
   String _operatingCity = 'Mysuru';
+  bool _isSunlightMode = false;
 
   double _todayEarnings = 0;
   int _weekJobCount = 0;
@@ -522,10 +523,12 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     final bool isTablet = screenWidth >= 768 && screenWidth < 1024;
     final bool isMobile = screenWidth < 768;
 
-    Widget content = SizedBox.expand(
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
+    Widget content = ColoredBox(
+      color: _isSunlightMode ? const Color(0xFF000000) : Colors.transparent,
+      child: SizedBox.expand(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
           SingleChildScrollView(
             primary: true,
             padding: EdgeInsets.symmetric(
@@ -778,7 +781,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
             ],
           ],
         ),
-      );
+      ),
+    );
 
     if (isMobile) {
       content = SafeArea(
@@ -1183,6 +1187,37 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.shield_outlined, color: Color(0xFF059669), size: 18),
+                ),
+                const SizedBox(width: 6),
+                // Outdoor Sunlight High-Contrast Toggle Pill
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    setState(() => _isSunlightMode = !_isSunlightMode);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: _isSunlightMode ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _isSunlightMode ? const Color(0xFFF59E0B) : const Color(0xFFCBD5E1),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _isSunlightMode ? '☀️ Sunlight ON' : '☀️ Outdoor',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: _isSunlightMode ? const Color(0xFFB45309) : const Color(0xFF475569),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),

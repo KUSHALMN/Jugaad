@@ -18,6 +18,16 @@ class WorkerAppTheme {
   static const Color divider = Color(0xFFE5E7EB);
   static const Color shadowColor = Color(0x12000000); // rgba(0,0,0,0.07)
 
+  // --- OUTDOOR SUNLIGHT HIGH-CONTRAST PALETTE ---
+  // Glare-proof for technicians on bikes under 35°C Indian afternoon sun
+  static const Color sunlightBackground = Color(0xFF000000);
+  static const Color sunlightSurface = Color(0xFF111827);
+  static const Color sunlightTextPrimary = Color(0xFFFFFFFF);
+  static const Color sunlightTextSecondary = Color(0xFFE2E8F0);
+  static const Color sunlightAmber = Color(0xFFF59E0B);
+  static const Color sunlightEmerald = Color(0xFF10B981);
+  static const Color sunlightBorder = Color(0xFF475569);
+
   // --- GRADIENTS ---
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [primaryGreen, Color(0xFF16A34A)],
