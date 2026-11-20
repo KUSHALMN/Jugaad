@@ -16,6 +16,9 @@ import 'package:jugaad_mvp/core/services/api_service.dart';
 import 'package:jugaad_mvp/core/utils/kalman_filter.dart';
 import 'package:jugaad_mvp/core/utils/smooth_location_interpolator.dart';
 import '../widgets/landmark_route_tracker.dart';
+import '../../../../core/models/spare_part_quotation_item.dart';
+import '../../shared/widgets/mrp_receipt_viewer_dialog.dart';
+import '../../shared/widgets/spare_parts_quotation_sheet.dart';
 
 class TrackingScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -1240,49 +1243,80 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
             style: UserAppTheme.body(size: 13, color: const Color(0xFF78350F)).copyWith(height: 1.3),
           ),
           const SizedBox(height: 12),
-          if (receiptUrl.isNotEmpty) ...[
-            GestureDetector(
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => Dialog(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                          child: Image.network(receiptUrl, fit: BoxFit.contain, errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image)),
+          // Interactive MRP Inspector Button & Detailed Sheet Link
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    final item = SparePartQuotationItem.fromJson(_pendingSparePart!);
+                    MrpReceiptViewerDialog.show(
+                      context,
+                      item: item,
+                      onApprove: () => _approveSparePart(item.id),
+                      onDecline: () => _declineSparePart(item.id),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFCD34D)),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x0D000000), blurRadius: 4, offset: Offset(0, 2)),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.zoom_in_rounded, size: 16, color: Color(0xFFD97706)),
+                        SizedBox(width: 6),
+                        Text(
+                          'Inspect Store Bill & MRP ↗',
+                          style: TextStyle(color: Color(0xFFD97706), fontSize: 11.5, fontWeight: FontWeight.bold),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Text('$itemName · Receipt Bill: ₹$amount', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
                       ],
                     ),
                   ),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFCD34D)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.image_search_rounded, size: 16, color: Color(0xFFD97706)),
-                    SizedBox(width: 6),
-                    Text('View Hardware Shop Receipt Photo ↗', style: TextStyle(color: Color(0xFFD97706), fontSize: 12, fontWeight: FontWeight.bold)),
-                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-          ],
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  final list = _spareParts.map((p) => SparePartQuotationItem.fromJson(p)).toList();
+                  SparePartsQuotationSheet.show(
+                    context,
+                    jobId: widget.jobId,
+                    isWorker: false,
+                    initialItems: list,
+                    onApprovePart: (id) => _approveSparePart(id),
+                    onDeclinePart: (id) => _declineSparePart(id),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFCD34D)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.list_alt_rounded, size: 16, color: Color(0xFFB45309)),
+                      SizedBox(width: 4),
+                      Text(
+                        'Full Quote',
+                        style: TextStyle(color: Color(0xFFB45309), fontSize: 11.5, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
