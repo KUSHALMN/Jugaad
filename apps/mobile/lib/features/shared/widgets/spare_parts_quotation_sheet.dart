@@ -133,7 +133,7 @@ class _SparePartsQuotationSheetState extends State<SparePartsQuotationSheet> {
   }
 
   void _applyPreset(Map<String, dynamic> preset) {
-    AppHaptics.lightImpact();
+    AppHaptics.lightTick();
     setState(() {
       _nameCtrl.text = preset['name'] as String;
       _mrpCtrl.text = (preset['mrp'] as double).toStringAsFixed(0);
@@ -143,7 +143,7 @@ class _SparePartsQuotationSheetState extends State<SparePartsQuotationSheet> {
   }
 
   Future<void> _captureReceiptPhoto() async {
-    AppHaptics.mediumImpact();
+    AppHaptics.mediumSnap();
     setState(() => _isScanning = true);
     final res = await _scanner.captureReceipt();
     if (mounted) {

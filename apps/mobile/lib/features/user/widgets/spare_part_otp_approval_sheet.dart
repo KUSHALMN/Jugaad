@@ -21,7 +21,7 @@ class SparePartOtpApprovalSheet extends StatefulWidget {
     required SparePartQuotationItem item,
     required VoidCallback onVerified,
   }) {
-    AppHaptics.mediumImpact();
+    AppHaptics.mediumSnap();
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -44,7 +44,7 @@ class _SparePartOtpApprovalSheetState extends State<SparePartOtpApprovalSheet> {
 
   void _onDigitPress(String d) {
     if (_digits.length >= 4) return;
-    AppHaptics.lightImpact();
+    AppHaptics.lightTick();
     setState(() {
       _digits.add(d);
       if (_digits.length == 4) {
@@ -58,7 +58,7 @@ class _SparePartOtpApprovalSheetState extends State<SparePartOtpApprovalSheet> {
             }
           });
         } else {
-          AppHaptics.warning();
+          AppHaptics.errorBuzz();
           Future.delayed(const Duration(milliseconds: 400), () {
             if (mounted) {
               setState(() => _digits.clear());
@@ -71,7 +71,7 @@ class _SparePartOtpApprovalSheetState extends State<SparePartOtpApprovalSheet> {
 
   void _onDelete() {
     if (_digits.isNotEmpty) {
-      AppHaptics.lightImpact();
+      AppHaptics.lightTick();
       setState(() => _digits.removeLast());
     }
   }

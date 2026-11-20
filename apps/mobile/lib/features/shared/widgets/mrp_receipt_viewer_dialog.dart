@@ -26,7 +26,7 @@ class MrpReceiptViewerDialog extends StatelessWidget {
     VoidCallback? onDecline,
     bool showActionButtons = true,
   }) {
-    AppHaptics.lightImpact();
+    AppHaptics.lightTick();
     return showDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.85),
@@ -95,7 +95,7 @@ class MrpReceiptViewerDialog extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () {
-                      AppHaptics.lightImpact();
+                      AppHaptics.lightTick();
                       Navigator.of(context).pop();
                     },
                     icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
@@ -137,76 +137,81 @@ class MrpReceiptViewerDialog extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Printed MRP',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF94A3B8),
-                              fontSize: 11,
-                            ),
-                          ),
-                          Text(
-                            '₹${item.mrpPrice.toStringAsFixed(0)}',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFFCBD5E1),
-                              fontSize: 14,
-                              decoration: TextDecoration.lineThrough,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'Save ₹${item.savingsAmount.toStringAsFixed(0)}',
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Printed MRP',
                               style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFF10B981),
+                                color: const Color(0xFF94A3B8),
                                 fontSize: 11,
-                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Zero Platform Markup',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF64748B),
-                              fontSize: 9.5,
+                            Text(
+                              '₹${item.mrpPrice.toStringAsFixed(0)}',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFFCBD5E1),
+                                fontSize: 13,
+                                decoration: TextDecoration.lineThrough,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'Billed Amount',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF94A3B8),
-                              fontSize: 11,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Save ₹${item.savingsAmount.toStringAsFixed(0)}',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: const Color(0xFF10B981),
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
-                          Text(
-                            '₹${item.billedPrice.toStringAsFixed(0)}',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFFF59E0B),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
+                            const SizedBox(height: 2),
+                            Text(
+                              'Zero Platform Fee',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFF64748B),
+                                fontSize: 9,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Billed Amount',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFF94A3B8),
+                                fontSize: 11,
+                              ),
+                            ),
+                            Text(
+                              '₹${item.billedPrice.toStringAsFixed(0)}',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFFF59E0B),
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -326,8 +331,9 @@ class MrpReceiptViewerDialog extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Audit Hash: ${item.auditSignature.substring(0, 8)}', style: const TextStyle(fontSize: 8, color: Color(0xFF9CA3AF))),
-              const Text('STAMPED & VERIFIED ✓', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+              Flexible(child: Text('Audit: ${item.auditSignature.substring(0, 8)}', style: const TextStyle(fontSize: 8, color: Color(0xFF9CA3AF)), overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: 4),
+              const Flexible(child: Text('VERIFIED ✓', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Color(0xFF059669)), overflow: TextOverflow.ellipsis)),
             ],
           ),
         ],

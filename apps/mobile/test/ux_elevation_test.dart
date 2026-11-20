@@ -148,7 +148,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Spare Parts & Material Quotation'), findsOneWidget);
+      expect(find.text('Digital Spare Parts & Material Bill'), findsOneWidget);
       expect(find.text('Havells 2.5µF Motor Capacitor'), findsOneWidget);
       expect(find.text('₹80'), findsOneWidget);
     });
