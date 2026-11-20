@@ -116,6 +116,29 @@ class AppTranslations {
       ? 'ವಾರಂಟಿ ಕಾರ್ಡ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ' 
       : (isHindi ? 'वारंटी कार्ड डाउनलोड करें' : 'Download Warranty Card');
 
+  // ── SPARE PARTS & MATERIAL ESCROW ──
+  String get sparePartsTitle => isKannada 
+      ? 'ಬಿಡಿಭಾಗಗಳ ಅಧಿಕೃತ ಕೋಟೇಶನ್ & ಎಂಆರ್‌ಪಿ ಸ್ಲಿಪ್' 
+      : (isHindi ? 'स्पेयर पार्ट्स डिजिटल कोटेशन और एमआरपी बिल' : 'Spare Parts & Material Quotation');
+  String get mrpProofGuarantee => isKannada 
+      ? 'ಅಂಗಡಿ ಎಂಆರ್‌ಪಿ ರಶೀದಿ ಗ್ಯಾರಂಟಿ: 1 ರೂಪಾಯಿ ಹೆಚ್ಚುವರಿ ಶುಲ್ಕವಿಲ್ಲ' 
+      : (isHindi ? 'दुकान एमआरपी रसीद गारंटी: ₹1 भी अतिरिक्त शुल्क नहीं' : 'Store MRP Slip Guarantee: Zero hidden markup');
+  String get viewStoreBill => isKannada 
+      ? 'ಅಂಗಡಿಯ ಬಿಲ್ & ಎಂಆರ್‌ಪಿ ಪರಿಶೀಲಿಸಿ ↗' 
+      : (isHindi ? 'दुकान की रसीद और एमआरपी जांचें ↗' : 'Inspect Store Bill & MRP ↗');
+  String get approveMaterialEscrow => isKannada 
+      ? 'ಬಿಡಿಭಾಗವನ್ನು ಅನುಮೋದಿಸಿ & ಬಿಲ್‌ಗೆ ಸೇರಿಸಿ' 
+      : (isHindi ? 'सामग्री मंजूर करें और बिल में जोड़ें' : 'Approve & Lock into Digital Bill');
+  String get declineMaterialEscrow => isKannada 
+      ? 'ತಿರಸ್ಕರಿಸಿ' 
+      : (isHindi ? 'अस्वीकार करें' : 'Decline');
+  String get zeroMarkupAssurance => isKannada 
+      ? '100% ವೆಚ್ಚ ಪಾಸ್‌-ಥ್ರೂ: ತಂತ್ರಜ್ಞರಿಗೆ ಅಂಗಡಿಯ ನಿಖರ ಮೊತ್ತವನ್ನು ಪಾವತಿಸಲಾಗುತ್ತದೆ' 
+      : (isHindi ? '100% लागत पास-थ्रू: तकनीशियन को दुकान की सटीक कीमत मिलती है' : '100% Cost Pass-Through: Reimbursed at exact store cost');
+  String get snapStoreBill => isKannada 
+      ? '📸 ಅಂಗಡಿ ಬಿಲ್ ಫೋಟೋ ತೆಗೆಯಿರಿ' 
+      : (isHindi ? '📸 दुकान बिल की फोटो खींचें' : '📸 Snap Store Bill / MRP Proof');
+
   // ── WORKER INTERFACE ──
   String get dutyOnline => isKannada 
       ? 'ಆನ್‌ಲೈನ್ · ಕೆಲಸಗಳನ್ನು ಸ್ವೀಕರಿಸಲಾಗುತ್ತಿದೆ' 
