@@ -7,6 +7,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/search_debouncer.dart';
 
 class WorkerListScreen extends StatefulWidget {
   const WorkerListScreen({super.key});
@@ -18,7 +19,7 @@ class WorkerListScreen extends StatefulWidget {
 class _WorkerListScreenState extends State<WorkerListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  Timer? _debounceTimer;
+  final SearchDebouncer<String> _debouncer = SearchDebouncer(delay: const Duration(milliseconds: 250));
   bool _isLoading = true;
   bool _isAreaBusyFallback = false;
 
@@ -264,7 +265,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _debouncer.dispose();
     _searchController.dispose();
     _workersSubscription?.cancel();
     super.dispose();
@@ -464,15 +465,18 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                 child: TextField(
                   controller: _searchController,
                   onChanged: (val) {
-                    _debounceTimer?.cancel();
-                    _debounceTimer = Timer(const Duration(milliseconds: 250), () {
-                      if (mounted) {
-                        setState(() {
-                          _searchQuery = val;
-                          _updateFilteredWorkers();
-                        });
-                      }
-                    });
+                    _debouncer.run(
+                      query: val,
+                      action: () async => val,
+                      onResult: (result, fromCache) {
+                        if (mounted) {
+                          setState(() {
+                            _searchQuery = result;
+                            _updateFilteredWorkers();
+                          });
+                        }
+                      },
+                    );
                   },
                   decoration: InputDecoration(
                     hintText: 'Search by name, skill, area, or email...',
