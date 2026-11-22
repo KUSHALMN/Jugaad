@@ -85,63 +85,12 @@ void main() async {
     // ── Critical init succeeded ──
     initSuccess = true;
 
-    // ── PHASE 2: Non-critical init (safe to fail) ──
-
-    // Initialize location on startup in the background (do not block app startup)
-    try {
-      final locationService = LocationService();
-      locationService.getCurrentLocation().catchError((error) {
-        print('[MAIN] Initial location request failed: $error');
-        return null;
-      });
-    } catch (locationError) {
-      print('[MAIN] Initial location request failed: $locationError');
-    }
-
-    // Crashlytics setup
-    if (!kIsWeb) {
-      FlutterError.onError = (errorDetails) {
-        FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
-      };
-      PlatformDispatcher.instance.onError = (error, stack) {
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-        return true;
-      };
-    } else {
-      FlutterError.onError = (errorDetails) {
-        FlutterError.presentError(errorDetails);
-      };
-      PlatformDispatcher.instance.onError = (error, stack) {
-        print('[MAIN] Platform error on web: $error\n$stack');
-        return true;
-      };
-    }
-
-    try {
-      if (kIsWeb) {
-        // Fix M1: Check for placeholder reCAPTCHA key and warn instead of silently misconfiguring App Check
-        const recaptchaKey = '6Ld_your-recaptcha-v3-key';
-        if (recaptchaKey.contains('your-recaptcha')) {
-          debugPrint('[MAIN] WARNING: Firebase App Check reCAPTCHA key is still a placeholder. '
-              'Web App Check is disabled. Update it in main.dart before release.');
-        } else {
-          await FirebaseAppCheck.instance.activate(
-            // ignore: deprecated_member_use
-            webProvider: ReCaptchaV3Provider(recaptchaKey),
-          );
-        }
-      } else {
-        await FirebaseAppCheck.instance.activate(
-          providerAndroid: const AndroidPlayIntegrityProvider(),
-        );
-      }
-    } catch (appCheckError) {
-      debugPrint('[MAIN] Firebase App Check initialization skipped/failed: $appCheckError');
-    }
-    // Initialize non-critical background services asynchronously to prevent blocking runApp()
-    HeartbeatService().init().catchError((e) => print('[MAIN] Heartbeat service init error: $e'));
-    NotificationService().init(AppRouter.rootNavigatorKey).catchError((e) => print('[MAIN] Notification service init error: $e'));
-    FCMTokenManager.refreshAndUploadToken();
+    // ── PHASE 2: Deferred Non-Critical Bootstrap ──
+    // Defer network handshakes, AppCheck & background sync past the first frame
+    // to achieve sub-second Time-To-Interactive (TTI) on mobile devices.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _executeDeferredBootstrap();
+    });
   } catch (e) {
     initError = e.toString();
     print('[MAIN] Init error: $e');
@@ -167,6 +116,64 @@ void main() async {
       ),
     ),
   );
+}
+
+/// Deferred background initialization executed after the first frame is painted
+void _executeDeferredBootstrap() async {
+  // 1. Initialize location in background without blocking frame rasterization
+  try {
+    LocationService().getCurrentLocation().catchError((error) {
+      debugPrint('[MAIN/DEFERRED] Initial location note: $error');
+      return null;
+    });
+  } catch (e) {
+    debugPrint('[MAIN/DEFERRED] Location init note: $e');
+  }
+
+  // 2. Crashlytics error dispatchers
+  if (!kIsWeb) {
+    FlutterError.onError = (errorDetails) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  } else {
+    FlutterError.onError = (errorDetails) {
+      FlutterError.presentError(errorDetails);
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      debugPrint('[MAIN/DEFERRED] Platform error on web: $error\n$stack');
+      return true;
+    };
+  }
+
+  // 3. Firebase AppCheck (non-blocking)
+  try {
+    if (kIsWeb) {
+      const recaptchaKey = '6Ld_your-recaptcha-v3-key';
+      if (recaptchaKey.contains('your-recaptcha')) {
+        debugPrint('[MAIN/DEFERRED] Web App Check disabled (placeholder key).');
+      } else {
+        await FirebaseAppCheck.instance.activate(
+          // ignore: deprecated_member_use
+          webProvider: ReCaptchaV3Provider(recaptchaKey),
+        );
+      }
+    } else {
+      await FirebaseAppCheck.instance.activate(
+        providerAndroid: const AndroidPlayIntegrityProvider(),
+      );
+    }
+  } catch (appCheckError) {
+    debugPrint('[MAIN/DEFERRED] App Check note: $appCheckError');
+  }
+
+  // 4. Background daemons: Heartbeat, Notifications & FCM
+  HeartbeatService().init().catchError((e) => debugPrint('[MAIN/DEFERRED] Heartbeat error: $e'));
+  NotificationService().init(AppRouter.rootNavigatorKey).catchError((e) => debugPrint('[MAIN/DEFERRED] Notification error: $e'));
+  FCMTokenManager.refreshAndUploadToken();
 }
 
 class JugaadApp extends StatefulWidget {
