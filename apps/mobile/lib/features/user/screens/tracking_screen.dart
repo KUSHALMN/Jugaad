@@ -1187,7 +1187,6 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
     final workerName = _jobData?['worker_name'] as String? ?? 'Technician';
     final itemName = _pendingSparePart!['item_name'] as String? ?? 'Material Part';
     final amount = _pendingSparePart!['amount'] ?? 0;
-    final receiptUrl = _pendingSparePart!['receipt_photo_url'] as String? ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),

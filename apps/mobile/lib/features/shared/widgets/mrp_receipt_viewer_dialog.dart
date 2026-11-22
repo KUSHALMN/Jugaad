@@ -118,7 +118,7 @@ class MrpReceiptViewerDialog extends StatelessWidget {
                         ? Image.network(
                             item.receiptPhotoUrl,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => _buildPlaceholderReceipt(),
+                            errorBuilder: (context, error, stackTrace) => _buildPlaceholderReceipt(),
                           )
                         : _buildPlaceholderReceipt(),
                   ),
