@@ -441,51 +441,56 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Category selector strip
-            Container(
-              height: 48,
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _services.length,
-                itemBuilder: (context, index) {
-                  final service = _services[index];
-                  final filterVal = service == 'All' ? '' : service;
-                  final isSelected = CategoryUtils.normalize(state.serviceType) ==
-                      CategoryUtils.normalize(filterVal);
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: ChoiceChip(
-                      label: Text(
-                        service,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
+            // Category selector strip (Isolated fine-grained Riverpod rebuild boundary)
+            Consumer(
+              builder: (context, ref, _) {
+                final currentServiceType = ref.watch(workerSearchProvider.select((s) => s.serviceType));
+                return Container(
+                  height: 48,
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _services.length,
+                    itemBuilder: (context, index) {
+                      final service = _services[index];
+                      final filterVal = service == 'All' ? '' : service;
+                      final isSelected = CategoryUtils.normalize(currentServiceType) ==
+                          CategoryUtils.normalize(filterVal);
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ChoiceChip(
+                          label: Text(
+                            service,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white : AppColors.textSecondary,
+                            ),
+                          ),
+                          selected: isSelected,
+                          selectedColor: AppColors.primary,
+                          backgroundColor: AppColors.background,
+                          showCheckmark: false,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(50),
+                            side: BorderSide(
+                              color: isSelected ? Colors.transparent : const Color(0xFFE5E7EB),
+                            ),
+                          ),
+                          onSelected: (selected) {
+                            if (selected) {
+                              HapticFeedback.selectionClick();
+                              ref.read(workerSearchProvider.notifier).updateServiceType(filterVal);
+                            }
+                          },
                         ),
-                      ),
-                      selected: isSelected,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.background,
-                      showCheckmark: false,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(50),
-                        side: BorderSide(
-                          color: isSelected ? Colors.transparent : const Color(0xFFE5E7EB),
-                        ),
-                      ),
-                      onSelected: (selected) {
-                        if (selected) {
-                          HapticFeedback.selectionClick();
-                          ref.read(workerSearchProvider.notifier).updateServiceType(filterVal);
-                        }
-                      },
-                    ),
-                  );
-                },
-              ),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
             const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
 
