@@ -358,86 +358,90 @@ class _VoiceSearchOverlayState extends ConsumerState<VoiceSearchOverlay> {
 
                   // ── MIC HERO OR COMPACT DETECTED STATE ──
                   if (_detectedBooking == null) ...[
-                    // Pulsing microphone button
-                    GestureDetector(
-                      onTap: _isListening ? _stopListening : _startListening,
-                      child: Center(
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            if (_isListening) ...[
-                              Container(
-                                width: 104,
-                                height: 104,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.orange.withValues(alpha: 0.14),
-                                ),
-                              )
-                                  .animate(onPlay: (c) => c.repeat())
-                                  .scale(
-                                    begin: const Offset(0.85, 0.85),
-                                    end: const Offset(1.4, 1.4),
-                                    duration: 1200.ms,
-                                    curve: Curves.easeOut,
-                                  )
-                                  .fadeOut(duration: 1200.ms),
-                              Container(
-                                width: 104,
-                                height: 104,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.orange.withValues(alpha: 0.08),
-                                ),
-                              )
-                                  .animate(onPlay: (c) => c.repeat(reverse: true))
-                                  .scale(
-                                    begin: const Offset(1.0, 1.0),
-                                    end: const Offset(1.25, 1.25),
-                                    delay: 300.ms,
-                                    duration: 1000.ms,
+                    // Pulsing microphone button with RepaintBoundary for 60fps compositor isolation
+                    RepaintBoundary(
+                      child: GestureDetector(
+                        onTap: _isListening ? _stopListening : _startListening,
+                        child: Center(
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              if (_isListening) ...[
+                                Container(
+                                  width: 104,
+                                  height: 104,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.orange.withValues(alpha: 0.14),
                                   ),
-                            ],
-                            AnimatedScale(
-                              scale: _isListening ? scaleMultiplier : 1.0,
-                              duration: const Duration(milliseconds: 100),
-                              child: Container(
-                                width: 72,
-                                height: 72,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: _isListening
-                                        ? [const Color(0xFFF97316), const Color(0xFFEA580C)]
-                                        : [AppColors.primary, const Color(0xFF2563EB)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
+                                )
+                                    .animate(onPlay: (c) => c.repeat())
+                                    .scale(
+                                      begin: const Offset(0.85, 0.85),
+                                      end: const Offset(1.4, 1.4),
+                                      duration: 1200.ms,
+                                      curve: Curves.easeOut,
+                                    )
+                                    .fadeOut(duration: 1200.ms),
+                                Container(
+                                  width: 104,
+                                  height: 104,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.orange.withValues(alpha: 0.08),
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (_isListening ? Colors.orange : AppColors.primary)
-                                          .withValues(alpha: 0.35),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 5),
+                                )
+                                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                                    .scale(
+                                      begin: const Offset(1.0, 1.0),
+                                      end: const Offset(1.25, 1.25),
+                                      delay: 300.ms,
+                                      duration: 1000.ms,
                                     ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                                  color: Colors.white,
-                                  size: 30,
+                              ],
+                              AnimatedScale(
+                                scale: _isListening ? scaleMultiplier : 1.0,
+                                duration: const Duration(milliseconds: 100),
+                                child: Container(
+                                  width: 72,
+                                  height: 72,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: _isListening
+                                          ? [const Color(0xFFF97316), const Color(0xFFEA580C)]
+                                          : [AppColors.primary, const Color(0xFF2563EB)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: (_isListening ? Colors.orange : AppColors.primary)
+                                            .withValues(alpha: 0.35),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                                    color: Colors.white,
+                                    size: 30,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 14),
 
-                    // Audio soundwave
+                    // Audio soundwave isolated with RepaintBoundary
                     if (_isListening)
-                      _AudioSoundwaveVisualizer(soundLevel: _soundLevel)
+                      RepaintBoundary(
+                        child: _AudioSoundwaveVisualizer(soundLevel: _soundLevel),
+                      )
                     else
                       const SizedBox(height: 14),
 

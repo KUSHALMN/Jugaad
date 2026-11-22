@@ -118,30 +118,32 @@ class _TacticalIncomingRequestCardState extends State<TacticalIncomingRequestCar
               ),
               Row(
                 children: [
-                  // 30-Second Circular Countdown Timer
-                  SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          value: _secondsRemaining / 30.0,
-                          strokeWidth: 3.5,
-                          backgroundColor: const Color(0xFF334155),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            _secondsRemaining <= 10 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                  // 30-Second Circular Countdown Timer isolated with RepaintBoundary
+                  RepaintBoundary(
+                    child: SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            value: _secondsRemaining / 30.0,
+                            strokeWidth: 3.5,
+                            backgroundColor: const Color(0xFF334155),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              _secondsRemaining <= 10 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                            ),
                           ),
-                        ),
-                        Text(
-                          '${_secondsRemaining}s',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                          Text(
+                            '${_secondsRemaining}s',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
