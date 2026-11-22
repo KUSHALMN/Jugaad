@@ -22,12 +22,30 @@ class LocationService {
   TrackingMode _trackingMode = TrackingMode.idle;
   Position? _lastPosition;
   Position? _currentPosition;
+  Position? _lastSyncedPosition;
   DateTime? _lastDbSyncTime;
+  int _totalPositionsReceived = 0;
+  int _suppressedUpdatesCount = 0;
+  int _dbWritesPerformed = 0;
 
   bool get isTracking => _isTracking;
   TrackingMode get trackingMode => _trackingMode;
   Position? get lastPosition => _lastPosition;
   Position? get currentPosition => _currentPosition;
+  Position? get lastSyncedPosition => _lastSyncedPosition;
+
+  /// Returns real-time battery and network optimization telemetry
+  Map<String, dynamic> getOptimizationStats() {
+    final total = _totalPositionsReceived;
+    final savings = total > 0 ? (_suppressedUpdatesCount / total) * 100 : 0.0;
+    return {
+      'totalPositionsReceived': _totalPositionsReceived,
+      'suppressedUpdatesCount': _suppressedUpdatesCount,
+      'dbWritesPerformed': _dbWritesPerformed,
+      'batteryNetworkSavingsPercent': double.parse(savings.toStringAsFixed(1)),
+      'trackingMode': _trackingMode.name,
+    };
+  }
 
   Duration get _currentMinDbSyncInterval {
     switch (_trackingMode) {
@@ -252,20 +270,42 @@ class LocationService {
 
   // ─── Position Update Handler ──────────────────────────────
   void _onPositionUpdate(Position position) async {
+    _totalPositionsReceived++;
     _lastPosition = position;
     _currentPosition = position;
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    // Rate-limit database updates dynamically by trackingMode to save field battery
     final now = DateTime.now();
+
+    // 1. Time-based throttle: check minimum interval per tracking mode
     if (_lastDbSyncTime != null && now.difference(_lastDbSyncTime!) < _currentMinDbSyncInterval) {
+      _suppressedUpdatesCount++;
       return;
     }
+
+    // 2. Spatial geofence throttle: avoid writing if technician has not moved
+    if (_lastSyncedPosition != null && _lastDbSyncTime != null) {
+      final distanceMoved = Geolocator.distanceBetween(
+        _lastSyncedPosition!.latitude,
+        _lastSyncedPosition!.longitude,
+        position.latitude,
+        position.longitude,
+      );
+      final minMeters = _trackingMode == TrackingMode.enRoute ? 15.0 : 25.0;
+      // Suppress if stationary and last sync was less than 4 minutes ago
+      if (distanceMoved < minMeters && now.difference(_lastDbSyncTime!) < const Duration(minutes: 4)) {
+        _suppressedUpdatesCount++;
+        return;
+      }
+    }
+
     _lastDbSyncTime = now;
+    _lastSyncedPosition = position;
+    _dbWritesPerformed++;
 
     debugPrint(
-      '[LOCATION] Adaptive DB Sync (${_trackingMode.name}): ${position.latitude}, ${position.longitude}',
+      '[LOCATION/BATTERY-SAVER] DB Sync (${_trackingMode.name}): lat=${position.latitude}, lng=${position.longitude} (suppressed=$_suppressedUpdatesCount)',
     );
 
     try {
