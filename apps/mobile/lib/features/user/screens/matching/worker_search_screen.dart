@@ -223,7 +223,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                   radius: 32,
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   backgroundImage: (profilePhoto != null && profilePhoto.isNotEmpty)
-                      ? CachedNetworkImageProvider(profilePhoto)
+                      ? CachedNetworkImageProvider(profilePhoto, maxWidth: 128, maxHeight: 128)
                       : null,
                   child: (profilePhoto == null || profilePhoto.isEmpty)
                       ? Text(
@@ -849,7 +849,7 @@ class _WorkerSearchScreenState extends ConsumerState<WorkerSearchScreen> {
                 radius: 26,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                 backgroundImage: (profilePhoto != null && profilePhoto.isNotEmpty)
-                    ? CachedNetworkImageProvider(profilePhoto)
+                    ? CachedNetworkImageProvider(profilePhoto, maxWidth: 104, maxHeight: 104)
                     : null,
                 child: (profilePhoto == null || profilePhoto.isEmpty)
                     ? Text(
