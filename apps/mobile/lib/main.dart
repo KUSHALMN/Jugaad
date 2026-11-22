@@ -15,6 +15,7 @@ import 'firebase_options.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/supabase_config.dart';
 import 'core/services/platform_config_service.dart';
+import 'core/services/fast_storage_service.dart';
 import 'app.dart';
 import 'features/shared/widgets/offline_banner.dart';
 import 'core/services/fcm_token_manager.dart';
@@ -46,6 +47,9 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+    // Warm in-memory FastStorage L1 cache for synchronous O(1) reads
+    await FastStorageService.instance.initialize();
 
     // Initialize network layer (Dio + connectivity + server warm-up)
     DioClient.initialize();

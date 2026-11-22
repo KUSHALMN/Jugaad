@@ -1,18 +1,20 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'fast_storage_service.dart';
 
 class SearchHistoryService {
   static const String _keyHistory = 'search_history_items';
   static const int _maxHistoryCount = 8;
 
-  // Private constructor
   SearchHistoryService._privateConstructor();
-
   static final SearchHistoryService instance = SearchHistoryService._privateConstructor();
 
-  /// Retrieves the stored search history items.
+  /// Retrieves search history synchronously from memory cache (O(1) latency).
+  List<String> getHistorySync() {
+    return FastStorageService.instance.getStringList(_keyHistory);
+  }
+
+  /// Retrieves the stored search history items (asynchronous compatibility wrapper).
   Future<List<String>> getHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList(_keyHistory) ?? [];
+    return getHistorySync();
   }
 
   /// Adds a new search term to history, moving it to the top.
@@ -20,8 +22,7 @@ class SearchHistoryService {
     final cleanTerm = term.trim();
     if (cleanTerm.isEmpty) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> current = prefs.getStringList(_keyHistory) ?? [];
+    final List<String> current = List<String>.from(getHistorySync());
 
     // Remove duplicates
     current.removeWhere((item) => item.toLowerCase() == cleanTerm.toLowerCase());
@@ -34,20 +35,18 @@ class SearchHistoryService {
       current.removeRange(_maxHistoryCount, current.length);
     }
 
-    await prefs.setStringList(_keyHistory, current);
+    await FastStorageService.instance.setStringList(_keyHistory, current);
   }
 
   /// Removes a single term from history.
   Future<void> removeTerm(String term) async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> current = prefs.getStringList(_keyHistory) ?? [];
+    final List<String> current = List<String>.from(getHistorySync());
     current.removeWhere((item) => item.toLowerCase() == term.trim().toLowerCase());
-    await prefs.setStringList(_keyHistory, current);
+    await FastStorageService.instance.setStringList(_keyHistory, current);
   }
 
   /// Clears the entire search history.
   Future<void> clearHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyHistory);
+    await FastStorageService.instance.remove(_keyHistory);
   }
 }
