@@ -34,6 +34,11 @@ class DioClient {
     _CacheInterceptor.invalidateCache();
   }
 
+  /// Get live telemetry for HTTP cache efficiency (hits, misses, size, hit-ratio)
+  static Map<String, dynamic> getCacheStats() {
+    return _CacheInterceptor.getStats();
+  }
+
   /// Call once at app startup (in main.dart).
   static void initialize() {
     if (_initialized) return;
@@ -73,35 +78,88 @@ class DioClient {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 0. CACHE INTERCEPTOR — fast in-memory response cache for static GETs
+// 0. CACHE INTERCEPTOR — bounded LRU in-memory response cache with TTL
 // ═══════════════════════════════════════════════════════════════════
 
+class _CacheEntry {
+  final DateTime timestamp;
+  final Duration ttl;
+  final Response response;
+  int accessCount;
+  DateTime lastAccessed;
+
+  _CacheEntry({
+    required this.timestamp,
+    required this.ttl,
+    required this.response,
+  })  : accessCount = 1,
+        lastAccessed = DateTime.now();
+
+  bool get isExpired => DateTime.now().difference(timestamp) > ttl;
+  void touch() {
+    accessCount++;
+    lastAccessed = DateTime.now();
+  }
+}
+
 class _CacheInterceptor extends Interceptor {
-  static final Map<String, (DateTime, Response)> _cache = {};
-  static const Set<String> _cacheablePaths = {
-    '/v1/services',
-    '/api/v1/services',
-    '/v1/platform/config',
-    '/api/v1/platform/config',
-  };
-  static const Duration _defaultTtl = Duration(seconds: 45);
+  // Map ordered by insertion / access for LRU tracking
+  static final Map<String, _CacheEntry> _cache = {};
+  static const int _maxCapacity = 60;
+
+  static int _hits = 0;
+  static int _misses = 0;
+  static int _evictions = 0;
+
+  /// Custom TTLs per endpoint category
+  static Duration _getTtlForPath(String path) {
+    if (path.contains('/platform/config')) {
+      return const Duration(minutes: 5);
+    }
+    if (path.contains('/services')) {
+      return const Duration(minutes: 10);
+    }
+    if (path.contains('/workers/search')) {
+      return const Duration(seconds: 30);
+    }
+    return const Duration(seconds: 45);
+  }
+
+  static bool _isCacheable(String path) {
+    return path.contains('/v1/services') ||
+        path.contains('/api/v1/services') ||
+        path.contains('/v1/platform/config') ||
+        path.contains('/api/v1/platform/config') ||
+        path.contains('/v1/workers/search') ||
+        path.contains('/api/v1/workers/search');
+  }
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (options.method.toUpperCase() == 'GET' && _cacheablePaths.contains(options.path)) {
+    if (options.method.toUpperCase() == 'GET' && _isCacheable(options.path)) {
       final key = '${options.method}:${options.path}:${options.queryParameters}';
       final cached = _cache[key];
-      if (cached != null && DateTime.now().difference(cached.$1) < _defaultTtl) {
-        debugPrint('[DIO/CACHE] Cache HIT for ${options.path}');
-        return handler.resolve(
-          Response(
-            requestOptions: options,
-            data: cached.$2.data,
-            statusCode: 200,
-            statusMessage: 'OK (Memory Cache)',
-          ),
-        );
+
+      if (cached != null) {
+        if (!cached.isExpired) {
+          cached.touch();
+          _hits++;
+          debugPrint('[DIO/LRU-CACHE] HIT [hits=$_hits, misses=$_misses] ${options.path}');
+          return handler.resolve(
+            Response(
+              requestOptions: options,
+              data: cached.response.data,
+              statusCode: 200,
+              statusMessage: 'OK (LRU Memory Cache)',
+              headers: cached.response.headers,
+            ),
+          );
+        } else {
+          // Expired entry
+          _cache.remove(key);
+        }
       }
+      _misses++;
     }
     handler.next(options);
   }
@@ -109,19 +167,54 @@ class _CacheInterceptor extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (response.requestOptions.method.toUpperCase() == 'GET' &&
-        _cacheablePaths.contains(response.requestOptions.path) &&
+        _isCacheable(response.requestOptions.path) &&
         response.statusCode == 200) {
       final key = '${response.requestOptions.method}:${response.requestOptions.path}:${response.requestOptions.queryParameters}';
-      if (_cache.length > 50) {
-        _cache.clear();
+      
+      // Evict least-recently used entry if capacity reached
+      if (_cache.length >= _maxCapacity) {
+        String? oldestKey;
+        DateTime? oldestAccess;
+        for (final entry in _cache.entries) {
+          if (oldestAccess == null || entry.value.lastAccessed.isBefore(oldestAccess)) {
+            oldestAccess = entry.value.lastAccessed;
+            oldestKey = entry.key;
+          }
+        }
+        if (oldestKey != null) {
+          _cache.remove(oldestKey);
+          _evictions++;
+        }
       }
-      _cache[key] = (DateTime.now(), response);
+
+      final ttl = _getTtlForPath(response.requestOptions.path);
+      _cache[key] = _CacheEntry(
+        timestamp: DateTime.now(),
+        ttl: ttl,
+        response: response,
+      );
     }
     handler.next(response);
   }
 
-  static void invalidateCache() {
-    _cache.clear();
+  static void invalidateCache({String? pattern}) {
+    if (pattern == null) {
+      _cache.clear();
+    } else {
+      _cache.removeWhere((key, _) => key.contains(pattern));
+    }
+  }
+
+  static Map<String, dynamic> getStats() {
+    final total = _hits + _misses;
+    final ratio = total > 0 ? (_hits / total) * 100 : 0.0;
+    return {
+      'hits': _hits,
+      'misses': _misses,
+      'evictions': _evictions,
+      'entries': _cache.length,
+      'hitRatioPercent': double.parse(ratio.toStringAsFixed(1)),
+    };
   }
 }
 
