@@ -14,12 +14,14 @@ class VoiceBriefingPill extends ConsumerWidget {
   final int totalAmount;
   final bool hasVerifiedParts;
   final bool showCaptionBanner;
+  final bool isAnimated;
 
   const VoiceBriefingPill({
     super.key,
     required this.totalAmount,
     this.hasVerifiedParts = true,
     this.showCaptionBanner = true,
+    this.isAnimated = true,
   });
 
   @override
@@ -103,7 +105,7 @@ class VoiceBriefingPill extends ConsumerWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: List.generate(3, (i) {
-                            return Container(
+                            final bar = Container(
                               margin: const EdgeInsets.symmetric(horizontal: 1.5),
                               width: 3,
                               height: 12,
@@ -111,7 +113,9 @@ class VoiceBriefingPill extends ConsumerWidget {
                                 color: const Color(0xFF16A34A),
                                 borderRadius: BorderRadius.circular(2),
                               ),
-                            )
+                            );
+                            if (!isAnimated) return bar;
+                            return bar
                                 .animate(onPlay: (c) => c.repeat(reverse: true))
                                 .scaleY(
                                   begin: 0.3,

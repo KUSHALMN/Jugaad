@@ -14,12 +14,14 @@ class DemandHotspotRadarCard extends StatefulWidget {
   final double currentLat;
   final double currentLng;
   final String city;
+  final bool isAnimated;
 
   const DemandHotspotRadarCard({
     super.key,
     required this.currentLat,
     required this.currentLng,
     this.city = 'Mysuru',
+    this.isAnimated = true,
   });
 
   @override
@@ -62,17 +64,18 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFFEF4444).withValues(alpha: 0.2),
-                    ),
-                  )
-                      .animate(onPlay: (c) => c.repeat())
-                      .scale(begin: const Offset(0.8, 0.8), end: const Offset(1.6, 1.6), duration: 1200.ms)
-                      .fadeOut(duration: 1200.ms),
+                  if (widget.isAnimated)
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.2),
+                      ),
+                    )
+                        .animate(onPlay: (c) => c.repeat())
+                        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1.6, 1.6), duration: 1200.ms)
+                        .fadeOut(duration: 1200.ms),
                   Container(
                     width: 14,
                     height: 14,
