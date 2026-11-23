@@ -189,6 +189,23 @@ class AppTranslations {
       ? 'ಗ್ರಾಹಕರಿಗೆ ಡಿಜಿಟಲ್ ಬಿಲ್ ಕಳುಹಿಸಿ' 
       : (isHindi ? 'ग्राहक को डिजिटल कोटेशन भेजें' : 'Send Digital Quote to Customer');
 
+  // ── VOICE BRIEFING ("KELI THILIRI" / "SUNKE SAMJHO") ──
+  String get voiceBriefingButtonLabel => isKannada 
+      ? '🔊 ಕನ್ನಡದಲ್ಲಿ ಕೇಳಿ' 
+      : (isHindi ? '🔊 ऑडियो में सुनें' : '🔊 Listen to Bill');
+  String get voiceBriefingPlaying => isKannada 
+      ? 'ಧ್ವನಿ ವಿವರಣೆ ಚಾಲನೆಯಲ್ಲಿದೆ...' 
+      : (isHindi ? 'ऑडियो विवरण चल रहा है...' : 'Playing audio briefing...');
+  String get voiceBriefingTooltip => isKannada 
+      ? 'ಧ್ವನಿ ಮೂಲಕ ಬಿಲ್ ವಿವರ ಆಲಿಸಿ' 
+      : (isHindi ? 'आवाज में बिल का विवरण सुनें' : 'Listen to bill breakdown via voice');
+  String get antiBribeAudioNotice => isKannada 
+      ? 'ಯಾವುದೇ ಹೆಚ್ಚುವರಿ ಹಣ ನೀಡಬೇಡಿ' 
+      : (isHindi ? 'कोई अतिरिक्त नकद न दें' : 'Do not pay any extra cash');
+  String get earningsRadarTitle => isKannada 
+      ? 'ಗಳಿಕೆ ರಾಡಾರ್ & ಹೆಚ್ಚಿನ ಬೇಡಿಕೆ ವಲಯಗಳು' 
+      : (isHindi ? 'कमाई रडार और उच्च मांग क्षेत्र' : 'Earnings Radar & High-Demand Hotspots');
+
   // ── GREETINGS ──
   String greeting(int hour) {
     if (isKannada) {
