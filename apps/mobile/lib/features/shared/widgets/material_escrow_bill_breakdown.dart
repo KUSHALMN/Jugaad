@@ -10,6 +10,7 @@ class MaterialEscrowBillBreakdown extends StatelessWidget {
   final List<SparePartQuotationItem> approvedParts;
   final double platformFee;
   final double discount;
+  final bool isAnimated;
 
   const MaterialEscrowBillBreakdown({
     super.key,
@@ -17,6 +18,7 @@ class MaterialEscrowBillBreakdown extends StatelessWidget {
     required this.approvedParts,
     this.platformFee = 0.0,
     this.discount = 0.0,
+    this.isAnimated = true,
   });
 
   double get totalPartsAmount => approvedParts.fold(0.0, (sum, p) => sum + p.billedPrice);
@@ -195,6 +197,7 @@ class MaterialEscrowBillBreakdown extends StatelessWidget {
           VoiceBriefingPill(
             totalAmount: grandTotal.round(),
             hasVerifiedParts: approvedParts.isNotEmpty,
+            isAnimated: isAnimated,
           ),
 
           // Savings banner if MRP discount present

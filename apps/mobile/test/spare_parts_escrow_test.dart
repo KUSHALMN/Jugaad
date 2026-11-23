@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jugaad_mvp/core/models/spare_part_quotation_item.dart';
 import 'package:jugaad_mvp/core/services/mrp_proof_scanner_service.dart';
 import 'package:jugaad_mvp/core/localization/app_localizations.dart';
@@ -90,12 +91,17 @@ void main() {
 
     testWidgets('MaterialEscrowBillBreakdown renders labor and pass-through parts cleanly', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MaterialEscrowBillBreakdown(
-              serviceLaborAmount: 199.0,
-              approvedParts: [samplePart],
-              discount: 20.0,
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: MaterialEscrowBillBreakdown(
+                  serviceLaborAmount: 199.0,
+                  approvedParts: [samplePart],
+                  discount: 20.0,
+                  isAnimated: false,
+                ),
+              ),
             ),
           ),
         ),

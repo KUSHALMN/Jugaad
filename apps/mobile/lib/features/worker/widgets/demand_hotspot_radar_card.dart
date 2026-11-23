@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/models/high_demand_zone.dart';
 import '../../../../core/services/demand_hotspot_service.dart';
 
 /// Tactical Earnings Radar & Demand Hotspot Card for Worker Dashboard.
@@ -144,7 +143,7 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               itemCount: hotspots.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (context, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final zone = hotspots[index];
                 final isSelected = index == _selectedZoneIndex;
