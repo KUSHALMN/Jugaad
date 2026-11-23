@@ -19,6 +19,7 @@ import '../widgets/landmark_route_tracker.dart';
 import '../../../../core/models/spare_part_quotation_item.dart';
 import '../../shared/widgets/mrp_receipt_viewer_dialog.dart';
 import '../../shared/widgets/spare_parts_quotation_sheet.dart';
+import '../../shared/widgets/voice_briefing_pill.dart';
 
 class TrackingScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -1348,6 +1349,12 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          // Audio Voice Briefing Pill for vernacular customer reassurance
+          VoiceBriefingPill(
+            totalAmount: (amount is num) ? amount.round() : 0,
+            hasVerifiedParts: true,
           ),
         ],
       ),

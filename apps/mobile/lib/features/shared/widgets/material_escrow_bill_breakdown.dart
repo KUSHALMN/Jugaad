@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/models/spare_part_quotation_item.dart';
+import 'voice_briefing_pill.dart';
 
 /// Transparent dual-tier digital invoice breakdown widget.
 /// Distinctly separates platform labor charges from 100% cost pass-through spare parts escrow.
@@ -187,6 +188,13 @@ class MaterialEscrowBillBreakdown extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+
+          const SizedBox(height: 12),
+          // Audio-Assisted Voice Briefing ("Keli Thiliri" / "Sunke Samjho")
+          VoiceBriefingPill(
+            totalAmount: grandTotal.round(),
+            hasVerifiedParts: approvedParts.isNotEmpty,
           ),
 
           // Savings banner if MRP discount present
