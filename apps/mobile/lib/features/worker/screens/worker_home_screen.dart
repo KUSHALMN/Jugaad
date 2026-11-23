@@ -17,6 +17,7 @@ import 'package:jugaad_mvp/core/services/sound_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/worker_dashboard_sheets.dart';
+import '../widgets/demand_hotspot_radar_card.dart';
 
 class WorkerHomeScreen extends StatefulWidget {
   const WorkerHomeScreen({super.key});
@@ -581,6 +582,17 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                   // ROW 1.5: MILESTONE INCENTIVE RADIAL GAUGE CARD
                   // ═══════════════════════════════════════════════════════════
                   _buildMilestoneIncentiveRingCard(),
+
+                  const SizedBox(height: 14),
+
+                  // ═══════════════════════════════════════════════════════════
+                  // ROW 1.8: EARNINGS RADAR & DEMAND HOTSPOTS (Surge Engine)
+                  // ═══════════════════════════════════════════════════════════
+                  DemandHotspotRadarCard(
+                    currentLat: LocationService().currentPosition?.latitude ?? 12.3051,
+                    currentLng: LocationService().currentPosition?.longitude ?? 76.6551,
+                    city: _operatingCity,
+                  ),
 
                   const SizedBox(height: 14),
 
