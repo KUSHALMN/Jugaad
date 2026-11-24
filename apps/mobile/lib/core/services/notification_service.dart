@@ -18,7 +18,13 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  FirebaseMessaging? get _fcm {
+    try {
+      return FirebaseMessaging.instance;
+    } catch (_) {
+      return null;
+    }
+  }
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   StreamSubscription<RemoteMessage>? _foregroundSub;
   StreamSubscription<RemoteMessage>? _openedSub;
@@ -48,108 +54,106 @@ class NotificationService {
     _isInitialized = true;
     
     // Request permissions
-    NotificationSettings settings = await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    print('[FCM] User granted permission: ${settings.authorizationStatus}');
+    if (_fcm != null) {
+      try {
+        NotificationSettings settings = await _fcm!.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        print('[FCM] User granted permission: ${settings.authorizationStatus}');
+      } catch (_) {}
+
+      // Setup Background Handler
+      try {
+        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      } catch (_) {}
+
+      // Terminated state — app was killed and user tapped notification to open
+      try {
+        final initialMessage = await _fcm!.getInitialMessage();
+        if (initialMessage != null) {
+          debugPrint('[FCM] App opened from terminated state via notification');
+          debugPrint('[FCM] Terminated data: ${initialMessage.data}');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _handleNavigation(initialMessage.data);
+          });
+        } else {
+          debugPrint('[FCM] No initial message (app opened normally)');
+        }
+      } catch (_) {}
+    }
 
     // Setup Local Notifications for foreground — NOT supported on web
-    if (!kIsWeb) {
-      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-      const darwinInit = DarwinInitializationSettings();
-      const initSettings = InitializationSettings(android: androidInit, iOS: darwinInit);
-      await _localNotifications.initialize(
-        settings: initSettings,
-        onDidReceiveNotificationResponse: (details) {
-          if (details.payload != null) {
-            final data = jsonDecode(details.payload!);
-            _handleNavigation(data);
+
+    // Foreground and background listeners — active only when Firebase is available
+    if (_fcm != null) {
+      try {
+        _foregroundSub = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          debugPrint('[FCM_FG] ═══════════════════════════════════════');
+          debugPrint('[FCM_FG] Foreground message received!');
+          debugPrint('[FCM_FG] type=${message.data['type']}');
+          debugPrint('[FCM_FG] job_id=${message.data['job_id']}');
+          debugPrint('[FCM_FG] All data keys: ${message.data.keys.toList()}');
+          debugPrint('[FCM_FG] Notification: ${message.notification?.title}');
+          debugPrint('[FCM_FG] ═══════════════════════════════════════');
+          
+          final type = message.data['type'];
+          
+          // ─── Dispatch System FCM Handlers ─────────────────
+          if (type == 'JOB_OFFER' || type == 'job_offer') {
+            // Worker received a job offer → show full notification + navigate
+            _showLocalNotification(message);
+            _handleNavigation(message.data);
+            return;
           }
-        },
-      );
+          if (type == 'job_accepted' || type == 'WORKER_ASSIGNED') {
+            emitDispatchEvent(message.data);
+            _showToast("Worker found! On the way.");
+            _handleNavigation(message.data);
+            return;
+          }
+          if (type == 'JOB_TAKEN' || type == 'job_offer_withdrawn') {
+            // Offer cancelled or taken → dismiss screen
+            emitDispatchEvent(message.data);
+            return;
+          }
+          if (type == 'JOB_TIMEOUT' || type == 'rejected_all') {
+            // Dispatch timeout / all rejected → no workers found
+            _showToast("No workers available nearby right now.");
+            emitDispatchEvent(message.data);
+            return;
+          }
+
+          // ─── Existing FCM Handlers (unchanged) ────────────
+          if (type == 'worker_arrived') {
+            _showToast("Your worker is almost here");
+            return;
+          }
+          if (type == 'payment_received') {
+            final amount = message.data['amount'] ?? '0';
+            _showToast("₹$amount added to your earnings");
+            return;
+          }
+          if (type == 'scheduled_confirmed') {
+            final service = message.data['service'] ?? 'service';
+            final time = message.data['time'] ?? '';
+            _showToast("Your $service job is confirmed for $time");
+            return;
+          }
+
+          // Otherwise show local notification
+          _showLocalNotification(message);
+        });
+
+        // Background state (App in background, user taps notification)
+        _openedSub = FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+          debugPrint('[FCM_BG_TAP] Notification tapped from background: type=${message.data['type']}');
+          debugPrint('[FCM_BG_TAP] Data: ${message.data}');
+          _handleNavigation(message.data);
+        });
+      } catch (_) {}
     }
-
-    // Setup Background Handler
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    // Terminated state — app was killed and user tapped notification to open
-    final initialMessage = await _fcm.getInitialMessage();
-    if (initialMessage != null) {
-      debugPrint('[FCM] App opened from terminated state via notification');
-      debugPrint('[FCM] Terminated data: ${initialMessage.data}');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _handleNavigation(initialMessage.data);
-      });
-    } else {
-      debugPrint('[FCM] No initial message (app opened normally)');
-    }
-
-    // Foreground state — app is open and visible
-    _foregroundSub = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('[FCM_FG] ═══════════════════════════════════════');
-      debugPrint('[FCM_FG] Foreground message received!');
-      debugPrint('[FCM_FG] type=${message.data['type']}');
-      debugPrint('[FCM_FG] job_id=${message.data['job_id']}');
-      debugPrint('[FCM_FG] All data keys: ${message.data.keys.toList()}');
-      debugPrint('[FCM_FG] Notification: ${message.notification?.title}');
-      debugPrint('[FCM_FG] ═══════════════════════════════════════');
-      
-      final type = message.data['type'];
-      
-      // ─── Dispatch System FCM Handlers ─────────────────
-      if (type == 'JOB_OFFER' || type == 'job_offer') {
-        // Worker received a job offer → show full notification + navigate
-        _showLocalNotification(message);
-        _handleNavigation(message.data);
-        return;
-      }
-      if (type == 'job_accepted' || type == 'WORKER_ASSIGNED') {
-        emitDispatchEvent(message.data);
-        _showToast("Worker found! On the way.");
-        _handleNavigation(message.data);
-        return;
-      }
-      if (type == 'JOB_TAKEN' || type == 'job_offer_withdrawn') {
-        // Offer cancelled or taken → dismiss screen
-        emitDispatchEvent(message.data);
-        return;
-      }
-      if (type == 'JOB_TIMEOUT' || type == 'rejected_all') {
-        // Dispatch timeout / all rejected → no workers found
-        _showToast("No workers available nearby right now.");
-        emitDispatchEvent(message.data);
-        return;
-      }
-
-      // ─── Existing FCM Handlers (unchanged) ────────────
-      if (type == 'worker_arrived') {
-        _showToast("Your worker is almost here");
-        return;
-      }
-      if (type == 'payment_received') {
-        final amount = message.data['amount'] ?? '0';
-        _showToast("₹$amount added to your earnings");
-        return;
-      }
-      if (type == 'scheduled_confirmed') {
-        final service = message.data['service'] ?? 'service';
-        final time = message.data['time'] ?? '';
-        _showToast("Your $service job is confirmed for $time");
-        return;
-      }
-
-      // Otherwise show local notification
-      _showLocalNotification(message);
-    });
-
-    // Background state (App in background, user taps notification)
-    _openedSub = FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('[FCM_BG_TAP] Notification tapped from background: type=${message.data['type']}');
-      debugPrint('[FCM_BG_TAP] Data: ${message.data}');
-      _handleNavigation(message.data);
-    });
   }
 
   Future<void> dispose() async {
