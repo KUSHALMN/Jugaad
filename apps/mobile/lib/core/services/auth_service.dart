@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import '../config/supabase_config.dart';
+import '../network/dio_client.dart';
 import 'api_service.dart';
 
 /// Production-ready Firebase auth service.
@@ -249,7 +250,7 @@ class AuthService {
       await result.user!.updateDisplayName(name.trim());
       await result.user!.reload();
       
-      final updatedUser = _auth.currentUser!;
+      final updatedUser = _auth.currentUser ?? result.user!;
       await _ensureUserDoc(updatedUser, explicitName: name.trim());
       return updatedUser;
     } on FirebaseAuthException catch (e) {
@@ -304,6 +305,9 @@ class AuthService {
       await _googleSignIn.signOut();
     } catch (_) {}
     _userRole = null;
+    try {
+      DioClient.invalidateCache();
+    } catch (_) {}
     await _auth.signOut();
   }
 
