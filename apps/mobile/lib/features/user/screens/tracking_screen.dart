@@ -280,6 +280,29 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
 
   Future<void> _declineSparePart(String partId) async {
     setState(() => _isActioningSparePart = true);
+
+    // Handle demo/sample item interaction gracefully without breaking real DB
+    if (partId.startsWith('demo-')) {
+      setState(() {
+        final idx = _spareParts.indexWhere((p) => p['id'] == partId);
+        if (idx != -1) {
+          _spareParts[idx]['status'] = 'rejected';
+          _pendingSparePart = null;
+        }
+      });
+      JugaadHaptics.selection();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Spare part reimbursement request declined.'),
+            backgroundColor: UserAppTheme.urgentRed,
+          ),
+        );
+      }
+      setState(() => _isActioningSparePart = false);
+      return;
+    }
+
     try {
       await SupabaseConfig.client.from('spare_parts').update({
         'status': 'rejected',
@@ -1321,7 +1344,12 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _isActioningSparePart ? null : () => _declineSparePart(_pendingSparePart!['id'] as String),
+                  onPressed: _isActioningSparePart ? null : () {
+                    final partId = _pendingSparePart?['id']?.toString() ?? '';
+                    if (partId.isNotEmpty) {
+                      _declineSparePart(partId);
+                    }
+                  },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: UserAppTheme.urgentRed),
                     foregroundColor: UserAppTheme.urgentRed,
@@ -1335,7 +1363,12 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
               Expanded(
                 flex: 2,
                 child: ElevatedButton(
-                  onPressed: _isActioningSparePart ? null : () => _approveSparePart(_pendingSparePart!['id'] as String),
+                  onPressed: _isActioningSparePart ? null : () {
+                    final partId = _pendingSparePart?['id']?.toString() ?? '';
+                    if (partId.isNotEmpty) {
+                      _approveSparePart(partId);
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF059669),
                     foregroundColor: Colors.white,
