@@ -28,12 +28,22 @@ class NotificationService {
 
   /// Stream controller for dispatch events that screens can listen to.
   /// Used by IncomingRequestScreen to auto-dismiss when JOB_TAKEN arrives.
-  final StreamController<Map<String, dynamic>> _dispatchEvents =
+  StreamController<Map<String, dynamic>> _dispatchEvents =
       StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get dispatchEvents => _dispatchEvents.stream;
 
+  /// Emits a dispatch event safely, guarding against closed controller race conditions.
+  void emitDispatchEvent(Map<String, dynamic> data) {
+    if (!_dispatchEvents.isClosed) {
+      _dispatchEvents.add(data);
+    }
+  }
+
   Future<void> init(GlobalKey<NavigatorState> navKey) async {
     navigatorKey = navKey;
+    if (_dispatchEvents.isClosed) {
+      _dispatchEvents = StreamController<Map<String, dynamic>>.broadcast();
+    }
     if (_isInitialized) return;
     _isInitialized = true;
     
@@ -96,20 +106,20 @@ class NotificationService {
         return;
       }
       if (type == 'job_accepted' || type == 'WORKER_ASSIGNED') {
-        _dispatchEvents.add(message.data);
+        emitDispatchEvent(message.data);
         _showToast("Worker found! On the way.");
         _handleNavigation(message.data);
         return;
       }
       if (type == 'JOB_TAKEN' || type == 'job_offer_withdrawn') {
         // Offer cancelled or taken → dismiss screen
-        _dispatchEvents.add(message.data);
+        emitDispatchEvent(message.data);
         return;
       }
       if (type == 'JOB_TIMEOUT' || type == 'rejected_all') {
         // Dispatch timeout / all rejected → no workers found
         _showToast("No workers available nearby right now.");
-        _dispatchEvents.add(message.data);
+        emitDispatchEvent(message.data);
         return;
       }
 
