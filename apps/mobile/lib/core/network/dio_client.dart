@@ -294,7 +294,14 @@ class _RetryInterceptor extends Interceptor {
         ? err.error as ApiError
         : ApiError.fromDioException(err);
 
-    if (!apiError.isRetryable) {
+    if (!apiError.isRetryable || err.type == DioExceptionType.cancel) {
+      return handler.next(err);
+    }
+
+    // Do not attempt to retry stream-based or non-replayable multi-part payloads
+    final requestData = err.requestOptions.data;
+    if (requestData is Stream || requestData is FormData) {
+      debugPrint('[DIO/RETRY] Skipping retry for non-replayable stream/FormData on ${err.requestOptions.path}');
       return handler.next(err);
     }
 
