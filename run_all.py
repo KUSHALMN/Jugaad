@@ -48,10 +48,13 @@ def get_backend_python():
         os.path.join(BACKEND_DIR, ".venv", "Scripts", "python.exe"),
         os.path.join(ROOT_DIR, "new_venv", "Scripts", "python.exe"),
         os.path.join(BACKEND_DIR, "venv", "Scripts", "python.exe"),
+        os.path.join(BACKEND_DIR, ".venv", "bin", "python"),
+        os.path.join(ROOT_DIR, "new_venv", "bin", "python"),
+        os.path.join(BACKEND_DIR, "venv", "bin", "python"),
         sys.executable,
     ]
     for c in candidates:
-        if os.path.isabs(c) and os.path.exists(c):
+        if c and os.path.isabs(c) and os.path.exists(c):
             return c
     return sys.executable or "python"
 
