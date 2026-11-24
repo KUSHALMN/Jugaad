@@ -473,12 +473,17 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> with TickerProv
       } catch (_) {}
     }
     _acceptCountdown.reset();
+    _fallbackTimer?.cancel();
+    _fallbackCountTimer?.cancel();
     setState(() => _matchingState = MatchingState.searching);
     _startFallbackTimer();
   }
 
   Future<void> _cancelJob() async {
     print('[MATCHING] Cancelling job: ${widget.jobId}');
+    _fallbackTimer?.cancel();
+    _fallbackCountTimer?.cancel();
+    _pollFallbackTimer?.cancel();
     try {
       await ApiService().deleteJob(widget.jobId);
     } catch (e) {
