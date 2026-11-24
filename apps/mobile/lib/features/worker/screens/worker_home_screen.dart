@@ -492,7 +492,10 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
     _workerSub?.cancel();
     _activeBookingSub?.cancel();
     _recentBookingsSub?.cancel();
+    _particles.clear();
+    _confettiController.stop();
     _confettiController.dispose();
+    _radarPulseController.stop();
     _radarPulseController.dispose();
     super.dispose();
   }
