@@ -87,7 +87,7 @@ void main() {
           networkHits++;
           return 'electrician_data';
         },
-        onResult: (_, __) {},
+        onResult: (result, fromCache) {},
       );
 
       await Future.delayed(const Duration(milliseconds: 80));
