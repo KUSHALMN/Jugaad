@@ -24,7 +24,9 @@ import {
   Download,
   Activity,
   BatteryLow,
-  Wifi
+  Wifi,
+  MapPin,
+  Sparkles
 } from 'lucide-react';
 import { exportCustomersToCsv } from '../utils/csvExport';
 
@@ -36,6 +38,8 @@ const DEFAULT_DEMO_CUSTOMERS = [
     email: 'ramesh.gowda@gmail.com',
     role: 'employer',
     city: 'Mysuru',
+    last_location: 'Vijayanagar 2nd Stage, Mysuru',
+    behavior_pattern: 'Night Emergency • Low-Battery Express',
     created_at: '2026-09-15T10:30:00Z',
     battery_level: 11,
     is_low_battery: true,
@@ -69,6 +73,8 @@ const DEFAULT_DEMO_CUSTOMERS = [
     email: 'ananya.rao@outlook.com',
     role: 'employer',
     city: 'Bengaluru',
+    last_location: 'Indiranagar 100ft Rd, Bengaluru',
+    behavior_pattern: 'Weekend AC & Appliance Regular',
     created_at: '2026-09-20T14:15:00Z',
     battery_level: 78,
     is_low_battery: false,
@@ -100,6 +106,8 @@ const DEFAULT_DEMO_CUSTOMERS = [
     email: 'karthik.nayak@yahoo.com',
     role: 'worker',
     city: 'Mysuru',
+    last_location: 'Gokulam 3rd Stage, Mysuru',
+    behavior_pattern: 'High-Frequency Field Pro • Mobile Data',
     created_at: '2026-09-28T09:45:00Z',
     battery_level: 64,
     is_low_battery: false,
@@ -131,6 +139,8 @@ const DEFAULT_DEMO_CUSTOMERS = [
     email: 'divya.s@gmail.com',
     role: 'employer',
     city: 'Mysuru',
+    last_location: 'Kuvempunagar, Mysuru',
+    behavior_pattern: 'High Cancellation Risk • Price Comparator',
     created_at: '2026-10-02T16:20:00Z',
     battery_level: 42,
     is_low_battery: false,
@@ -229,12 +239,24 @@ export default function CustomersManager({ session }) {
             const cancelled = uJobs.filter((j) => (j.status || '').toLowerCase() === 'cancelled');
             const spent = completed.reduce((acc, j) => acc + Number(j.amount || 0) + Number(j.surcharge_amount || 0), 0);
             const totalB = uJobs.length;
+            const cancelRate = totalB > 0 ? Math.round((cancelled.length / totalB) * 1000) / 10 : 0;
+            const derivedPattern = u.behavior_pattern || (
+              cancelRate > 25
+                ? 'High Cancel Risk • Review Needed'
+                : totalB >= 3
+                ? 'Frequent Repeat Booker'
+                : u.is_low_battery
+                ? 'Battery-Saver Express User'
+                : 'Steady Local User'
+            );
             return {
               ...u,
+              last_location: u.last_location || u.city || (uJobs[0]?.address || 'Mysuru'),
+              behavior_pattern: derivedPattern,
               total_bookings: totalB,
               completed_bookings: completed.length,
               cancelled_bookings: cancelled.length,
-              cancellation_rate: totalB > 0 ? Math.round((cancelled.length / totalB) * 1000) / 10 : 0,
+              cancellation_rate: cancelRate,
               total_spent: spent,
               recent_jobs: uJobs.slice(0, 5),
               status: u.is_suspended ? 'suspended' : 'active',
@@ -610,6 +632,18 @@ export default function CustomersManager({ session }) {
 
                       <td className="py-3.5 px-4">
                         <div className="space-y-1 text-xs">
+                          <div className="flex items-center gap-1 text-zinc-700 font-medium">
+                            <MapPin className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                            <span className="truncate max-w-[190px]">
+                              {user.last_location || user.city || 'Mysuru'}
+                            </span>
+                          </div>
+                          {user.behavior_pattern && (
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-[10px] font-semibold">
+                              <Sparkles className="w-2.5 h-2.5 flex-shrink-0" />
+                              <span className="truncate max-w-[190px]">{user.behavior_pattern}</span>
+                            </div>
+                          )}
                           <div className="flex flex-wrap items-center gap-1">
                             {user.last_booked_skill && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium capitalize">
@@ -810,6 +844,19 @@ export default function CustomersManager({ session }) {
               <div className="flex justify-between py-1.5 border-b border-zinc-100">
                 <span className="text-zinc-400">Member Since:</span>
                 <span className="font-medium">{selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : 'Unknown'}</span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-zinc-100">
+                <span className="text-zinc-400">Location:</span>
+                <span className="font-medium text-zinc-900">
+                  {selectedUser.last_location || selectedUser.city || 'Mysuru'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-1.5 border-b border-zinc-100">
+                <span className="text-zinc-400">Behavior Pattern:</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-[11px] font-semibold">
+                  <Sparkles className="w-3 h-3" />
+                  {selectedUser.behavior_pattern || 'Steady Local User'}
+                </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-zinc-100">
                 <span className="text-zinc-400">Device & Network Context:</span>

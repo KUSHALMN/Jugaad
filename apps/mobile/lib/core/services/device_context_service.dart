@@ -50,6 +50,26 @@ class DeviceContextService extends ChangeNotifier {
   bool get isOffline => _isOffline;
   String get networkType => _networkType;
   String get devicePlatform => kIsWeb ? 'Web' : defaultTargetPlatform.name;
+
+  /// Derives a concise behavioral pattern label from in-app & device signals.
+  String get behaviorPattern {
+    if (isLowBattery && isNightTime) {
+      return 'Night Emergency • Low-Battery Express';
+    }
+    if (isLowBattery) {
+      return 'Battery-Conscious • 1-Tap Express';
+    }
+    if (isSlowOrMeteredNetwork && _recentSearches.isNotEmpty) {
+      return 'On-the-Go Mobile Searcher (${_recentSearches.first})';
+    }
+    if (_lastBookedSkill != null) {
+      return 'Repeat ${_lastBookedSkill!.replaceAll('_', ' ')} Booker';
+    }
+    if (_recentSearches.isNotEmpty) {
+      return 'Active Explorer (${_recentSearches.first})';
+    }
+    return isNightTime ? 'Late-Night Browser' : 'Standard Daytime User';
+  }
   List<String> get recentSearches => List.unmodifiable(_recentSearches);
   List<Map<String, dynamic>> get activityLog => List.unmodifiable(_activityLog);
   String? get lastBookedSkill => _lastBookedSkill;
@@ -180,6 +200,7 @@ class DeviceContextService extends ChangeNotifier {
         'recent_searches': _recentSearches,
         'last_booked_skill': _lastBookedSkill,
         'has_trusted_contact': hasTrustedContact,
+        'behavior_pattern': behaviorPattern,
         'activity_log': _activityLog,
         'last_active_at': DateTime.now().toIso8601String(),
       }).eq('id', uid);

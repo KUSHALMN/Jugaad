@@ -757,6 +757,7 @@ def list_users_for_admin(
                 "email": u.get("email") or "",
                 "role": u.get("role") or "employer",
                 "city": u.get("city") or "",
+                "last_location": u.get("last_location") or u.get("city") or "",
                 "created_at": u.get("created_at"),
                 "last_active_at": u.get("last_active_at") or u.get("updated_at"),
                 "battery_level": u.get("battery_level"),
@@ -767,6 +768,12 @@ def list_users_for_admin(
                 "recent_searches": u.get("recent_searches") or [],
                 "last_booked_skill": u.get("last_booked_skill"),
                 "has_trusted_contact": bool(u.get("has_trusted_contact")),
+                "behavior_pattern": u.get("behavior_pattern") or (
+                    "High Cancel Risk • Review Needed" if canc_rate > 25
+                    else ("Frequent Repeat Booker" if total_b >= 3
+                          else ("Battery-Saver Express User" if u.get("is_low_battery")
+                                else "Steady Local User"))
+                ),
                 "activity_log": u.get("activity_log") or [],
                 "recent_jobs": recent_jobs_map.get(str(uid), []),
                 "total_bookings": total_b,
