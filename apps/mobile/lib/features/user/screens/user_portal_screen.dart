@@ -161,7 +161,17 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
             elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0F172A), size: 20),
-              onPressed: () => Navigator.maybePop(context),
+              onPressed: () {
+                try {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/user/home');
+                  }
+                } catch (_) {
+                  Navigator.maybePop(context);
+                }
+              },
             ),
             title: Text(
               'User Account',
