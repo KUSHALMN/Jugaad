@@ -68,7 +68,7 @@ void main() {
       expect(find.byIcon(Icons.shower_rounded), findsOneWidget);
     });
 
-    testWidgets('tapping an issue card opens the diagnosis bottom sheet', (tester) async {
+    testWidgets('tapping an issue card opens full-screen blurred video player without step text', (tester) async {
       await tester.pumpWidget(buildTestableWidget(const JugaadStoriesTray()));
       await tester.pumpAndSettle();
 
@@ -76,10 +76,11 @@ void main() {
       await tester.tap(find.text('AC'));
       await tester.pumpAndSettle();
 
-      // Bottom sheet should open with 3-step diagnosis guide
-      expect(find.text('30-SECOND QUICK DIAGNOSIS GUIDE'), findsOneWidget);
-      expect(find.textContaining('Turn off the AC indoor unit immediately'), findsOneWidget);
-      expect(find.textContaining('15-Min Doorstep Guarantee'), findsOneWidget);
+      // Full-screen blurred player opens without text step instructions
+      expect(find.text('30-SECOND QUICK DIAGNOSIS GUIDE'), findsNothing);
+      expect(find.textContaining('Turn off the AC indoor unit immediately'), findsNothing);
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
       expect(find.textContaining('Book Verified Technician (₹299)'), findsOneWidget);
     });
 

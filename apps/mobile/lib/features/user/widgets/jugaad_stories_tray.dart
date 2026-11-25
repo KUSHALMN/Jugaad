@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -170,209 +171,23 @@ class JugaadStoriesTray extends StatelessWidget {
   void _showDiagnosisModal(BuildContext context, StoryDiagnosisItem item) {
     HapticFeedback.mediumImpact();
 
-    showModalBottomSheet(
+    showGeneralDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(ctx).size.height * 0.88,
-        ),
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Color(0xFF0F172A),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x66000000),
-              blurRadius: 32,
-              offset: Offset(0, -8),
-            ),
-          ],
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF334155),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [item.gradientStart, item.gradientEnd],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(item.emoji, style: const TextStyle(fontSize: 22)),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            item.title,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF334155),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              item.duration,
-                              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.category,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: const Color(0xFF38BDF8),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _DiagnosisVideoPlayer(
-              videoAssetPath: item.videoAssetPath,
-              accentColor: item.gradientStart,
-            ),
-            const SizedBox(height: 18),
-            Text(
-              '30-SECOND QUICK DIAGNOSIS GUIDE',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF94A3B8),
-                letterSpacing: 0.8,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ...item.steps.asMap().entries.map((entry) {
-              final idx = entry.key + 1;
-              final text = entry.value;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF1E293B),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '$idx',
-                        style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 11, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        text,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          color: const Color(0xFFE2E8F0),
-                          height: 1.4,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF334155)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '⚡ 15-Min Doorstep Guarantee • Insured up to ₹25,000',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        color: const Color(0xFF6EE7B7),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  HapticFeedback.mediumImpact();
-                  Navigator.pop(ctx);
-                  context.push('/user/worker-search?service=${Uri.encodeComponent(item.category)}');
-                },
-                icon: const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
-                label: Text(
-                  'Book Verified Technician (₹${item.estimatedFare.toInt()})',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: item.gradientStart,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 0,
-                ),
-              ),
-            ),
-          ],
-        ),
-        ),
-      ),
+      barrierDismissible: true,
+      barrierLabel: 'Close video diagnosis',
+      barrierColor: Colors.black.withValues(alpha: 0.72),
+      transitionDuration: const Duration(milliseconds: 260),
+      pageBuilder: (ctx, anim1, anim2) => _FullScreenVideoDiagnosisPlayer(item: item),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        final curved = CurvedAnimation(parent: anim1, curve: Curves.easeOutCubic);
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.94, end: 1.0).animate(curved),
+            child: child,
+          ),
+        );
+      },
     );
   }
 
@@ -891,20 +706,16 @@ class JugaadStoriesTray extends StatelessWidget {
   }
 }
 
-class _DiagnosisVideoPlayer extends StatefulWidget {
-  final String videoAssetPath;
-  final Color accentColor;
+class _FullScreenVideoDiagnosisPlayer extends StatefulWidget {
+  final StoryDiagnosisItem item;
 
-  const _DiagnosisVideoPlayer({
-    required this.videoAssetPath,
-    required this.accentColor,
-  });
+  const _FullScreenVideoDiagnosisPlayer({required this.item});
 
   @override
-  State<_DiagnosisVideoPlayer> createState() => _DiagnosisVideoPlayerState();
+  State<_FullScreenVideoDiagnosisPlayer> createState() => _FullScreenVideoDiagnosisPlayerState();
 }
 
-class _DiagnosisVideoPlayerState extends State<_DiagnosisVideoPlayer> {
+class _FullScreenVideoDiagnosisPlayerState extends State<_FullScreenVideoDiagnosisPlayer> {
   VideoPlayerController? _controller;
   bool _isInitialized = false;
   bool _hasError = false;
@@ -918,7 +729,7 @@ class _DiagnosisVideoPlayerState extends State<_DiagnosisVideoPlayer> {
 
   Future<void> _initVideo() async {
     try {
-      final controller = VideoPlayerController.asset(widget.videoAssetPath);
+      final controller = VideoPlayerController.asset(widget.item.videoAssetPath);
       _controller = controller;
       await controller.initialize();
       await controller.setLooping(true);
@@ -968,129 +779,330 @@ class _DiagnosisVideoPlayerState extends State<_DiagnosisVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        width: double.infinity,
-        height: 210,
-        decoration: BoxDecoration(
-          color: const Color(0xFF020617),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFF334155)),
-        ),
-        child: _hasError
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.play_circle_outline_rounded, color: widget.accentColor, size: 42),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Local Video Guide: ${widget.videoAssetPath.split('/').last}',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF94A3B8),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+    final item = widget.item;
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width > 600;
+
+    return Material(
+      type: MaterialType.transparency,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Full-Screen Background Blur + Ambient Category Glow
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.center,
+                  radius: 1.1,
+                  colors: [
+                    item.gradientStart.withValues(alpha: 0.28),
+                    Colors.black.withValues(alpha: 0.82),
                   ],
                 ),
-              )
-            : !_isInitialized || _controller == null
-                ? Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: widget.accentColor,
-                    ),
-                  )
-                : Stack(
-                    alignment: Alignment.center,
+              ),
+            ),
+          ),
+
+          // Centered Full-Height Reel Frame (Full Screen on Mobile, Sleek Portrait Reel on Desktop)
+          SafeArea(
+            child: Center(
+              child: Container(
+                width: isWide ? 440 : size.width,
+                height: isWide ? size.height * 0.90 : size.height,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF020617),
+                  borderRadius: BorderRadius.circular(isWide ? 28 : 0),
+                  border: isWide
+                      ? Border.all(color: Colors.white.withValues(alpha: 0.16), width: 1.2)
+                      : null,
+                  boxShadow: isWide
+                      ? [
+                          BoxShadow(
+                            color: item.gradientStart.withValues(alpha: 0.35),
+                            blurRadius: 48,
+                            spreadRadius: 2,
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.65),
+                            blurRadius: 32,
+                            offset: const Offset(0, 12),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(isWide ? 28 : 0),
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      GestureDetector(
-                        onTap: _togglePlayPause,
-                        child: Center(
-                          child: AspectRatio(
-                            aspectRatio: _controller!.value.aspectRatio > 0
-                                ? _controller!.value.aspectRatio
-                                : 16 / 9,
-                            child: VideoPlayer(_controller!),
-                          ),
-                        ),
-                      ),
-                      if (!_controller!.value.isPlaying)
-                        GestureDetector(
-                          onTap: _togglePlayPause,
-                          child: Container(
-                            width: 54,
-                            height: 54,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.65),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 32),
-                          ),
-                        ),
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                      // Video Canvas (fills frame edge-to-edge cleanly)
+                      if (_hasError)
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.videocam_rounded, color: Color(0xFF38BDF8), size: 13),
-                              const SizedBox(width: 4),
+                              Icon(Icons.play_circle_outline_rounded, color: item.gradientStart, size: 56),
+                              const SizedBox(height: 12),
                               Text(
-                                '30s GUIDE',
+                                item.title,
                                 style: GoogleFonts.plusJakartaSans(
                                   color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 10,
-                        right: 10,
-                        child: GestureDetector(
-                          onTap: _toggleMute,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.6),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              _isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                              color: Colors.white,
-                              size: 16,
+                        )
+                      else if (!_isInitialized || _controller == null)
+                        Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            color: item.gradientStart,
+                          ),
+                        )
+                      else
+                        GestureDetector(
+                          onTap: _togglePlayPause,
+                          child: FittedBox(
+                            fit: BoxFit.cover,
+                            clipBehavior: Clip.hardEdge,
+                            child: SizedBox(
+                              width: _controller!.value.size.width > 0
+                                  ? _controller!.value.size.width
+                                  : 1080,
+                              height: _controller!.value.size.height > 0
+                                  ? _controller!.value.size.height
+                                  : 1920,
+                              child: VideoPlayer(_controller!),
                             ),
                           ),
                         ),
+
+                      // Top & Bottom Gradient Scrims for Contrast
+                      IgnorePointer(
+                        child: Column(
+                          children: [
+                            Container(
+                              height: 120,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.72),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              height: 170,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.85),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: VideoProgressIndicator(
-                          _controller!,
-                          allowScrubbing: true,
-                          colors: VideoProgressColors(
-                            playedColor: widget.accentColor,
-                            bufferedColor: const Color(0xFF475569),
-                            backgroundColor: const Color(0xFF1E293B),
+
+                      // Center Pause Play Button Overlay
+                      if (_isInitialized && _controller != null && !_controller!.value.isPlaying)
+                        Center(
+                          child: GestureDetector(
+                            onTap: _togglePlayPause,
+                            child: Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.55),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.5),
+                              ),
+                              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 42),
+                            ),
                           ),
+                        ),
+
+                      // Floating Glassmorphic Top Bar
+                      Positioned(
+                        top: 14,
+                        left: 14,
+                        right: 14,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [item.gradientStart, item.gradientEnd],
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Icon(item.icon, color: Colors.white, size: 20),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          item.title,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.18),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          item.duration,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Text(
+                                    item.category,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11.5,
+                                      color: Colors.white.withValues(alpha: 0.8),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: _toggleMute,
+                              child: Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+                                ),
+                                child: Icon(
+                                  _isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.pop(context);
+                              },
+                              child: Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+                                ),
+                                child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Floating Bottom Scrubber + Book Verified Technician CTA
+                      Positioned(
+                        left: 16,
+                        right: 16,
+                        bottom: 18,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_isInitialized && _controller != null)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 14),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: VideoProgressIndicator(
+                                    _controller!,
+                                    allowScrubbing: true,
+                                    padding: EdgeInsets.zero,
+                                    colors: VideoProgressColors(
+                                      playedColor: item.gradientStart,
+                                      bufferedColor: Colors.white.withValues(alpha: 0.35),
+                                      backgroundColor: Colors.white.withValues(alpha: 0.16),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  HapticFeedback.mediumImpact();
+                                  Navigator.pop(context);
+                                  context.push('/user/worker-search?service=${Uri.encodeComponent(item.category)}');
+                                },
+                                icon: const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
+                                label: Text(
+                                  'Book Verified Technician (₹${item.estimatedFare.toInt()})',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14.5,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: item.gradientStart,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  elevation: 4,
+                                  shadowColor: item.gradientStart.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
