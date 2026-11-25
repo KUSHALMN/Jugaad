@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.8.0] - 2026-11-25
+### Added
+- **User Account Profile Redesign**: Upgraded `UserPortalScreen` with soft-mint hero card, Mysuru cityscape watermark, avatar camera edit badge, `Edit Profile` pill, and `Total Bookings` / `Your Rating` KPI cards.
+- **Rich Portal Selector Cards**: Replaced flat segmented bar with interactive dual-card switcher (`User Portal` active emerald card + `Worker Portal` card).
+- **Actionable My Bookings Empty State**: Added `View all →` header link and empty-state card featuring `Find & Book a Service` CTA button.
+- **Automated Widget Tests**: Added `user_profile_redesign_test.dart` covering profile hero KPIs, portal switching callback, and bookings empty-state CTA.
+
+---
+
 ## [1.7.0] - 2026-11-25
 ### Added
 - **Jugaad Experts Directory Redesign**: Elevated `WorkerListScreen` with dual-tone brand header, live KPI trust pills (`120+ Verified Workers`, `4.8 ★ Avg. Rating`, `24/7 Service Available`), and responsive mobile/desktop layout.
