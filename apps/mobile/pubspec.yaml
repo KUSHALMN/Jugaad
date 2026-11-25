@@ -75,6 +75,7 @@ dependencies:
   speech_to_text: ^7.4.0
   camera: ^0.12.1
   video_player: ^2.14.1
+  battery_plus: ^7.1.2
 
 dev_dependencies:
   flutter_test:

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/services/device_context_service.dart';
 import '../screens/post_job/post_job_state.dart';
 import 'rate_card_calculator_sheet.dart';
 
@@ -311,13 +312,22 @@ class HomeCategoriesGrid extends ConsumerWidget {
                             ? (isDesktop ? 12.5 : 11.5)
                             : (isSmallMobile ? 10.2 : 11.5);
 
-                        return Wrap(
-                          spacing: spacing,
-                          runSpacing: runSpacing,
-                          alignment: showSingleRow ? WrapAlignment.spaceBetween : WrapAlignment.center,
-                          children: categories.map((cat) {
-                            return SizedBox(
-                              width: itemWidth,
+                        return ListenableBuilder(
+                          listenable: DeviceContextService.instance,
+                          builder: (context, _) {
+                            final ctx = DeviceContextService.instance;
+                            final ranked = List<CategoryGridItem>.from(categories)
+                              ..sort((a, b) =>
+                                  ctx.scoreSkill(b.id).compareTo(ctx.scoreSkill(a.id)));
+                            return Wrap(
+                              spacing: spacing,
+                              runSpacing: runSpacing,
+                              alignment: showSingleRow
+                                  ? WrapAlignment.spaceBetween
+                                  : WrapAlignment.center,
+                              children: ranked.map((cat) {
+                                return SizedBox(
+                                  width: itemWidth,
                               child: _CategoryTile(
                                 category: cat,
                                 cardHeight: cardHeight,
@@ -336,7 +346,9 @@ class HomeCategoriesGrid extends ConsumerWidget {
                                 },
                               ),
                             );
-                          }).toList(),
+                              }).toList(),
+                            );
+                          },
                         );
                       },
                     ),

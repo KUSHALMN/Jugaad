@@ -13,6 +13,7 @@ import 'package:jugaad_mvp/features/user/screens/user_home_screen.dart';
 import 'package:jugaad_mvp/core/theme/user_app_theme.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
 import 'package:jugaad_mvp/core/services/api_service.dart';
+import 'package:jugaad_mvp/core/services/device_context_service.dart';
 import 'package:jugaad_mvp/core/utils/kalman_filter.dart';
 import 'package:jugaad_mvp/core/utils/smooth_location_interpolator.dart';
 import '../widgets/landmark_route_tracker.dart';
@@ -566,6 +567,16 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
   Future<void> _shareLiveVisitOnWhatsApp() async {
     final workerName = _jobData?['worker_name'] as String? ?? 'Verified Professional';
     final service = _jobData?['skill'] as String? ?? 'Home Maintenance';
+    final ctx = DeviceContextService.instance;
+    if (ctx.hasTrustedContact) {
+      final launched = await ctx.shareTrackingWithTrustedContact(
+        jobId: widget.jobId,
+        workerName: workerName,
+        serviceName: service,
+        useWhatsApp: true,
+      );
+      if (launched) return;
+    }
     final trackingUrl = 'https://jugaad.app/track/${widget.jobId}';
     final shareText = '🛡️ *Jugaad Safety Alert*: $workerName (4.9★, Police Verified Aadhaar KYC) is currently servicing $service at my home.\n\n'
         '📍 *Live Status*: In-Progress\n'
@@ -1510,50 +1521,73 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
 
   // ─── SHARE LIVE VISIT WITH FAMILY CARD ──────────────────────────
   Widget _buildFamilySafetyCard() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: UserAppTheme.cardBorderRadius,
-        border: Border.all(color: const Color(0xFF86EFAC), width: 1.2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return ListenableBuilder(
+      listenable: DeviceContextService.instance,
+      builder: (context, _) {
+        final ctx = DeviceContextService.instance;
+        final shareLabel = ctx.hasTrustedContact
+            ? 'Notify ${ctx.trustedContactName}'
+            : 'Share on WhatsApp';
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FDF4),
+            borderRadius: UserAppTheme.cardBorderRadius,
+            border: Border.all(color: const Color(0xFF86EFAC), width: 1.2),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF16A34A),
-                  borderRadius: BorderRadius.circular(8),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF16A34A),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.family_restroom_rounded, color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Share Live Visit with Family',
+                      style: UserAppTheme.heading(size: 14, color: const Color(0xFF166534), weight: FontWeight.bold),
+                    ),
+                  ),
+                  const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 18),
+                ],
+              ),
+              if (ctx.isLowBattery) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: Text(
+                    'Battery ${ctx.batteryLevel}% • GPS polling reduced to ${ctx.gpsPollingInterval.inSeconds}s to save power',
+                    style: UserAppTheme.body(size: 11, color: const Color(0xFF92400E)),
+                  ),
                 ),
-                child: const Icon(Icons.family_restroom_rounded, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 8),
+              ],
+              const SizedBox(height: 6),
               Text(
-                'Share Live Visit with Family',
-                style: UserAppTheme.heading(size: 14, color: const Color(0xFF166534), weight: FontWeight.bold),
+                'Keep family reassured. Sends live tracking & verified technician Aadhaar KYC to WhatsApp.',
+                style: UserAppTheme.body(size: 12, color: const Color(0xFF14532D)),
               ),
-              const Spacer(),
-              const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 18),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Keep family reassured. Sends live tracking & verified technician Aadhaar KYC to WhatsApp.',
-            style: UserAppTheme.body(size: 12, color: const Color(0xFF14532D)),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: ElevatedButton.icon(
-                  onPressed: _shareLiveVisitOnWhatsApp,
-                  icon: const Icon(Icons.share_rounded, size: 16),
-                  label: const Text('Share on WhatsApp'),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: ElevatedButton.icon(
+                      onPressed: _shareLiveVisitOnWhatsApp,
+                      icon: const Icon(Icons.share_rounded, size: 16),
+                      label: Text(shareLabel),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF25D366),
                     foregroundColor: Colors.white,
@@ -1581,6 +1615,8 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> with WidgetsBin
           ),
         ],
       ),
+    );
+      },
     );
   }
 

@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/device_context_service.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/config/services_list.dart';
 import '../../../core/providers/services_provider.dart';
@@ -162,6 +163,7 @@ class _InteractiveHomeSearchBarState extends ConsumerState<_InteractiveHomeSearc
   @override
   void initState() {
     super.initState();
+    DeviceContextService.instance.initialize();
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted && _controller.text.isEmpty) {
         setState(() {
@@ -183,6 +185,7 @@ class _InteractiveHomeSearchBarState extends ConsumerState<_InteractiveHomeSearc
     HapticFeedback.lightImpact();
     final query = _controller.text.trim();
     if (query.isNotEmpty) {
+      DeviceContextService.instance.recordSearch(query);
       context.push('/user/worker-search?service=${Uri.encodeComponent(query)}');
     } else {
       context.push('/user/worker-search');
@@ -325,6 +328,7 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
   @override
   void initState() {
     super.initState();
+    DeviceContextService.instance.initialize();
 
     // Bell shake anim: 15 degrees shake left-right 3 times
     _bellShakeController = AnimationController(
@@ -906,6 +910,103 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                                     ],
                                   ),
                                 ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // --- BATTERY-AWARE EXPRESS MODE / LIGHTWEIGHT NETWORK BANNER
+                  SliverToBoxAdapter(
+                    child: ListenableBuilder(
+                      listenable: DeviceContextService.instance,
+                      builder: (context, _) {
+                        final ctx = DeviceContextService.instance;
+                        if (!ctx.isLowBattery && !ctx.isSlowOrMeteredNetwork) {
+                          return const SizedBox.shrink();
+                        }
+                        final isBattery = ctx.isLowBattery;
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(20.0, 0.0, 20.0, 12.0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isBattery
+                                  ? const Color(0xFFFFFBEB)
+                                  : const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isBattery
+                                    ? const Color(0xFFFDE68A)
+                                    : const Color(0xFFBFDBFE),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isBattery
+                                      ? Icons.battery_alert_rounded
+                                      : Icons.network_check_rounded,
+                                  color: isBattery
+                                      ? const Color(0xFFD97706)
+                                      : const Color(0xFF2563EB),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isBattery
+                                            ? 'Battery Express Mode (${ctx.batteryLevel}%)'
+                                            : 'Lightweight Mode • Mobile Network',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: const Color(0xFF0F172A),
+                                        ),
+                                      ),
+                                      Text(
+                                        isBattery
+                                            ? 'Heavy media paused • 1-Tap Express Booking ready'
+                                            : 'Video preloads paused to keep booking fast',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF475569),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isBattery) ...[
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: () {
+                                      HapticFeedback.mediumImpact();
+                                      context.push('/user/book?urgency=emergency');
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF16A34A),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '1-Tap Book',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),

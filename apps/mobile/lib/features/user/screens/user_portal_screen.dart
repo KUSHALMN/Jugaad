@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:jugaad_mvp/core/config/supabase_config.dart';
+import 'package:jugaad_mvp/core/services/device_context_service.dart';
 import 'package:jugaad_mvp/core/theme/user_app_theme.dart';
 import 'package:jugaad_mvp/shared/widgets/jugaad_card.dart';
 import 'package:shimmer/shimmer.dart';
@@ -969,6 +970,21 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
                           'Help & support',
                           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen())),
                         ),
+                        ListenableBuilder(
+                          listenable: DeviceContextService.instance,
+                          builder: (context, _) {
+                            final ctx = DeviceContextService.instance;
+                            final subtitle = ctx.hasTrustedContact
+                                ? '${ctx.trustedContactName} • ${ctx.trustedContactPhone}'
+                                : 'Add family contact for SOS & low-battery';
+                            return _buildMenuListItem(
+                              context,
+                              Icons.contact_emergency_outlined,
+                              'Trusted contact ($subtitle)',
+                              () => _showTrustedContactSheet(context),
+                            );
+                          },
+                        ),
                         _buildMenuListItem(
                           context,
                           Icons.shield_outlined,
@@ -1017,6 +1033,101 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _showTrustedContactSheet(BuildContext context) {
+    final ctx = DeviceContextService.instance;
+    final nameCtrl = TextEditingController(text: ctx.trustedContactName ?? '');
+    final phoneCtrl = TextEditingController(text: ctx.trustedContactPhone ?? '');
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          MediaQuery.of(sheetCtx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Trusted Emergency Contact',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Used only when you tap Share Live Visit during low battery or Night Emergency.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                color: const Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Contact Name (e.g. Mom, Brother)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: phoneCtrl,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone Number (+91...)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                if (ctx.hasTrustedContact)
+                  TextButton(
+                    onPressed: () async {
+                      await ctx.clearTrustedContact();
+                      if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+                    },
+                    child: const Text(
+                      'Remove',
+                      style: TextStyle(color: Color(0xFFDC2626)),
+                    ),
+                  ),
+                const Spacer(),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (phoneCtrl.text.trim().isEmpty) return;
+                    await ctx.saveTrustedContact(
+                      name: nameCtrl.text.trim().isEmpty
+                          ? 'Family'
+                          : nameCtrl.text.trim(),
+                      phone: phoneCtrl.text.trim(),
+                    );
+                    if (sheetCtx.mounted) Navigator.pop(sheetCtx);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF16A34A),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Save Contact'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
