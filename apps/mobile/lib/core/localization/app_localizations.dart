@@ -93,6 +93,12 @@ class AppTranslations {
   String get verifiedWorkersLabel => isKannada
       ? 'ಪರಿಶೀಲಿಸಿದ ತಂತ್ರಜ್ಞರು'
       : (isHindi ? 'सत्यापित कारीगर' : 'Verified Workers');
+  String get editProfileLabel => isKannada
+      ? 'ಪ್ರೊಫೈಲ್ ತಿದ್ದುಪಡಿ'
+      : (isHindi ? 'प्रोफ़ाइल संपादित करें' : 'Edit Profile');
+  String get findAndBookService => isKannada
+      ? 'ಸೇವೆ ಹುಡುಕಿ ಮತ್ತು ಬುಕ್ ಮಾಡಿ'
+      : (isHindi ? 'सेवा खोजें और बुक करें' : 'Find & Book a Service');
 
   // ── CATEGORIES ──
   String get electrician => isKannada ? 'ಎಲೆಕ್ಟ್ರಿಷಿಯನ್' : (isHindi ? 'इलेक्ट्रीशियन' : 'Electrician');
