@@ -97,5 +97,14 @@ void main() {
       expect(find.text('Record 30s Video'), findsOneWidget);
       expect(find.text('Upload Video'), findsOneWidget);
     });
+
+    test('each diagnosis story maps accurately to its local 30s MP4 video asset', () {
+      final map = {for (final s in JugaadStoriesTray.stories) s.id: s.videoAssetPath};
+      expect(map['ac_leak'], 'assets/videos/ac.mp4');
+      expect(map['fan_hum'], 'assets/videos/fan.mp4');
+      expect(map['tap_low'], 'assets/videos/plumber.mp4');
+      expect(map['mcb_trip'], 'assets/videos/mcb.mp4');
+      expect(map['geyser_cold'], 'assets/videos/gyser.mp4');
+    });
   });
 }

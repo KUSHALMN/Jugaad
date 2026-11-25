@@ -74,6 +74,7 @@ dependencies:
   slide_action: ^0.0.2
   speech_to_text: ^7.4.0
   camera: ^0.12.1
+  video_player: ^2.14.1
 
 dev_dependencies:
   flutter_test:
@@ -112,6 +113,7 @@ flutter:
     - assets/images/ghibli/
     - assets/lottie/
     - assets/sounds/
+    - assets/videos/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

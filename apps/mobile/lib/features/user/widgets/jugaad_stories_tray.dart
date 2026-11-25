@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:video_player/video_player.dart';
 
 class StoryDiagnosisItem {
   final String id;
@@ -11,6 +12,7 @@ class StoryDiagnosisItem {
   final String emoji;
   final IconData icon;
   final String duration;
+  final String videoAssetPath;
   final Color cardBg;
   final Color borderColor;
   final Color iconColor;
@@ -29,6 +31,7 @@ class StoryDiagnosisItem {
     required this.emoji,
     required this.icon,
     required this.duration,
+    required this.videoAssetPath,
     required this.cardBg,
     required this.borderColor,
     required this.iconColor,
@@ -55,6 +58,7 @@ class JugaadStoriesTray extends StatelessWidget {
       emoji: '❄️',
       icon: Icons.ac_unit_rounded,
       duration: '30s',
+      videoAssetPath: 'assets/videos/ac.mp4',
       cardBg: Color(0xFFF0F9FF),
       borderColor: Color(0xFFBAE6FD),
       iconColor: Color(0xFF0284C7),
@@ -77,6 +81,7 @@ class JugaadStoriesTray extends StatelessWidget {
       emoji: '⚡',
       icon: Icons.bolt_rounded,
       duration: '25s',
+      videoAssetPath: 'assets/videos/fan.mp4',
       cardBg: Color(0xFFFFFBEB),
       borderColor: Color(0xFFFDE68A),
       iconColor: Color(0xFFD97706),
@@ -99,6 +104,7 @@ class JugaadStoriesTray extends StatelessWidget {
       emoji: '💧',
       icon: Icons.water_drop_rounded,
       duration: '20s',
+      videoAssetPath: 'assets/videos/plumber.mp4',
       cardBg: Color(0xFFEFF6FF),
       borderColor: Color(0xFFBFDBFE),
       iconColor: Color(0xFF2563EB),
@@ -121,6 +127,7 @@ class JugaadStoriesTray extends StatelessWidget {
       emoji: '🔌',
       icon: Icons.power_rounded,
       duration: '35s',
+      videoAssetPath: 'assets/videos/mcb.mp4',
       cardBg: Color(0xFFFFF1F2),
       borderColor: Color(0xFFFECDD3),
       iconColor: Color(0xFFE11D48),
@@ -143,6 +150,7 @@ class JugaadStoriesTray extends StatelessWidget {
       emoji: '🚿',
       icon: Icons.shower_rounded,
       duration: '30s',
+      videoAssetPath: 'assets/videos/gyser.mp4',
       cardBg: Color(0xFFF0FDF4),
       borderColor: Color(0xFFBBF7D0),
       iconColor: Color(0xFF16A34A),
@@ -167,6 +175,9 @@ class JugaadStoriesTray extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(ctx).size.height * 0.88,
+        ),
         padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
           color: Color(0xFF0F172A),
@@ -179,7 +190,8 @@ class JugaadStoriesTray extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -253,7 +265,12 @@ class JugaadStoriesTray extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            _DiagnosisVideoPlayer(
+              videoAssetPath: item.videoAssetPath,
+              accentColor: item.gradientStart,
+            ),
+            const SizedBox(height: 18),
             Text(
               '30-SECOND QUICK DIAGNOSIS GUIDE',
               style: GoogleFonts.plusJakartaSans(
@@ -353,6 +370,7 @@ class JugaadStoriesTray extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -868,6 +886,211 @@ class JugaadStoriesTray extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DiagnosisVideoPlayer extends StatefulWidget {
+  final String videoAssetPath;
+  final Color accentColor;
+
+  const _DiagnosisVideoPlayer({
+    required this.videoAssetPath,
+    required this.accentColor,
+  });
+
+  @override
+  State<_DiagnosisVideoPlayer> createState() => _DiagnosisVideoPlayerState();
+}
+
+class _DiagnosisVideoPlayerState extends State<_DiagnosisVideoPlayer> {
+  VideoPlayerController? _controller;
+  bool _isInitialized = false;
+  bool _hasError = false;
+  bool _isMuted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initVideo();
+  }
+
+  Future<void> _initVideo() async {
+    try {
+      final controller = VideoPlayerController.asset(widget.videoAssetPath);
+      _controller = controller;
+      await controller.initialize();
+      await controller.setLooping(true);
+      await controller.play();
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _togglePlayPause() {
+    final controller = _controller;
+    if (controller == null || !_isInitialized) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      if (controller.value.isPlaying) {
+        controller.pause();
+      } else {
+        controller.play();
+      }
+    });
+  }
+
+  void _toggleMute() {
+    final controller = _controller;
+    if (controller == null || !_isInitialized) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _isMuted = !_isMuted;
+      controller.setVolume(_isMuted ? 0.0 : 1.0);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        height: 210,
+        decoration: BoxDecoration(
+          color: const Color(0xFF020617),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFF334155)),
+        ),
+        child: _hasError
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.play_circle_outline_rounded, color: widget.accentColor, size: 42),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Local Video Guide: ${widget.videoAssetPath.split('/').last}',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF94A3B8),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : !_isInitialized || _controller == null
+                ? Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: widget.accentColor,
+                    ),
+                  )
+                : Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: _togglePlayPause,
+                        child: Center(
+                          child: AspectRatio(
+                            aspectRatio: _controller!.value.aspectRatio > 0
+                                ? _controller!.value.aspectRatio
+                                : 16 / 9,
+                            child: VideoPlayer(_controller!),
+                          ),
+                        ),
+                      ),
+                      if (!_controller!.value.isPlaying)
+                        GestureDetector(
+                          onTap: _togglePlayPause,
+                          child: Container(
+                            width: 54,
+                            height: 54,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.65),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 32),
+                          ),
+                        ),
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.videocam_rounded, color: Color(0xFF38BDF8), size: 13),
+                              const SizedBox(width: 4),
+                              Text(
+                                '30s GUIDE',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: GestureDetector(
+                          onTap: _toggleMute,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: VideoProgressIndicator(
+                          _controller!,
+                          allowScrubbing: true,
+                          colors: VideoProgressColors(
+                            playedColor: widget.accentColor,
+                            bufferedColor: const Color(0xFF475569),
+                            backgroundColor: const Color(0xFF1E293B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
       ),
     );
   }
