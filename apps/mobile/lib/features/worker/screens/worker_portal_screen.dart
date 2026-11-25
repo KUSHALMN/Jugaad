@@ -319,12 +319,12 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
   }) {
     final bgGradient = activeOnlineStatus
         ? const LinearGradient(
-            colors: [Color(0xFF047857), Color(0xFF059669)],
+            colors: [Color(0xFFECFDF5), Color(0xFFD1FAE5)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           )
         : const LinearGradient(
-            colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+            colors: [Colors.white, Color(0xFFF8FAFC)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           );
@@ -333,13 +333,17 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
       decoration: BoxDecoration(
         gradient: bgGradient,
         borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: activeOnlineStatus ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
             color: activeOnlineStatus
-                ? const Color(0xFF059669).withValues(alpha: 0.35)
-                : Colors.black.withValues(alpha: 0.2),
+                ? const Color(0xFF16A34A).withValues(alpha: 0.12)
+                : Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -374,15 +378,15 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
                     height: 38,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: activeOnlineStatus ? const Color(0xFF10B981) : const Color(0xFF334155),
+                      color: activeOnlineStatus ? const Color(0xFF16A34A) : const Color(0xFFF1F5F9),
                       border: Border.all(
-                        color: activeOnlineStatus ? const Color(0xFFA7F3D0) : const Color(0xFF475569),
-                        width: 2.2,
+                        color: activeOnlineStatus ? const Color(0xFFA7F3D0) : const Color(0xFFCBD5E1),
+                        width: 2.0,
                       ),
                     ),
                     child: Icon(
                       activeOnlineStatus ? Icons.radar_rounded : Icons.nightlight_round,
-                      color: Colors.white,
+                      color: activeOnlineStatus ? Colors.white : const Color(0xFF475569),
                       size: 20,
                     ),
                   ),
@@ -400,7 +404,7 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
                         Text(
                           activeOnlineStatus ? 'ONLINE — READY FOR JOBS' : 'OFFLINE — DUTY PAUSED',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
+                            color: activeOnlineStatus ? const Color(0xFF065F46) : const Color(0xFF0F172A),
                             fontSize: 13.5,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.6,
@@ -414,9 +418,9 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
                           ? 'Broadcasting GPS • Priority dispatch active'
                           : 'Switch online to receive new client bookings',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white.withValues(alpha: 0.75),
+                        color: activeOnlineStatus ? const Color(0xFF047857) : const Color(0xFF64748B),
                         fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -426,7 +430,8 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
               // Cupertino Toggle Switch
               CupertinoSwitch(
                 value: activeOnlineStatus,
-                activeTrackColor: const Color(0xFF34D399),
+                activeTrackColor: const Color(0xFF16A34A),
+                inactiveTrackColor: const Color(0xFFCBD5E1),
                 onChanged: (val) async {
                   JugaadHaptics.medium();
                   setState(() {
