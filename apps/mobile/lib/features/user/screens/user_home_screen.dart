@@ -122,14 +122,14 @@ class _ScaleOnTapState extends State<ScaleOnTap> {
   }
 }
 
-class _RotatingSearchPlaceholder extends ConsumerStatefulWidget {
-  const _RotatingSearchPlaceholder();
+class _InteractiveHomeSearchBar extends ConsumerStatefulWidget {
+  const _InteractiveHomeSearchBar();
 
   @override
-  ConsumerState<_RotatingSearchPlaceholder> createState() => _RotatingSearchPlaceholderState();
+  ConsumerState<_InteractiveHomeSearchBar> createState() => _InteractiveHomeSearchBarState();
 }
 
-class _RotatingSearchPlaceholderState extends ConsumerState<_RotatingSearchPlaceholder> {
+class _InteractiveHomeSearchBarState extends ConsumerState<_InteractiveHomeSearchBar> {
   static const List<String> _englishHints = [
     "Search 'Electrician in 15 mins'...",
     "Search 'AC cleaning & filter repair'...",
@@ -154,6 +154,8 @@ class _RotatingSearchPlaceholderState extends ConsumerState<_RotatingSearchPlace
     "'आरओ वाटर' फ़िल्टर सर्विस...",
   ];
 
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   int _currentIndex = 0;
   Timer? _timer;
 
@@ -161,7 +163,7 @@ class _RotatingSearchPlaceholderState extends ConsumerState<_RotatingSearchPlace
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted) {
+      if (mounted && _controller.text.isEmpty) {
         setState(() {
           _currentIndex = (_currentIndex + 1) % 5;
         });
@@ -172,7 +174,19 @@ class _RotatingSearchPlaceholderState extends ConsumerState<_RotatingSearchPlace
   @override
   void dispose() {
     _timer?.cancel();
+    _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  void _submitSearch() {
+    HapticFeedback.lightImpact();
+    final query = _controller.text.trim();
+    if (query.isNotEmpty) {
+      context.push('/user/worker-search?service=${Uri.encodeComponent(query)}');
+    } else {
+      context.push('/user/worker-search');
+    }
   }
 
   @override
@@ -183,27 +197,106 @@ class _RotatingSearchPlaceholderState extends ConsumerState<_RotatingSearchPlace
         : (lang == AppLanguage.hindi ? _hindiHints : _englishHints);
     final hint = hints[_currentIndex % hints.length];
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      transitionBuilder: (child, animation) {
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0.0, 0.4),
-            end: Offset.zero,
-          ).animate(animation),
-          child: FadeTransition(opacity: animation, child: child),
-        );
-      },
-      child: Text(
-        hint,
-        key: ValueKey<String>('${lang.code}_$_currentIndex'),
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 13.5,
-          color: const Color(0xFF64748B),
-          fontWeight: FontWeight.w500,
+    return Container(
+      height: 52.0,
+      padding: const EdgeInsets.symmetric(horizontal: 14.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.0),
+        border: Border.all(
+          color: const Color(0xFFE2E8F0),
+          width: 1.2,
         ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x080F172A),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: _submitSearch,
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.search_rounded,
+                color: Color(0xFF1D4ED8),
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12.0),
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              textInputAction: TextInputAction.search,
+              onChanged: (_) => setState(() {}),
+              onSubmitted: (_) => _submitSearch(),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                color: const Color(0xFF0F172A),
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: GoogleFonts.plusJakartaSans(
+                  fontSize: 13.5,
+                  color: const Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          if (_controller.text.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF64748B)),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              onPressed: () {
+                _controller.clear();
+                setState(() {});
+              },
+            ),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              showDialog(
+                context: context,
+                barrierColor: Colors.black.withValues(alpha: 0.2),
+                builder: (context) => const VoiceSearchOverlay(),
+              );
+            },
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7ED),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.mic_rounded,
+                color: Color(0xFFEA580C),
+                size: 17,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -821,81 +914,11 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                     ),
                   ),
 
-                  // --- SEARCH BAR (Top Placement - High-Visibility Hero Search)
-                  SliverToBoxAdapter(
+                  // --- SEARCH BAR (Top Placement - Interactive Hero Search)
+                  const SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20.0, 4.0, 20.0, 16.0),
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          context.push('/user/worker-search');
-                        },
-                        child: Container(
-                          height: 52.0,
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16.0),
-                            border: Border.all(
-                              color: const Color(0xFFE2E8F0),
-                              width: 1.2,
-                            ),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x080F172A),
-                                blurRadius: 16,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF6FF),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  Icons.search_rounded,
-                                  color: Color(0xFF1D4ED8),
-                                  size: 18,
-                                ),
-                              ),
-                              const SizedBox(width: 12.0),
-                              const Expanded(
-                                child: _RotatingSearchPlaceholder(),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                  showDialog(
-                                    context: context,
-                                    barrierColor: Colors.black.withValues(alpha: 0.2),
-                                    builder: (context) => const VoiceSearchOverlay(),
-                                  );
-                                },
-                                child: Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFF7ED),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Icon(
-                                    Icons.mic_rounded,
-                                    color: Color(0xFFEA580C),
-                                    size: 17,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      padding: EdgeInsets.fromLTRB(20.0, 4.0, 20.0, 16.0),
+                      child: _InteractiveHomeSearchBar(),
                     ),
                   ),
 
