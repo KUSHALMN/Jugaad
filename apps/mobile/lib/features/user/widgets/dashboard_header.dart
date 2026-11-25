@@ -475,12 +475,16 @@ class DashboardHeader extends ConsumerWidget {
                           children: [
                             const Text('🌙', style: TextStyle(fontSize: 10)),
                             const SizedBox(width: 5),
-                            Text(
-                              'Night Emergency Active • 24/7 Technicians in ${userLocation.city.isNotEmpty ? userLocation.city : "Mysuru"}',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFFFCD34D),
+                            Flexible(
+                              child: Text(
+                                'Night Emergency Active • 24/7 Technicians in ${userLocation.city.isNotEmpty ? userLocation.city : "Mysuru"}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFFFCD34D),
+                                ),
                               ),
                             ),
                           ],
@@ -513,12 +517,16 @@ class DashboardHeader extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            'Live in ${userLocation.city.isNotEmpty ? userLocation.city : "Mysuru"} • 38 verified technicians nearby',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF047857),
+                          Flexible(
+                            child: Text(
+                              'Live in ${userLocation.city.isNotEmpty ? userLocation.city : "Mysuru"} • 38 verified technicians nearby',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF047857),
+                              ),
                             ),
                           ),
                         ],
