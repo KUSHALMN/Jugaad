@@ -582,6 +582,13 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                   const SizedBox(height: 14),
 
                   // ═══════════════════════════════════════════════════════════
+                  // ROW 1.2: TODAY'S SHIFT KPI PILL SUMMARY (Mint, Sky, Amber)
+                  // ═══════════════════════════════════════════════════════════
+                  _buildTodaysShiftKpiRow(),
+
+                  const SizedBox(height: 12),
+
+                  // ═══════════════════════════════════════════════════════════
                   // ROW 1.5: MILESTONE INCENTIVE RADIAL GAUGE CARD
                   // ═══════════════════════════════════════════════════════════
                   _buildMilestoneIncentiveRingCard(),
@@ -1614,6 +1621,100 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
             onChanged: (val) {
               _setAvailabilityState(_isOnline, val);
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Compact Today's Shift Summary Header Pills (Mint, Sky, Amber)
+  Widget _buildTodaysShiftKpiRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildShiftKpiPill(
+            icon: Icons.account_balance_wallet_rounded,
+            iconColor: const Color(0xFF16A34A),
+            bgColor: const Color(0xFFECFDF5),
+            borderColor: const Color(0xFFA7F3D0),
+            value: '₹${_todayEarnings.toInt()}',
+            label: "Today's Earnings",
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildShiftKpiPill(
+            icon: Icons.schedule_rounded,
+            iconColor: const Color(0xFF2563EB),
+            bgColor: const Color(0xFFEFF6FF),
+            borderColor: const Color(0xFFBFDBFE),
+            value: _isOnline ? '4h 20m' : 'Paused',
+            label: 'Active Hours',
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _buildShiftKpiPill(
+            icon: Icons.verified_rounded,
+            iconColor: const Color(0xFFD97706),
+            bgColor: const Color(0xFFFFFBEB),
+            borderColor: const Color(0xFFFDE68A),
+            value: '98%',
+            label: 'Acceptance',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShiftKpiPill({
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    required Color borderColor,
+    required String value,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.0),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: iconColor, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0F172A),
+                    height: 1.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  label,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF475569),
+                    height: 1.15,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),

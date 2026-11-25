@@ -229,7 +229,7 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
               children: [
                 const SizedBox(height: 14),
 
-                // 1. HERO DUTY RADAR CAPSULE
+                // 1. HERO DUTY RADAR CAPSULE (Full Width)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: _buildDutyRadarCapsule(
@@ -241,57 +241,81 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
 
                 const SizedBox(height: 14),
 
-                // 2. VERIFIED PARTNER IDENTITY CARD
+                // 2 & 3 & 4 & 6. RESPONSIVE 2-COLUMN BENTO GRID ON WIDE SCREENS (> 800px)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildPartnerIdentityCard(
-                    name: name,
-                    phone: phone,
-                    initials: initials,
-                    ratingDisplay: ratingDisplay,
-                    totalJobsCompleted: totalJobsCompleted,
-                    isVerified: data['isVerified'] as bool? ?? true,
-                    data: data,
-                  ),
-                ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth > 800;
 
-                const SizedBox(height: 14),
+                      final identityCard = _buildPartnerIdentityCard(
+                        name: name,
+                        phone: phone,
+                        initials: initials,
+                        ratingDisplay: ratingDisplay,
+                        totalJobsCompleted: totalJobsCompleted,
+                        isVerified: data['isVerified'] as bool? ?? true,
+                        data: data,
+                      );
 
-                // 3. HERO FINTECH EARNINGS CARD
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildHeroEarningsCard(
-                    totalEarnings: totalEarnings.toString(),
-                    context: context,
+                      final earningsCard = _buildHeroEarningsCard(
+                        totalEarnings: totalEarnings.toString(),
+                        context: context,
+                      );
+
+                      final quickActions = _buildQuickActionMatrix(context);
+
+                      final specialitiesSection = _buildSpecialitiesSection(
+                        specialities: specialities,
+                        primaryColor: primaryColor,
+                        primaryLightColor: primaryLightColor,
+                      );
+
+                      if (isWide) {
+                        return Column(
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: identityCard),
+                                const SizedBox(width: 16),
+                                Expanded(child: earningsCard),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: quickActions),
+                                const SizedBox(width: 16),
+                                Expanded(child: specialitiesSection),
+                              ],
+                            ),
+                          ],
+                        );
+                      }
+
+                      return Column(
+                        children: [
+                          identityCard,
+                          const SizedBox(height: 14),
+                          earningsCard,
+                          const SizedBox(height: 16),
+                          quickActions,
+                          const SizedBox(height: 16),
+                          specialitiesSection,
+                        ],
+                      );
+                    },
                   ),
                 ),
 
                 const SizedBox(height: 16),
 
-                // 4. TACTICAL 2x2 QUICK ACTION MATRIX
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildQuickActionMatrix(context),
-                ),
-
-                const SizedBox(height: 16),
-
-                // 5. FLUID SEGMENTED GLASS PORTAL SWITCHER
+                // 5. DUAL-CARD PORTAL SWITCHER
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: _buildPortalSelector(),
-                ),
-
-                const SizedBox(height: 16),
-
-                // 6. REGISTERED SPECIALITIES PILLS
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildSpecialitiesSection(
-                    specialities: specialities,
-                    primaryColor: primaryColor,
-                    primaryLightColor: primaryLightColor,
-                  ),
                 ),
 
                 const SizedBox(height: 16),
@@ -332,7 +356,7 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
     return Container(
       decoration: BoxDecoration(
         gradient: bgGradient,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: activeOnlineStatus ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
           width: 1.2,
@@ -341,7 +365,7 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
           BoxShadow(
             color: activeOnlineStatus
                 ? const Color(0xFF16A34A).withValues(alpha: 0.12)
-                : Colors.black.withValues(alpha: 0.04),
+                : const Color(0x0A0F172A),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -684,16 +708,17 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF064E3B), Color(0xFF047857), Color(0xFF065F46)],
+          colors: [Colors.white, Color(0xFFECFDF5)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF86EFAC), width: 1.2),
+        boxShadow: const [
           BoxShadow(
-            color: const Color(0xFF047857).withValues(alpha: 0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: Color(0x0A0F172A),
+            blurRadius: 16,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -706,12 +731,12 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
             children: [
               Row(
                 children: [
-                  const Icon(Icons.account_balance_wallet_rounded, size: 16, color: Color(0xFF6EE7B7)),
+                  const Icon(Icons.account_balance_wallet_rounded, size: 16, color: Color(0xFF16A34A)),
                   const SizedBox(width: 6),
                   Text(
                     'TODAY\'S NET EARNINGS',
                     style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFFA7F3D0),
+                      color: const Color(0xFF15803D),
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.0,
@@ -729,14 +754,14 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
                 },
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: const Color(0xFF16A34A),
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 6,
+                        color: const Color(0xFF16A34A).withValues(alpha: 0.22),
+                        blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
                     ],
@@ -744,12 +769,12 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF047857)),
+                      const Icon(Icons.bolt_rounded, size: 14, color: Colors.white),
                       const SizedBox(width: 4),
                       Text(
-                        'Instant Payout',
+                        'Withdraw / Bank',
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF047857),
+                          color: Colors.white,
                           fontWeight: FontWeight.w800,
                           fontSize: 11.5,
                         ),
@@ -771,16 +796,16 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
               Text(
                 '₹',
                 style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFF6EE7B7),
+                  color: const Color(0xFF16A34A),
                   fontSize: 26,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(width: 4),
               Text(
                 totalEarnings,
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: const Color(0xFF0F172A),
                   fontSize: 34,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.5,
@@ -788,15 +813,16 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: const Color(0xFFDCFCE7),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFBBF7D0)),
                 ),
                 child: Text(
                   'UPI Soundbox 🔊',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
+                    color: const Color(0xFF15803D),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -814,7 +840,7 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
               Text(
                 'Daily Target: ₹2,500',
                 style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFFA7F3D0),
+                  color: const Color(0xFF475569),
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -822,7 +848,7 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
               Text(
                 '${(targetProgress * 100).toInt()}% Achieved',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: const Color(0xFF15803D),
                   fontSize: 11.5,
                   fontWeight: FontWeight.w800,
                 ),
@@ -835,8 +861,8 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
             child: LinearProgressIndicator(
               value: targetProgress,
               minHeight: 7,
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF34D399)),
+              backgroundColor: const Color(0xFFE2E8F0),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF16A34A)),
             ),
           ),
         ],
@@ -996,104 +1022,187 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> with TickerProv
     );
   }
 
-  /// 5. Fluid Segmented Glass Portal Switcher
+  /// 5. Dual-Card Portal Switcher (Matches User Account Design)
   Widget _buildPortalSelector() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A0F172A),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 620;
+
+          final headerBlock = Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.swap_horizontal_circle_outlined, size: 16, color: Color(0xFF059669)),
-              const SizedBox(width: 6),
-              Text(
-                'APP MODE SWITCHER',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF64748B),
-                  letterSpacing: 0.8,
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                child: const Icon(Icons.layers_rounded, color: Color(0xFF16A34A), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Portal Selector',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                  Text(
+                    'Choose how you want to use Jugaad',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11.5,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () {
-                      JugaadHaptics.selection();
-                      widget.onSwitchMode();
-                    },
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'User Portal',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF64748B),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Container(
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF059669),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF059669).withValues(alpha: 0.25),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        )
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+          );
+
+          final userPortalCard = InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              JugaadHaptics.selection();
+              widget.onSwitchMode();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.person_rounded, color: Color(0xFF16A34A), size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.shield_rounded, size: 15, color: Colors.white),
-                        const SizedBox(width: 6),
                         Text(
-                          'Worker Mode',
+                          'User Portal',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
+                            color: const Color(0xFF0F172A),
+                            fontSize: 14,
                             fontWeight: FontWeight.w800,
-                            fontSize: 13.5,
                           ),
                         ),
+                        Text(
+                          'Book services, track jobs and more',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: const Color(0xFF64748B),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
                   ),
+                ],
+              ),
+            ),
+          );
+
+          final workerPortalCard = Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF16A34A),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF16A34A).withValues(alpha: 0.25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-          ),
-        ],
+            child: Row(
+              children: [
+                const Icon(Icons.engineering_rounded, color: Colors.white, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Worker Portal',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        'Offer your services and get jobs',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_rounded, color: Color(0xFF16A34A), size: 15),
+                ),
+              ],
+            ),
+          );
+
+          if (isWide) {
+            return Row(
+              children: [
+                headerBlock,
+                const SizedBox(width: 20),
+                Expanded(child: userPortalCard),
+                const SizedBox(width: 12),
+                Expanded(child: workerPortalCard),
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              headerBlock,
+              const SizedBox(height: 14),
+              workerPortalCard,
+              const SizedBox(height: 10),
+              userPortalCard,
+            ],
+          );
+        },
       ),
     );
   }
