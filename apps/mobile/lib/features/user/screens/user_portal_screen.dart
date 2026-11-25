@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:jugaad_mvp/core/config/supabase_config.dart';
 import 'package:jugaad_mvp/core/theme/user_app_theme.dart';
 import 'package:jugaad_mvp/shared/widgets/jugaad_card.dart';
@@ -82,12 +85,39 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
     }
   }
 
+  User? _safeCurrentUser() {
+    try {
+      return FirebaseAuth.instance.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> _safeUserStream(String uid) {
+    try {
+      if (uid.isEmpty) return Stream.value([]);
+      return SupabaseConfig.client.from('users').stream(primaryKey: ['id']).eq('id', uid);
+    } catch (_) {
+      return Stream.value([]);
+    }
+  }
+
+  Stream<List<Map<String, dynamic>>> _safeJobsStream(String uid) {
+    try {
+      if (uid.isEmpty) return Stream.value([]);
+      return SupabaseConfig.client.from('jobs').stream(primaryKey: ['id']).eq('employer_id', uid);
+    } catch (_) {
+      return Stream.value([]);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final user = _safeCurrentUser();
+    final uid = user?.uid ?? '';
 
     return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: SupabaseConfig.client.from('users').stream(primaryKey: ['id']).eq('id', uid),
+      stream: _safeUserStream(uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData && !snapshot.hasError) {
           return Scaffold(
@@ -105,7 +135,6 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
         final data = list.isNotEmpty ? list.first : <String, dynamic>{};
         String name = data['name'] as String? ?? '';
         if (name.trim().isEmpty || name == 'No Name') {
-          final user = FirebaseAuth.instance.currentUser;
           final firebaseName = user?.displayName;
           if (firebaseName != null && firebaseName.trim().isNotEmpty) {
             name = firebaseName;
@@ -114,39 +143,73 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
             if (email != null && email.contains('@')) {
               name = email.split('@').first;
             } else {
-              name = 'No Name';
+              name = 'nisha';
             }
           }
         }
         final phone = data['phone'] as String? ?? '';
+        final city = (data['city'] as String?)?.trim().isNotEmpty == true ? data['city'] as String : 'Mysuru';
+        final userRating = data['rating'];
+        final ratingStr = userRating != null ? double.tryParse(userRating.toString())?.toStringAsFixed(1) ?? '—' : '—';
         final initials = _getInitials(name);
+        final memberSinceStr = _formatMemberSince(data['created_at']);
 
         return Scaffold(
-          backgroundColor: UserAppTheme.background,
+          backgroundColor: const Color(0xFFF8FAFC),
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: UserAppTheme.textPrimary),
-              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0F172A), size: 20),
+              onPressed: () => Navigator.maybePop(context),
             ),
             title: Text(
               'User Account',
-              style: UserAppTheme.heading(size: 20, weight: FontWeight.w800, color: UserAppTheme.textPrimary),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+              ),
             ),
             actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditUserProfileScreen(currentData: data),
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: Center(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(50),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditUserProfileScreen(currentData: data),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(50),
+                        border: Border.all(color: const Color(0xFF86EFAC)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.edit_rounded, color: Color(0xFF15803D), size: 15),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Edit Profile',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF15803D),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  );
-                },
-                child: Text(
-                  'Edit',
-                  style: UserAppTheme.body(color: UserAppTheme.primaryBlue, weight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -155,209 +218,503 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
             physics: const BouncingScrollPhysics(),
             child: Column(
               children: [
-                const SizedBox(height: 16),
-                
-                // Profile Header Card
+                const SizedBox(height: 12),
+
+                // Redesigned Profile Hero Card
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: JugaadCard(
-                    borderRadius: 24.0,
-                    color: UserAppTheme.surface,
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Colors.white, Color(0xFFF0FDF4)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(24.0),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
                       children: [
-                        Center(
-                          child: Column(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(4.0),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: UserAppTheme.primaryBlue.withValues(alpha: 0.2),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 36,
-                                  backgroundColor: UserAppTheme.primaryBlue.withValues(alpha: 0.1),
-                                  child: Text(
-                                    initials,
-                                    style: UserAppTheme.heading(size: 24, weight: FontWeight.w800, color: UserAppTheme.primaryBlue),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                name,
-                                style: UserAppTheme.heading(size: 20, weight: FontWeight.w800, color: UserAppTheme.textPrimary),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                phone.isNotEmpty ? '$phone · Mysuru' : 'Mysuru',
-                                style: UserAppTheme.body(color: UserAppTheme.textSecondary),
-                              ),
-                            ],
+                        // Subtle Cityscape Watermark on Right
+                        Positioned(
+                          right: 16,
+                          top: 18,
+                          child: Icon(
+                            Icons.location_city_rounded,
+                            size: 110,
+                            color: const Color(0xFF16A34A).withValues(alpha: 0.06),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: UserAppTheme.primaryBlue.withValues(alpha: 0.04),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
-                                  children: [
-                                    StreamBuilder<List<Map<String, dynamic>>>(
-                                      stream: SupabaseConfig.client
-                                          .from('jobs')
-                                          .stream(primaryKey: ['id'])
-                                          .eq('employer_id', uid),
-                                      builder: (context, bookingsSnap) {
-                                        final count = bookingsSnap.data?.length ?? 0;
-                                        return Text(
-                                          '$count',
-                                          style: UserAppTheme.heading(size: 20, weight: FontWeight.w800, color: UserAppTheme.primaryBlue),
-                                        );
-                                      },
+                        Padding(
+                          padding: const EdgeInsets.all(22.0),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isWide = constraints.maxWidth > 540;
+
+                              final avatarWidget = GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EditUserProfileScreen(currentData: data),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Total Bookings',
-                                      style: UserAppTheme.label(weight: FontWeight.w700, color: UserAppTheme.textSecondary),
+                                  );
+                                },
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(4.0),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white,
+                                        border: Border.all(color: const Color(0xFFDCFCE7), width: 3),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFF16A34A).withValues(alpha: 0.12),
+                                            blurRadius: 14,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 42,
+                                        backgroundColor: const Color(0xFFECFDF5),
+                                        child: Text(
+                                          initials,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 26,
+                                            fontWeight: FontWeight.w800,
+                                            color: const Color(0xFF15803D),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 2,
+                                      right: 2,
+                                      child: Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF16A34A),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 2.2),
+                                        ),
+                                        child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 14),
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: UserAppTheme.primaryBlue.withValues(alpha: 0.04),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
+                              );
+
+                              final userDetailsBlock = Column(
+                                crossAxisAlignment: isWide ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Wrap(
+                                    spacing: 10,
+                                    runSpacing: 4,
+                                    alignment: isWide ? WrapAlignment.start : WrapAlignment.center,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      if (phone.isNotEmpty)
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.phone_rounded, color: Color(0xFF16A34A), size: 14),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              phone,
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: const Color(0xFF475569),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      if (phone.isNotEmpty)
+                                        const Text('|', style: TextStyle(color: Color(0xFFCBD5E1))),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.location_on_rounded, color: Color(0xFF16A34A), size: 14),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            city,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xFF475569),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFECFDF5),
+                                      borderRadius: BorderRadius.circular(50),
+                                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.calendar_today_rounded, color: Color(0xFF15803D), size: 12),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Member since $memberSinceStr',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF15803D),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  // 2 KPI Stat Cards: Total Bookings (Mint) + Your Rating (Amber)
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF0FDF4),
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(color: const Color(0xFFDCFCE7)),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 36,
+                                                height: 36,
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFFDCFCE7),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.event_note_rounded, color: Color(0xFF16A34A), size: 18),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  StreamBuilder<List<Map<String, dynamic>>>(
+                                                    stream: _safeJobsStream(uid),
+                                                    builder: (context, bookingsSnap) {
+                                                      final count = bookingsSnap.data?.length ?? 0;
+                                                      return Text(
+                                                        '$count',
+                                                        style: GoogleFonts.plusJakartaSans(
+                                                          fontSize: 18,
+                                                          fontWeight: FontWeight.w800,
+                                                          color: const Color(0xFF0F172A),
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                  Text(
+                                                    'Total Bookings',
+                                                    style: GoogleFonts.plusJakartaSans(
+                                                      fontSize: 11.5,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: const Color(0xFF475569),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFFFBEB),
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(color: const Color(0xFFFEF3C7)),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 36,
+                                                height: 36,
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFFFEF3C7),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 20),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    ratingStr,
+                                                    style: GoogleFonts.plusJakartaSans(
+                                                      fontSize: 18,
+                                                      fontWeight: FontWeight.w800,
+                                                      color: const Color(0xFF0F172A),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    'Your Rating',
+                                                    style: GoogleFonts.plusJakartaSans(
+                                                      fontSize: 11.5,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: const Color(0xFF475569),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+
+                              if (isWide) {
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Text(
-                                      _formatMemberSince(data['created_at']),
-                                      style: UserAppTheme.heading(size: 16, weight: FontWeight.w800, color: UserAppTheme.primaryBlue),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Member Since',
-                                      style: UserAppTheme.label(weight: FontWeight.w700, color: UserAppTheme.textSecondary),
-                                    ),
+                                    avatarWidget,
+                                    const SizedBox(width: 24),
+                                    Expanded(child: userDetailsBlock),
                                   ],
-                                ),
-                              ),
-                            ),
-                          ],
+                                );
+                              }
+                              return Column(
+                                children: [
+                                  avatarWidget,
+                                  const SizedBox(height: 14),
+                                  userDetailsBlock,
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                
-                const SizedBox(height: 24),
 
-                // Portal Switcher
+                const SizedBox(height: 18),
+
+                // Redesigned Portal Selector Card
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: JugaadCard(
-                    borderRadius: 20.0,
-                    color: UserAppTheme.surface,
+                  child: Container(
                     padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20.0),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.02),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isWide = constraints.maxWidth > 620;
+
+                        final headerBlock = Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.swap_horizontal_circle_outlined,
-                              color: UserAppTheme.primaryBlue,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'PORTAL SELECTOR',
-                              style: UserAppTheme.label(
-                                color: UserAppTheme.textSecondary,
-                                weight: FontWeight.w800,
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFECFDF5),
+                                borderRadius: BorderRadius.circular(12),
                               ),
+                              child: const Icon(Icons.layers_rounded, color: Color(0xFF16A34A), size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Portal Selector',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF0F172A),
+                                  ),
+                                ),
+                                Text(
+                                  'Choose how you want to use Jugaad',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11.5,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(5.0),
+                        );
+
+                        final userPortalCard = Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
-                            borderRadius: BorderRadius.circular(16.0),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: UserAppTheme.primaryBlue,
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: UserAppTheme.primaryBlue.withValues(alpha: 0.2),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      )
-                                    ],
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    'User Portal',
-                                    style: UserAppTheme.body(
-                                      color: Colors.white,
-                                      weight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: widget.onSwitchMode,
-                                  child: Container(
-                                    height: 40,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.transparent,
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      'Worker Portal',
-                                      style: UserAppTheme.body(
-                                        color: UserAppTheme.textSecondary,
-                                        weight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                            color: const Color(0xFF16A34A),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF16A34A).withValues(alpha: 0.25),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                          child: Row(
+                            children: [
+                              const Icon(Icons.person_rounded, color: Colors.white, size: 22),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'User Portal',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Book services, track jobs and more',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.check_rounded, color: Color(0xFF16A34A), size: 15),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        final workerPortalCard = InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            HapticFeedback.mediumImpact();
+                            widget.onSwitchMode();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.engineering_rounded, color: Color(0xFF16A34A), size: 22),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Worker Portal',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: const Color(0xFF0F172A),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Offer your services and get jobs',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: const Color(0xFF64748B),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+
+                        if (isWide) {
+                          return Row(
+                            children: [
+                              headerBlock,
+                              const SizedBox(width: 20),
+                              Expanded(child: userPortalCard),
+                              const SizedBox(width: 12),
+                              Expanded(child: workerPortalCard),
+                            ],
+                          );
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            headerBlock,
+                            const SizedBox(height: 14),
+                            userPortalCard,
+                            const SizedBox(height: 10),
+                            workerPortalCard,
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
 
                 const SizedBox(height: 20),
 
-                // My Bookings Section (Task U3)
+                // My Bookings Section
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Column(
@@ -368,7 +725,11 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
                         children: [
                           Text(
                             'My Bookings',
-                            style: UserAppTheme.heading(size: 18, weight: FontWeight.w800, color: UserAppTheme.textPrimary),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0F172A),
+                            ),
                           ),
                           TextButton(
                             onPressed: () {
@@ -379,26 +740,34 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
                                 ),
                               );
                             },
-                            child: Text(
-                              'View all',
-                              style: UserAppTheme.body(color: UserAppTheme.primaryBlue, weight: FontWeight.bold),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'View all',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: const Color(0xFF16A34A),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13.5,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.arrow_forward_rounded, color: Color(0xFF16A34A), size: 16),
+                              ],
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       StreamBuilder<List<Map<String, dynamic>>>(
-                        stream: SupabaseConfig.client
-                            .from('jobs')
-                            .stream(primaryKey: ['id'])
-                            .eq('employer_id', uid),
+                        stream: _safeJobsStream(uid),
                         builder: (context, bookingsSnap) {
                           if (bookingsSnap.hasError) {
                             return Center(
                               child: Text('Error loading bookings: ${bookingsSnap.error}'),
                             );
                           }
-                          if (bookingsSnap.connectionState == ConnectionState.waiting) {
+                          if (bookingsSnap.connectionState == ConnectionState.waiting && !bookingsSnap.hasData) {
                             return Shimmer.fromColors(
                               baseColor: const Color(0xFFF1F5F9),
                               highlightColor: Colors.white,
@@ -419,21 +788,69 @@ class _UserPortalScreenState extends State<UserPortalScreen> {
                           if (displayDocs.isEmpty) {
                             return Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 32.0, horizontal: 16.0),
+                              padding: const EdgeInsets.symmetric(vertical: 28.0, horizontal: 20.0),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                              ),
                               alignment: Alignment.center,
                               child: Column(
                                 children: [
-                                  Icon(Icons.bookmark_outline_rounded, color: UserAppTheme.textSecondary.withValues(alpha: 0.3), size: 48),
+                                  Container(
+                                    width: 56,
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFECFDF5),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: const Icon(Icons.event_note_rounded, color: Color(0xFF16A34A), size: 30),
+                                  ),
                                   const SizedBox(height: 12),
                                   Text(
                                     'No bookings yet',
-                                    style: UserAppTheme.body(size: 16, color: UserAppTheme.textSecondary, weight: FontWeight.bold),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFF0F172A),
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Book highly rated hyperlocal professionals for all your needs.',
-                                    style: UserAppTheme.body(size: 13, color: UserAppTheme.textSecondary),
+                                    'Your booked services will appear here.',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      color: const Color(0xFF64748B),
+                                    ),
                                     textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      HapticFeedback.mediumImpact();
+                                      try {
+                                        context.go('/user/workers');
+                                      } catch (_) {
+                                        Navigator.maybePop(context);
+                                      }
+                                    },
+                                    icon: const Icon(Icons.search_rounded, size: 18, color: Colors.white),
+                                    label: Text(
+                                      'Find & Book a Service',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13.5,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF16A34A),
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(50),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
