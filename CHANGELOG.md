@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.0] - 2026-11-25
+### Added
+- **30s Video Diagnosis UI Redesign**: Modernized 30-second diagnosis hero card replacing legacy circular avatars with high-contrast pastel issue cards (AC Leaking, Fan Humming, Low Tap Water, MCB Tripping, Geyser Cold).
+- **Tactile Camera & Slate Controls**: Added royal blue video camera trigger badge, verified emerald `GUIDES` indicator, and `30s` playback pill with instant AI video recording modal.
+- **Multilingual Subtitle Support**: Added Kannada (`ಕನ್ನಡ`), Hindi (`हिंदी`), and English localized strings for diagnosis walkthroughs and descriptions.
+- **Automated Widget Test Suite**: Integrated comprehensive widget tests in `video_diagnosis_redesign_test.dart` verifying all 5 issue cards, layout responsive rendering, and bottom sheet interactions.
+
+---
+
 ## [1.5.0] - 2026-10-27
 ### Fixed
 - **Google Play Services OAuth Certificate Alignment**: Configured Android Gradle `debug` build type to sign with production release keystore (`jugaad-release-key.jks`) matching registered Firebase / Google Cloud SHA-1 and SHA-256 fingerprints, eliminating `ApiException: 10`.
