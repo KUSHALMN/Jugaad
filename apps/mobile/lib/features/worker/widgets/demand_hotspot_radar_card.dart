@@ -43,14 +43,14 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A), // Tactical obsidian dark
+        color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFF334155), width: 1.5),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -95,14 +95,14 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: const Color(0xFF0F172A),
                       ),
                     ),
                     Text(
                       'High-booking clusters across ${widget.city}',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
-                        color: const Color(0xFF94A3B8),
+                        color: const Color(0xFF64748B),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -112,9 +112,9 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: const Color(0xFFFFFBEB),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF475569)),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -126,7 +126,7 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
-                        color: const Color(0xFFFBBF24),
+                        color: const Color(0xFFB45309),
                       ),
                     ),
                   ],
@@ -157,10 +157,10 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFF97316) : const Color(0xFF1E293B),
+                      color: isSelected ? const Color(0xFFF97316) : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFFEA580C) : const Color(0xFF334155),
+                        color: isSelected ? const Color(0xFFEA580C) : const Color(0xFFE2E8F0),
                       ),
                     ),
                     child: Row(
@@ -173,7 +173,7 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
-                            color: isSelected ? Colors.white : const Color(0xFFCBD5E1),
+                            color: isSelected ? Colors.white : const Color(0xFF475569),
                           ),
                         ),
                       ],
@@ -190,12 +190,12 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                colors: [Color(0xFFFFF7ED), Color(0xFFFFFBEB)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF334155)),
+              border: Border.all(color: const Color(0xFFFED7AA)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,7 +209,7 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: const Color(0xFF0F172A),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -218,7 +218,7 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD97706),
+                          color: const Color(0xFFEA580C),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -239,8 +239,8 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
                   activeZone.summaryTagline,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFFFBBF24),
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFC2410C),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -251,20 +251,21 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF334155),
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.handyman_rounded, color: Color(0xFF94A3B8), size: 12),
+                          const Icon(Icons.handyman_rounded, color: Color(0xFF475569), size: 12),
                           const SizedBox(width: 4),
                           Text(
                             activeZone.dominantTrade,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFFE2E8F0),
+                              color: const Color(0xFF334155),
                             ),
                           ),
                         ],
@@ -273,14 +274,14 @@ class _DemandHotspotRadarCardState extends State<DemandHotspotRadarCard> {
                     const Spacer(),
                     Row(
                       children: [
-                        const Icon(Icons.two_wheeler_rounded, color: Color(0xFF10B981), size: 14),
+                        const Icon(Icons.two_wheeler_rounded, color: Color(0xFF15803D), size: 14),
                         const SizedBox(width: 4),
                         Text(
                           '$driveMinutes mins ($distanceText)',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF10B981),
+                            color: const Color(0xFF15803D),
                           ),
                         ),
                       ],

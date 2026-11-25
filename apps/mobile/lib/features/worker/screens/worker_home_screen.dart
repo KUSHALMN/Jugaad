@@ -1633,15 +1633,15 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+            colors: [Colors.white, Color(0xFFF8FAFC)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFF334155), width: 1.2),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x1A000000),
+              color: Color(0x0A0F172A),
               blurRadius: 16,
               offset: Offset(0, 4),
             ),
@@ -1662,7 +1662,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFEA580C).withValues(alpha: 0.3),
+                        color: const Color(0xFFEA580C).withValues(alpha: 0.22),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -1688,9 +1688,9 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7).withValues(alpha: 0.15),
+                    color: const Color(0xFFFFFBEB),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1702,7 +1702,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFFFBBF24),
+                          color: const Color(0xFFB45309),
                         ),
                       ),
                     ],
@@ -1713,8 +1713,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                   'Level 4 Partner',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -1733,15 +1733,15 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                       const CircularProgressIndicator(
                         value: progress,
                         strokeWidth: 5.5,
-                        backgroundColor: Color(0xFF334155),
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+                        backgroundColor: Color(0xFFE2E8F0),
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF16A34A)),
                       ),
                       Text(
                         '$completedJobs/$targetJobs',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: const Color(0xFF0F172A),
                         ),
                       ),
                     ],
@@ -1758,15 +1758,16 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                              color: const Color(0xFFFFFBEB),
                               borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFFFDE68A)),
                             ),
                             child: Text(
                               'DAILY TARGET',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.w800,
-                                color: const Color(0xFFFBBF24),
+                                color: const Color(0xFFD97706),
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -1777,7 +1778,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF94A3B8),
+                              color: const Color(0xFF64748B),
                             ),
                           ),
                         ],
@@ -1788,7 +1789,7 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: const Color(0xFF0F172A),
                         ),
                       ),
                     ],
@@ -1807,8 +1808,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                     child: const LinearProgressIndicator(
                       value: 420 / 500,
                       minHeight: 6,
-                      backgroundColor: Color(0xFF334155),
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF38BDF8)),
+                      backgroundColor: Color(0xFFE2E8F0),
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0284C7)),
                     ),
                   ),
                 ),
@@ -1817,8 +1818,8 @@ class _WorkerHomeScreenState extends State<WorkerHomeScreen>
                   '420 / 500 XP',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF38BDF8),
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0284C7),
                   ),
                 ),
               ],
