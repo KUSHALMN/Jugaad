@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] - 2026-11-25
+### Added
+- **Jugaad Experts Directory Redesign**: Elevated `WorkerListScreen` with dual-tone brand header, live KPI trust pills (`120+ Verified Workers`, `4.8 ★ Avg. Rating`, `24/7 Service Available`), and responsive mobile/desktop layout.
+- **Integrated City Filter & Icon Chips**: Added Mysuru/Bengaluru city selector inside the search bar and dedicated category icons across all filter chips.
+- **Action-Driven Expert Cards**: Redesigned `_WorkerCard` with category-themed illustration badges, icon skill chips, bold `₹rate/hr` pricing, emerald `Book Now >` CTA, and 1-tap call button (`📞`).
+- **Automated Widget Tests**: Added `jugaad_experts_redesign_test.dart` verifying header KPIs, city selector, icon chips, and card action controls.
+
+---
+
 ## [1.6.0] - 2026-11-25
 ### Added
 - **30s Video Diagnosis UI Redesign**: Modernized 30-second diagnosis hero card replacing legacy circular avatars with high-contrast pastel issue cards (AC Leaking, Fan Humming, Low Tap Water, MCB Tripping, Geyser Cold).
