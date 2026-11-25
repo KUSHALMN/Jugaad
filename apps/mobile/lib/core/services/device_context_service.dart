@@ -24,6 +24,7 @@ class DeviceContextService extends ChangeNotifier {
   static const _kLastBookedSkillKey = 'jugaad_last_booked_skill';
   static const _kTrustedContactNameKey = 'jugaad_trusted_contact_name';
   static const _kTrustedContactPhoneKey = 'jugaad_trusted_contact_phone';
+  static const _kActivityLogKey = 'jugaad_activity_log';
 
   final Battery _battery = Battery();
   final Connectivity _connectivity = Connectivity();
@@ -36,7 +37,9 @@ class DeviceContextService extends ChangeNotifier {
   BatteryState _batteryState = BatteryState.full;
   bool _isSlowOrMeteredNetwork = false;
   bool _isOffline = false;
+  String _networkType = 'wifi';
   List<String> _recentSearches = [];
+  List<Map<String, dynamic>> _activityLog = [];
   String? _lastBookedSkill;
   String? _trustedContactName;
   String? _trustedContactPhone;
@@ -45,7 +48,10 @@ class DeviceContextService extends ChangeNotifier {
   BatteryState get batteryState => _batteryState;
   bool get isSlowOrMeteredNetwork => _isSlowOrMeteredNetwork;
   bool get isOffline => _isOffline;
+  String get networkType => _networkType;
+  String get devicePlatform => kIsWeb ? 'Web' : defaultTargetPlatform.name;
   List<String> get recentSearches => List.unmodifiable(_recentSearches);
+  List<Map<String, dynamic>> get activityLog => List.unmodifiable(_activityLog);
   String? get lastBookedSkill => _lastBookedSkill;
   String? get trustedContactName => _trustedContactName;
   String? get trustedContactPhone => _trustedContactPhone;
@@ -79,12 +85,14 @@ class DeviceContextService extends ChangeNotifier {
     await _loadPrefs();
     await _refreshBattery();
     await _refreshConnectivity();
+    await recordActivity('app_open', 'Opened Jugaad ($devicePlatform • $_networkType)');
 
     try {
       _batterySub = _battery.onBatteryStateChanged.listen((state) async {
         _batteryState = state;
         await _refreshBattery(notify: false);
         notifyListeners();
+        _syncActivityToBackend();
       });
     } catch (_) {
       // Safe no-op on unsupported platforms or tests
@@ -93,8 +101,14 @@ class DeviceContextService extends ChangeNotifier {
     try {
       _connectivitySub =
           _connectivity.onConnectivityChanged.listen((results) {
+        final prevNetwork = _networkType;
         _applyConnectivity(results);
         notifyListeners();
+        if (prevNetwork != _networkType) {
+          recordActivity('network_change', 'Switched to $_networkType');
+        } else {
+          _syncActivityToBackend();
+        }
       });
     } catch (_) {
       // Safe no-op on unsupported platforms or tests
@@ -138,6 +152,19 @@ class DeviceContextService extends ChangeNotifier {
         results.isEmpty || results.every((r) => r == ConnectivityResult.none);
     _isSlowOrMeteredNetwork =
         _isOffline || results.contains(ConnectivityResult.mobile);
+    if (_isOffline) {
+      _networkType = 'offline';
+    } else if (results.contains(ConnectivityResult.wifi)) {
+      _networkType = 'wifi';
+    } else if (results.contains(ConnectivityResult.mobile)) {
+      _networkType = 'mobile';
+    } else if (results.contains(ConnectivityResult.ethernet)) {
+      _networkType = 'ethernet';
+    } else if (results.contains(ConnectivityResult.vpn)) {
+      _networkType = 'vpn';
+    } else {
+      _networkType = results.first.name;
+    }
   }
 
   Future<void> _syncActivityToBackend() async {
@@ -147,17 +174,41 @@ class DeviceContextService extends ChangeNotifier {
       await SupabaseConfig.client.from('users').update({
         'battery_level': _batteryLevel,
         'is_low_battery': isLowBattery,
-        'network_mode': _isOffline
-            ? 'offline'
-            : (_isSlowOrMeteredNetwork ? 'mobile_slow' : 'wifi'),
+        'battery_state': _batteryState.name,
+        'network_mode': _networkType,
+        'device_platform': devicePlatform,
         'recent_searches': _recentSearches,
         'last_booked_skill': _lastBookedSkill,
         'has_trusted_contact': hasTrustedContact,
+        'activity_log': _activityLog,
         'last_active_at': DateTime.now().toIso8601String(),
       }).eq('id', uid);
     } catch (_) {
       // Safe no-op if offline, uninitialized, or columns not migrated yet
     }
+  }
+
+  /// Records an in-app or device event to the user's activity feed and syncs it.
+  Future<void> recordActivity(String type, String detail) async {
+    final entry = <String, dynamic>{
+      'type': type,
+      'detail': detail,
+      'battery': _batteryLevel,
+      'network': _networkType,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+    _activityLog = [entry, ..._activityLog].take(20).toList();
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        _kActivityLogKey,
+        _activityLog
+            .map((e) => '${e['type']}|${e['detail']}|${e['timestamp']}')
+            .toList(),
+      );
+    } catch (_) {}
+    await _syncActivityToBackend();
   }
 
   /// Records a user search query to personalize service recommendations.
@@ -173,7 +224,7 @@ class DeviceContextService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_kRecentSearchesKey, _recentSearches);
     } catch (_) {}
-    _syncActivityToBackend();
+    await recordActivity('search', 'Searched "$normalized"');
   }
 
   /// Records the most recently booked skill for smart re-ranking.
@@ -186,7 +237,7 @@ class DeviceContextService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kLastBookedSkillKey, normalized);
     } catch (_) {}
-    _syncActivityToBackend();
+    await recordActivity('booking', 'Booked $normalized');
   }
 
   /// Saves an optional user-picked Trusted Emergency Contact.

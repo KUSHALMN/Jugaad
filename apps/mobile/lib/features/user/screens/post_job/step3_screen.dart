@@ -8,6 +8,7 @@ import 'dart:async';
 
 import '../../../../core/theme/user_app_theme.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/device_context_service.dart';
 import '../../../../core/services/video_diagnosis_session.dart';
 import '../../../../core/config/services_list.dart';
 import '../../../../core/providers/services_provider.dart';
@@ -122,6 +123,7 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
       }
 
       print('[POST_JOB] Job created: job_id=$jobId');
+      DeviceContextService.instance.recordBookedSkill(normalizedSkill);
       videoSession.clear();
       ref.read(postJobProvider.notifier).reset();
 

@@ -335,6 +335,10 @@ class HomeCategoriesGrid extends ConsumerWidget {
                                 isDesktop: isDesktop || isTablet,
                                 onTap: () {
                                   HapticFeedback.mediumImpact();
+                                  DeviceContextService.instance.recordActivity(
+                                    'category_tap',
+                                    'Selected ${cat.title}',
+                                  );
                                   ref.read(postJobProvider.notifier).reset();
                                   ref.read(postJobProvider.notifier).setSkill(cat.serviceSkill);
                                   ref.read(postJobProvider.notifier).setUrgency('now');

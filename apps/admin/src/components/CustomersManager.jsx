@@ -559,13 +559,22 @@ export default function CustomersManager({ session }) {
                               </span>
                             )}
                             {user.network_mode && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200 font-medium">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200 font-medium uppercase text-[10px]">
                                 <Wifi className="w-3 h-3" />
                                 {user.network_mode}
                               </span>
                             )}
+                            {user.device_platform && (
+                              <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 text-[10px] font-medium">
+                                {user.device_platform}
+                              </span>
+                            )}
                           </div>
-                          {Array.isArray(user.recent_searches) && user.recent_searches.length > 0 ? (
+                          {Array.isArray(user.activity_log) && user.activity_log.length > 0 ? (
+                            <div className="text-[11px] text-zinc-600 truncate max-w-[220px]">
+                              {user.activity_log[0].detail}
+                            </div>
+                          ) : Array.isArray(user.recent_searches) && user.recent_searches.length > 0 ? (
                             <div className="text-[11px] text-zinc-500 truncate max-w-[200px]">
                               Searched: {user.recent_searches.slice(0, 2).join(', ')}
                             </div>
@@ -740,11 +749,30 @@ export default function CustomersManager({ session }) {
               <div className="flex justify-between py-1.5 border-b border-zinc-100">
                 <span className="text-zinc-400">Device & Network Context:</span>
                 <span className="font-medium">
-                  {selectedUser.battery_level != null ? `${selectedUser.battery_level}% battery` : 'Battery N/A'}
-                  {selectedUser.network_mode ? ` · ${selectedUser.network_mode}` : ''}
+                  {selectedUser.device_platform ? `${selectedUser.device_platform} · ` : ''}
+                  {selectedUser.battery_level != null
+                    ? `${selectedUser.battery_level}%${selectedUser.battery_state ? ` (${selectedUser.battery_state})` : ''}`
+                    : 'Battery N/A'}
+                  {selectedUser.network_mode ? ` · ${selectedUser.network_mode.toUpperCase()}` : ''}
                   {selectedUser.has_trusted_contact ? ' · Trusted Contact Set' : ''}
                 </span>
               </div>
+              {Array.isArray(selectedUser.activity_log) && selectedUser.activity_log.length > 0 && (
+                <div className="py-1.5 border-b border-zinc-100">
+                  <span className="text-zinc-400 block mb-1">Live Phone & App Activity:</span>
+                  <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
+                    {selectedUser.activity_log.slice(0, 8).map((ev, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-[11px] bg-zinc-50 px-2.5 py-1 rounded-lg">
+                        <span className="text-zinc-800 font-medium truncate max-w-[260px]">{ev.detail || ev.type}</span>
+                        <span className="text-zinc-400 font-mono text-[10px]">
+                          {ev.network ? `${ev.network} · ` : ''}
+                          {ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {Array.isArray(selectedUser.recent_searches) && selectedUser.recent_searches.length > 0 && (
                 <div className="py-1.5 border-b border-zinc-100">
                   <span className="text-zinc-400 block mb-1">Recent Searches:</span>
