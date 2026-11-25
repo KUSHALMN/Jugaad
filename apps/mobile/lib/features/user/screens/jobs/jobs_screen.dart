@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:async';
 import 'package:jugaad_mvp/core/services/auth_service.dart';
@@ -135,55 +136,169 @@ class _JobsScreenState extends State<JobsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: UserAppTheme.background,
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header ───────────────────────────────────────────
+            // ── Header with Icon Badge & KPI Pills ─────────────────
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'My Jobs',
-                  style: UserAppTheme.display(size: 28, weight: FontWeight.w800, color: UserAppTheme.textPrimary),
-                ).animate().fadeIn(duration: 300.ms),
-              ),
-            ),
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 620;
+                  final activeCount = _activeJobs?.length ?? 0;
 
-            // ── Custom Pill Tab Bar ───────────────────────────────
+                  final titleBlock = Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(13),
+                          border: Border.all(color: const Color(0xFFA7F3D0)),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.assignment_turned_in_rounded, color: Color(0xFF16A34A), size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RichText(
+                            text: TextSpan(
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0F172A),
+                              ),
+                              children: const [
+                                TextSpan(text: 'My '),
+                                TextSpan(text: 'Jobs', style: TextStyle(color: Color(0xFF16A34A))),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            'Live tracking & scheduled bookings',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12.5,
+                              color: const Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+
+                  final kpiPills = Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFA7F3D0)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.bolt_rounded, color: Color(0xFF16A34A), size: 16),
+                            const SizedBox(width: 6),
+                            Text(
+                              '$activeCount Active',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF15803D),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFFBEB),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFFDE68A)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.verified_user_rounded, color: Color(0xFFD97706), size: 15),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Insured',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFFB45309),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+
+                  if (isWide) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [titleBlock, kpiPills],
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      titleBlock,
+                      const SizedBox(height: 12),
+                      kpiPills,
+                    ],
+                  );
+                },
+              ),
+            ).animate().fadeIn(duration: 300.ms),
+
+            // ── Emerald Pill Tab Bar ───────────────────────────────
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20.0),
+              padding: const EdgeInsets.all(4),
               height: 50.0,
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(50.0),
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(16.0),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: TabBar(
                 controller: _tabController,
                 labelColor: Colors.white,
-                unselectedLabelColor: UserAppTheme.textSecondary,
+                unselectedLabelColor: const Color(0xFF64748B),
                 indicator: BoxDecoration(
-                  color: UserAppTheme.primaryBlue,
-                  borderRadius: BorderRadius.circular(50.0),
+                  color: const Color(0xFF16A34A),
+                  borderRadius: BorderRadius.circular(12.0),
                   boxShadow: [
                     BoxShadow(
-                      color: UserAppTheme.primaryBlue.withValues(alpha: 0.2),
+                      color: const Color(0xFF16A34A).withValues(alpha: 0.25),
                       blurRadius: 8,
-                      offset: const Offset(0, 3),
+                      offset: const Offset(0, 2),
                     )
                   ],
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: Colors.transparent,
-                labelStyle: UserAppTheme.body(
-                  weight: FontWeight.w800,
+                labelStyle: GoogleFonts.plusJakartaSans(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
                   color: Colors.white,
                 ),
-                unselectedLabelStyle: UserAppTheme.body(
-                  color: UserAppTheme.textSecondary,
-                  weight: FontWeight.w600,
+                unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+                  fontSize: 13.5,
+                  color: const Color(0xFF64748B),
+                  weight: FontWeight.w700,
                 ),
                 tabs: const [
                   Tab(text: 'Active'),

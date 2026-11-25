@@ -24,7 +24,8 @@ import {
   Zap,
   ShieldCheck,
   BarChart3,
-  Download
+  Download,
+  Video
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { API_ENDPOINTS, BACKEND_API_URL } from './apiConfig';
@@ -1312,14 +1313,14 @@ export default function JugaadOpsDashboard() {
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
             {/* Logo Section */}
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-zinc-50 border border-zinc-100 rounded-xl text-zinc-900">
+              <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-600 shadow-xs">
                 <Shield className="w-5 h-5" />
               </div>
               <div>
                 <h1 className="text-sm font-semibold text-zinc-950 tracking-tight leading-none mb-0.5">
                   Jugaad Ops
                 </h1>
-                <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest leading-none">
+                <span className="text-[10px] font-medium text-emerald-600 uppercase tracking-widest leading-none">
                   Admin Command Console
                 </span>
               </div>
@@ -1365,6 +1366,10 @@ export default function JugaadOpsDashboard() {
 
             {/* Actions Section */}
             <div className="flex items-center space-x-4 relative">
+              <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Live Sync
+              </div>
               <button 
                 onClick={() => {
                   setShowNotifications(!showNotifications);
@@ -1560,7 +1565,15 @@ export default function JugaadOpsDashboard() {
                           {(jobs.length > 0 ? jobs : FALLBACK_JOBS).slice(0, 5).map((job) => (
                             <tr key={job.id} className="border-b border-zinc-100 hover:bg-zinc-50/50 transition-colors last:border-0">
                               <td className="py-4 px-5 text-sm font-medium text-zinc-800 capitalize">
-                                {job.skill_required?.replace('_', ' ')}
+                                <div className="flex items-center gap-2">
+                                  <span>{job.skill_required?.replace('_', ' ')}</span>
+                                  {(job.diagnosis_video_url || job.video_url) && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 normal-case">
+                                      <Video className="w-3 h-3" />
+                                      30s Video
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td className="py-4 px-5 text-sm text-zinc-500 max-w-xs truncate">
                                 {job.address || 'Mysuru, India'}
@@ -1923,7 +1936,15 @@ export default function JugaadOpsDashboard() {
                                 {job.id.substring(0, 8)}...
                               </td>
                               <td className="py-4 px-5 text-sm font-medium text-zinc-800 capitalize">
-                                {job.skill_required?.replace('_', ' ')}
+                                <div className="flex items-center gap-2">
+                                  <span>{job.skill_required?.replace('_', ' ')}</span>
+                                  {(job.diagnosis_video_url || job.video_url) && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 normal-case">
+                                      <Video className="w-3 h-3" />
+                                      30s Video
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td className="py-4 px-5 text-sm text-zinc-500 truncate max-w-xs" title={job.address}>
                                 {job.address || 'Mysuru, India'}

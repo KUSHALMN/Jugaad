@@ -337,7 +337,21 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
       _userCache['mock_6'] = {'email': 'sriranga.clean@jugaad.com', 'phone': '+91 90363 62141'};
     }
 
-    var categoryFiltered = listToFilter;
+    var cityFiltered = listToFilter;
+    if (_selectedCity != 'All Cities') {
+      final cityLower = _selectedCity.toLowerCase();
+      final aliases = cityLower == 'mysuru'
+          ? ['mysuru', 'mysore']
+          : (cityLower == 'bengaluru' ? ['bengaluru', 'bangalore'] : [cityLower]);
+      cityFiltered = listToFilter.where((w) {
+        final areaStr = (w['area'] ?? '').toString().toLowerCase();
+        final cityStr = (w['city'] ?? '').toString().toLowerCase();
+        final combined = '$areaStr $cityStr';
+        return aliases.any((a) => combined.contains(a));
+      }).toList();
+    }
+
+    var categoryFiltered = cityFiltered;
     if (_selectedCategory != 'All') {
       final selectedClean = _selectedCategory.toLowerCase().replaceAll(' ', '_').replaceAll('-', '_');
       String rootKeyword = selectedClean;
@@ -359,7 +373,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
         rootKeyword = 'ac';
       }
 
-      categoryFiltered = listToFilter.where((w) {
+      categoryFiltered = cityFiltered.where((w) {
         final cat = (w['category'] ?? w['work_category'] ?? '').toString().toLowerCase().replaceAll(' ', '_');
         final skills = List<String>.from(w['skills'] as List? ?? [])
             .map((s) => s.toLowerCase().replaceAll(' ', '_'))
@@ -642,6 +656,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                               HapticFeedback.selectionClick();
                               setState(() {
                                 _selectedCity = val;
+                                _updateFilteredWorkers();
                               });
                             }
                           },

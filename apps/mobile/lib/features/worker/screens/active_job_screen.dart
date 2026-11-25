@@ -2735,10 +2735,47 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
                     style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
+            if (_jobData?['diagnosis_video_url'] != null ||
+                _jobData?['video_url'] != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.videocam_rounded,
+                      size: 16,
+                      color: Color(0xFF16A34A),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '30s Customer Diagnosis Video Attached',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF15803D),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.verified_rounded,
+                      size: 14,
+                      color: Color(0xFF16A34A),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
           // 64dp High-Contrast One-Thumb Road Mode Action Hub
           Row(
             children: [

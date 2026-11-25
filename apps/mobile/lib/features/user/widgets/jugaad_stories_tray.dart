@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
+import 'package:jugaad_mvp/core/services/video_diagnosis_session.dart';
 
 class StoryDiagnosisItem {
   final String id;
@@ -369,11 +370,15 @@ class JugaadStoriesTray extends StatelessWidget {
                       child: OutlinedButton.icon(
                         onPressed: () {
                           HapticFeedback.lightImpact();
+                          VideoDiagnosisSession.instance.attachClip(
+                            videoUrl: 'assets/videos/ac.mp4',
+                            category: 'Uploaded Diagnosis',
+                          );
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Video uploaded! Diagnosing issue via AI in 15 seconds...'),
-                              backgroundColor: Color(0xFF4F46E5),
+                              content: Text('30s Video attached! Workers & Admin can preview it on your booking.'),
+                              backgroundColor: Color(0xFF16A34A),
                             ),
                           );
                         },
@@ -399,10 +404,14 @@ class JugaadStoriesTray extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           HapticFeedback.heavyImpact();
+                          VideoDiagnosisSession.instance.attachClip(
+                            videoUrl: 'assets/videos/fan.mp4',
+                            category: 'Recorded Diagnosis',
+                          );
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Starting 30s camera recording...'),
+                              content: Text('30s diagnosis clip recorded & attached to your next booking!'),
                               backgroundColor: Color(0xFF16A34A),
                             ),
                           );

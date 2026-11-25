@@ -8,6 +8,7 @@ import 'package:jugaad_mvp/core/theme/worker_app_theme.dart';
 import 'package:jugaad_mvp/core/services/job_dispatch_service.dart';
 import 'package:jugaad_mvp/core/services/notification_service.dart';
 import 'package:jugaad_mvp/core/services/sound_service.dart';
+import 'package:jugaad_mvp/core/services/video_diagnosis_session.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
 
 class IncomingRequestScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class IncomingRequestScreen extends StatefulWidget {
   final int timeoutSeconds;
   final String jobType;
   final double surchargeAmount;
+  final String? diagnosisVideoUrl;
 
   const IncomingRequestScreen({
     super.key,
@@ -30,6 +32,7 @@ class IncomingRequestScreen extends StatefulWidget {
     this.timeoutSeconds = 300,
     this.jobType = 'normal',
     this.surchargeAmount = 0,
+    this.diagnosisVideoUrl,
   });
 
   @override
@@ -629,41 +632,71 @@ class _IncomingRequestScreenState extends State<IncomingRequestScreen>
                         ],
                       ),
                     ),
-                    // Urgency Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: widget.jobType == 'emergency'
-                            ? const Color(0xFF7F1D1D)
-                            : const Color(0xFFFEE2E2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            widget.jobType == 'emergency'
-                                ? Icons.warning_rounded
-                                : Icons.flash_on_rounded,
-                            size: 12,
-                            color: widget.jobType == 'emergency'
-                                ? Colors.white
-                                : WorkerAppTheme.urgentRed,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            widget.jobType == 'emergency' ? 'EMERGENCY' : 'Urgent',
-                            style: WorkerAppTheme.label(
-                              color: widget.jobType == 'emergency'
-                                  ? Colors.white
-                                  : WorkerAppTheme.urgentRed,
-                              size: 11,
-                              weight: FontWeight.w800,
+                    // Urgency & 30s Video Diagnosis Badges
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if ((widget.diagnosisVideoUrl?.isNotEmpty ?? false) ||
+                            VideoDiagnosisSession.instance.hasClip)
+                          Container(
+                            margin: const EdgeInsets.only(right: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFECFDF5),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFF86EFAC)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.videocam_rounded, size: 12, color: Color(0xFF15803D)),
+                                SizedBox(width: 4),
+                                Text(
+                                  '30s Video',
+                                  style: TextStyle(
+                                    color: Color(0xFF15803D),
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: widget.jobType == 'emergency'
+                                ? const Color(0xFFFFE4E6)
+                                : const Color(0xFFFEE2E2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFFFECDD3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                widget.jobType == 'emergency'
+                                    ? Icons.warning_rounded
+                                    : Icons.flash_on_rounded,
+                                size: 12,
+                                color: WorkerAppTheme.urgentRed,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                widget.jobType == 'emergency' ? 'EMERGENCY' : 'Urgent',
+                                style: WorkerAppTheme.label(
+                                  color: WorkerAppTheme.urgentRed,
+                                  size: 11,
+                                  weight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

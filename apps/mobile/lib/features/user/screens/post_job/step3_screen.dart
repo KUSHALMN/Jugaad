@@ -8,6 +8,7 @@ import 'dart:async';
 
 import '../../../../core/theme/user_app_theme.dart';
 import '../../../../core/services/api_service.dart';
+import '../../../../core/services/video_diagnosis_session.dart';
 import '../../../../core/config/services_list.dart';
 import '../../../../core/providers/services_provider.dart';
 import '../../../../core/widgets/jugaad_step_header.dart';
@@ -100,6 +101,7 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
       final cleanSkill = jobState.skill.trim().toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
       final normalizedSkill = (cleanSkill == 'home_repairs') ? 'home_repair' : cleanSkill;
 
+      final videoSession = VideoDiagnosisSession.instance;
       final res = await ApiService().createJob({
         'skill': normalizedSkill,
         'description': jobState.description,
@@ -112,6 +114,7 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
         'surcharge_amount': jobState.surchargeAmount,
         'is_emergency': jobState.jobType == 'emergency',
         'emergency_surcharge': jobState.jobType == 'emergency' ? (jobState.surchargeAmount > 0 ? jobState.surchargeAmount : 150.0) : 0.0,
+        if (videoSession.hasClip) 'diagnosis_video_url': videoSession.activeVideoUrl,
       });
       final jobId = res['job_id'] ?? res['id'];
       if (jobId == null || jobId.toString().isEmpty) {
@@ -119,6 +122,7 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
       }
 
       print('[POST_JOB] Job created: job_id=$jobId');
+      videoSession.clear();
       ref.read(postJobProvider.notifier).reset();
 
       if (mounted) {

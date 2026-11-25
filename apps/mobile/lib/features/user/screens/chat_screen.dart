@@ -854,26 +854,89 @@ class _ChatScreenState extends State<ChatScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title Header
+        // Title Header with Brand Badge & KPI Pills
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-          child: Text(
-            'Chats',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF0F172A),
-            ),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: const Color(0xFFA7F3D0)),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.forum_rounded, color: Color(0xFF16A34A), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 23,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F172A),
+                          ),
+                          children: const [
+                            TextSpan(text: 'Jugaad '),
+                            TextSpan(text: 'Chats', style: TextStyle(color: Color(0xFF16A34A))),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        'Direct technician messaging',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.translate_rounded, color: Color(0xFF2563EB), size: 14),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Auto-Translate',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1D4ED8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
 
         // Search Bar
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.03),
@@ -894,7 +957,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: const Color(0xFF94A3B8),
                   fontSize: 14,
                 ),
-                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF94A3B8), size: 20),
+                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF16A34A), size: 20),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
@@ -1085,51 +1148,77 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildEmptyInbox() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 20,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(18),
                 ),
-              ],
-            ),
-            child: const Icon(
-              Icons.forum_outlined,
-              color: Color(0xFF94A3B8),
-              size: 44,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'No Active Chats',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48),
-            child: Text(
-              'Your conversation threads with service experts will appear here once a booking is assigned.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFF64748B),
-                fontSize: 13,
-                height: 1.4,
+                child: const Icon(
+                  Icons.forum_outlined,
+                  color: Color(0xFF16A34A),
+                  size: 32,
+                ),
               ),
-            ),
+              const SizedBox(height: 16),
+              Text(
+                'No Active Chats',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Your conversation threads with service experts will appear here once a booking is assigned.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  color: const Color(0xFF64748B),
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 18),
+              ElevatedButton.icon(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  context.go('/user/workers');
+                },
+                icon: const Icon(Icons.search_rounded, size: 18, color: Colors.white),
+                label: Text(
+                  'Find & Book a Service',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF16A34A),
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+                ),
+              ),
+            ],
           ),
-        ],
-      ).animate().fadeIn(duration: 400.ms),
+        ).animate().fadeIn(duration: 400.ms),
+      ),
     );
   }
 
