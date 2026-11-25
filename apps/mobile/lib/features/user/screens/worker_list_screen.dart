@@ -28,6 +28,8 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
   final Map<String, Map<String, dynamic>> _userCache = {};
   StreamSubscription? _workersSubscription;
   String _selectedCategory = 'All';
+  String _selectedCity = 'Mysuru';
+  final List<String> _cities = ['Mysuru', 'Bengaluru', 'All Cities'];
   final List<String> _categories = [
     'All',
     'Electrician',
@@ -39,6 +41,18 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
     'AC service',
     'Cleaning',
   ];
+
+  static const Map<String, IconData> _categoryIcons = {
+    'All': Icons.grid_view_rounded,
+    'Electrician': Icons.bolt_rounded,
+    'Plumber': Icons.plumbing_rounded,
+    'Laptop repair': Icons.laptop_mac_rounded,
+    'Phone repair': Icons.smartphone_rounded,
+    'Carpenter': Icons.carpenter_rounded,
+    'Painter': Icons.format_paint_rounded,
+    'AC service': Icons.ac_unit_rounded,
+    'Cleaning': Icons.cleaning_services_rounded,
+  };
 
   static final List<Map<String, dynamic>> _mockWorkers = [
     {
@@ -421,39 +435,128 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Section
+            // Header Section with Brand Icon, Dual-Tone Title & KPI Stat Pills
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Jugaad Experts',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF0F172A),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Browse all skilled workers and their live status.',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      color: const Color(0xFF64748B),
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth > 740;
+                  final titleBlock = Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(13),
+                          border: Border.all(color: const Color(0xFFA7F3D0)),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.build_rounded,
+                          color: Color(0xFF16A34A),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RichText(
+                              text: TextSpan(
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: isWide ? 26 : 23,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF0F172A),
+                                ),
+                                children: const [
+                                  TextSpan(text: 'Jugaad '),
+                                  TextSpan(
+                                    text: 'Experts',
+                                    style: TextStyle(color: Color(0xFF16A34A)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Browse all skilled workers and their live status.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                color: const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+
+                  final kpiBadges = Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      _buildHeaderKpiPill(
+                        icon: Icons.groups_rounded,
+                        iconColor: const Color(0xFF16A34A),
+                        bgColor: const Color(0xFFECFDF5),
+                        borderColor: const Color(0xFFA7F3D0),
+                        value: '120+',
+                        label: 'Verified Workers',
+                      ),
+                      _buildHeaderKpiPill(
+                        icon: Icons.star_rounded,
+                        iconColor: const Color(0xFFF59E0B),
+                        bgColor: const Color(0xFFFFFBEB),
+                        borderColor: const Color(0xFFFDE68A),
+                        value: '4.8 ★',
+                        label: 'Avg. Rating',
+                      ),
+                      _buildHeaderKpiPill(
+                        icon: Icons.bolt_rounded,
+                        iconColor: const Color(0xFF16A34A),
+                        bgColor: const Color(0xFFECFDF5),
+                        borderColor: const Color(0xFFA7F3D0),
+                        value: '24/7',
+                        label: 'Service Available',
+                      ),
+                    ],
+                  );
+
+                  if (isWide) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(child: titleBlock),
+                        const SizedBox(width: 16),
+                        kpiBadges,
+                      ],
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      titleBlock,
+                      const SizedBox(height: 12),
+                      kpiBadges,
+                    ],
+                  );
+                },
               ),
             ),
 
-            // Search bar with 250ms debounce
+            // Search bar with 250ms debounce & integrated City Selector
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.03),
@@ -462,50 +565,96 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                     ),
                   ],
                 ),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (val) {
-                    _debouncer.run(
-                      query: val,
-                      action: () async => val,
-                      onResult: (result, fromCache) {
-                        if (mounted) {
-                          setState(() {
-                            _searchQuery = result;
-                            _updateFilteredWorkers();
-                          });
-                        }
-                      },
-                    );
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Search by name, skill, area, or email...',
-                    hintStyle: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF94A3B8),
-                      fontSize: 14,
-                    ),
-                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF16A34A), size: 20),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                                _updateFilteredWorkers();
-                              });
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (val) {
+                          _debouncer.run(
+                            query: val,
+                            action: () async => val,
+                            onResult: (result, fromCache) {
+                              if (mounted) {
+                                setState(() {
+                                  _searchQuery = result;
+                                  _updateFilteredWorkers();
+                                });
+                              }
                             },
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
+                          );
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Search by name, skill, area, or email...',
+                          hintStyle: GoogleFonts.plusJakartaSans(
+                            color: const Color(0xFF94A3B8),
+                            fontSize: 13.5,
+                          ),
+                          prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF16A34A), size: 20),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _searchQuery = '';
+                                      _updateFilteredWorkers();
+                                    });
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      height: 24,
+                      width: 1,
+                      color: const Color(0xFFE2E8F0),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedCity,
+                          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 18),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0F172A),
+                          ),
+                          items: _cities.map((city) {
+                            return DropdownMenuItem<String>(
+                              value: city,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.location_on_rounded, color: Color(0xFF16A34A), size: 15),
+                                  const SizedBox(width: 4),
+                                  Text(city),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              HapticFeedback.selectionClick();
+                              setState(() {
+                                _selectedCity = val;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
             const SizedBox(height: 8),
 
-            // Category Filter Chips
+            // Category Filter Chips with Icons
             Container(
               height: 48,
               margin: const EdgeInsets.only(bottom: 4),
@@ -516,15 +665,21 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                 itemBuilder: (context, index) {
                   final category = _categories[index];
                   final isSelected = _selectedCategory == category;
+                  final iconData = _categoryIcons[category] ?? Icons.handyman_rounded;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ChoiceChip(
+                      avatar: Icon(
+                        iconData,
+                        size: 15,
+                        color: isSelected ? Colors.white : const Color(0xFF475569),
+                      ),
                       label: Text(
                         category,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: isSelected ? Colors.white : const Color(0xFF64748B),
+                          color: isSelected ? Colors.white : const Color(0xFF334155),
                         ),
                       ),
                       selected: isSelected,
@@ -537,12 +692,12 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                           width: 1.0,
                         ),
                       ),
-
-                      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 6.0),
-                      labelPadding: EdgeInsets.zero,
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                      labelPadding: const EdgeInsets.only(left: 4, right: 4),
                       showCheckmark: false,
                       onSelected: (selected) {
                         if (selected) {
+                          HapticFeedback.selectionClick();
                           setState(() {
                             _selectedCategory = category;
                             _updateFilteredWorkers();
@@ -618,17 +773,68 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
                           separatorBuilder: (context, index) => const SizedBox(height: 14),
                           itemBuilder: (context, index) {
                             final worker = _filteredWorkersCache[index];
+                            final phone = (worker['phone'] ?? _userCache[worker['id']]?['phone'] ?? '').toString();
                             return _WorkerCard(
                               key: ValueKey(worker['id']),
                               worker: worker,
                               userData: _userCache[worker['id']] ?? {},
                               onTap: () => _showWorkerDetailsBottomSheet(worker),
+                              onCall: () => _makeCall(phone),
                             );
                           },
                         ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderKpiPill({
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    required Color borderColor,
+    required String value,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor, width: 1.0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: iconColor, size: 18),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
+                  height: 1.1,
+                ),
+              ),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF475569),
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1385,12 +1591,14 @@ class _WorkerCard extends StatefulWidget {
   final Map<String, dynamic> worker;
   final Map<String, dynamic> userData;
   final VoidCallback onTap;
+  final VoidCallback onCall;
 
   const _WorkerCard({
     super.key,
     required this.worker,
     required this.userData,
     required this.onTap,
+    required this.onCall,
   });
 
   @override
@@ -1401,6 +1609,24 @@ class _WorkerCardState extends State<_WorkerCard> {
   bool _isPressed = false;
   bool _isHovered = false;
 
+  IconData _resolveCategoryIcon(String cat) {
+    final lower = cat.toLowerCase();
+    if (lower.contains('ro') || lower.contains('purifier') || lower.contains('water')) {
+      return Icons.water_drop_rounded;
+    }
+    if (lower.contains('refrigerator') || lower.contains('fridge') || lower.contains('ac')) {
+      return Icons.ac_unit_rounded;
+    }
+    if (lower.contains('electr')) return Icons.bolt_rounded;
+    if (lower.contains('plumb')) return Icons.plumbing_rounded;
+    if (lower.contains('laptop')) return Icons.laptop_mac_rounded;
+    if (lower.contains('phone') || lower.contains('mobile')) return Icons.smartphone_rounded;
+    if (lower.contains('carpent')) return Icons.carpenter_rounded;
+    if (lower.contains('paint')) return Icons.format_paint_rounded;
+    if (lower.contains('clean')) return Icons.cleaning_services_rounded;
+    return Icons.handyman_rounded;
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = widget.worker['name'] ?? 'Expert';
@@ -1409,8 +1635,8 @@ class _WorkerCardState extends State<_WorkerCard> {
     final int jobs = widget.worker['total_jobs'] ?? widget.worker['totalJobsCompleted'] ?? widget.worker['completed_jobs'] ?? 0;
     final rawRating = widget.worker['rating'];
     final double? rating = (rawRating != null && jobs > 0) ? (double.tryParse(rawRating.toString())) : null;
-    final exp = widget.worker['experience'] ?? '1+ yrs';
-    final rate = widget.worker['hourly_rate'] ?? widget.worker['rate_per_hour'] ?? 150;
+    final exp = widget.worker['experience'] ?? '5+ years';
+    final rate = widget.worker['hourly_rate'] ?? widget.worker['rate_per_hour'] ?? 200;
     final isAvailable = widget.worker['is_available'] == true || widget.worker['availability_status'] == 'online' || widget.worker['is_online'] == true;
     final photoUrl = (widget.worker['profile_photo'] ?? widget.worker['id_document_url']) as String?;
     final specialities = List<String>.from(widget.worker['specialities'] as List? ?? []);
@@ -1422,8 +1648,8 @@ class _WorkerCardState extends State<_WorkerCard> {
             : (skills.isNotEmpty ? skills.first : 'Worker'));
 
     final initials = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'W';
-    final scale = _isPressed ? 0.97 : (_isHovered ? 1.02 : 1.0);
-
+    final scale = _isPressed ? 0.985 : (_isHovered ? 1.01 : 1.0);
+    final catIcon = _resolveCategoryIcon(categoryText);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -1441,33 +1667,33 @@ class _WorkerCardState extends State<_WorkerCard> {
           curve: Curves.easeOutCubic,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _isHovered ? const Color(0xFF16A34A).withValues(alpha: 0.4) : const Color(0xFFECEFF1),
+                color: _isHovered ? const Color(0xFF16A34A).withValues(alpha: 0.45) : const Color(0xFFE2E8F0),
                 width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: _isHovered 
+                  color: _isHovered
                       ? const Color(0xFF16A34A).withValues(alpha: 0.10)
-                      : Colors.black.withValues(alpha: 0.02),
-                  blurRadius: _isHovered ? 16 : 8,
+                      : Colors.black.withValues(alpha: 0.03),
+                  blurRadius: _isHovered ? 16 : 10,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Avatar with online pulse dot
-                Stack(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 620;
+
+                final avatarWidget = Stack(
                   children: [
                     CircleAvatar(
                       radius: 28,
-                      backgroundColor: const Color(0xFFF0FDF4),
+                      backgroundColor: const Color(0xFFECFDF5),
                       backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
                           ? CachedNetworkImageProvider(photoUrl)
                           : null,
@@ -1476,7 +1702,7 @@ class _WorkerCardState extends State<_WorkerCard> {
                               initials,
                               style: GoogleFonts.plusJakartaSans(
                                 color: const Color(0xFF16A34A),
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                                 fontSize: 20,
                               ),
                             )
@@ -1496,159 +1722,367 @@ class _WorkerCardState extends State<_WorkerCard> {
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(width: 16),
+                );
 
-                // Content Details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Name & verified badge
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              name,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF0F172A),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                final detailsColumn = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Name & verified badge
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0F172A),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          _buildVerificationStages(widget.worker, size: 12),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-
-                      // Category Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0FDF4),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFBBF7D0)),
-                        ),
-                        child: Text(
-                          categoryText.toUpperCase(),
-                          style: GoogleFonts.plusJakartaSans(
-                            color: const Color(0xFF15803D),
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(width: 6),
+                        _buildVerificationStages(widget.worker, size: 12),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+
+                    // Category Badge with Icon
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFBBF7D0)),
                       ),
-
-                      const SizedBox(height: 6),
-
-                      // Rating & job count
-                      Row(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.star_rounded, color: Color(0xFFEAB308), size: 16),
+                          Icon(catIcon, color: const Color(0xFF15803D), size: 12),
                           const SizedBox(width: 4),
                           Text(
-                            rating != null ? rating.toStringAsFixed(1) : 'New',
+                            categoryText.toUpperCase(),
                             style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12.5,
-                              color: const Color(0xFF1E293B),
-                            ),
-                          ),
-
-                          const SizedBox(width: 6),
-                          Container(width: 3, height: 3, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF94A3B8))),
-                          const SizedBox(width: 6),
-                          Text(
-                            '$jobs completed',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              color: const Color(0xFF64748B),
+                              color: const Color(0xFF15803D),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                    ),
+                    const SizedBox(height: 7),
 
-                      // Skills Chips
-                      if (skills.isNotEmpty) ...[
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: skills.take(3).map((s) => Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F5F9),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
+                    // Rating & completed jobs count
+                    Row(
+                      children: [
+                        const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          rating != null ? rating.toStringAsFixed(1) : 'New',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 3,
+                          height: 3,
+                          decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF94A3B8)),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$jobs completed jobs',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF475569),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Skills Chips with mini icons
+                    if (skills.isNotEmpty) ...[
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: skills.take(3).map((s) {
+                          final skillIcon = _resolveCategoryIcon(s);
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(skillIcon, size: 12, color: const Color(0xFF475569)),
+                                const SizedBox(width: 4),
+                                Text(
                                   s,
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF475569),
+                                    color: const Color(0xFF334155),
                                     fontSize: 11,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              )).toList(),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
 
-                      // Experience & Rate
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.work_outline_rounded, color: Color(0xFF94A3B8), size: 14),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$exp Exp',
+                    // Experience & Location Metadata Row
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.work_outline_rounded, color: Color(0xFF64748B), size: 14),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$exp Experience',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF475569),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.location_on_outlined, color: Color(0xFF64748B), size: 14),
+                            const SizedBox(width: 4),
+                            ConstrainedBox(
+                              constraints: BoxConstraints(maxWidth: isWide ? 280 : 220),
+                              child: Text(
+                                area,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
                                   color: const Color(0xFF64748B),
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ],
-                          ),
-                          Text(
-                            '₹$rate/hr',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: const Color(0xFF0F172A),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                );
 
-                      // Area location
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, color: Color(0xFF94A3B8), size: 14),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              area,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                color: const Color(0xFF94A3B8),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                // Category-themed visual illustration badge
+                final visualBadge = Container(
+                  width: 82,
+                  height: 82,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0F2FE).withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFBAE6FD).withValues(alpha: 0.6)),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(catIcon, size: 42, color: const Color(0xFF0284C7)),
+                      Positioned(
+                        bottom: 6,
+                        right: 6,
+                        child: Container(
+                          width: 24,
+                          height: 24,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF16A34A),
+                            shape: BoxShape.circle,
                           ),
-                        ],
+                          child: const Icon(Icons.verified_rounded, color: Colors.white, size: 14),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                );
+
+                // Pricing + Book Now + Call Button
+                final actionControls = Column(
+                  crossAxisAlignment: isWide ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '₹$rate/hr',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 17,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton(
+                          onPressed: widget.onTap,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF16A34A),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.event_available_rounded, size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Book Now',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.chevron_right_rounded, size: 16),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: widget.onCall,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFECFDF5),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFA7F3D0)),
+                            ),
+                            alignment: Alignment.center,
+                            child: const Icon(Icons.call_rounded, color: Color(0xFF16A34A), size: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+
+                if (isWide) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      avatarWidget,
+                      const SizedBox(width: 16),
+                      Expanded(child: detailsColumn),
+                      const SizedBox(width: 16),
+                      visualBadge,
+                      Container(
+                        height: 82,
+                        width: 1,
+                        margin: const EdgeInsets.symmetric(horizontal: 18),
+                        color: const Color(0xFFE2E8F0),
+                      ),
+                      actionControls,
+                    ],
+                  );
+                }
+
+                // Compact mobile layout
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        avatarWidget,
+                        const SizedBox(width: 14),
+                        Expanded(child: detailsColumn),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '₹$rate/hr',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              onTap: widget.onCall,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFECFDF5),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.call_rounded, color: Color(0xFF16A34A), size: 17),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: widget.onTap,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF16A34A),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.event_available_rounded, size: 15),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Book Now',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.chevron_right_rounded, size: 15),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
