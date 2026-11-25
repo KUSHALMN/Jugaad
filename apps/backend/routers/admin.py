@@ -691,35 +691,55 @@ def list_users_for_admin(
         # Aggregate booking metrics for each user
         user_ids = [u["id"] for u in raw_users if u.get("id")]
         stats_map = {}
+        recent_jobs_map = {}
         if user_ids:
             try:
-                jobs_res = supabase.table("jobs").select("employer_id, status, amount, surcharge_amount").in_("employer_id", user_ids).execute()
+                jobs_res = (
+                    supabase.table("jobs")
+                    .select("id, employer_id, worker_id, skill_required, status, amount, surcharge_amount, created_at, address, diagnosis_video_url")
+                    .order("created_at", desc=True)
+                    .limit(500)
+                    .execute()
+                )
+                user_id_set = set(str(uid) for uid in user_ids)
                 for j in (jobs_res.data or []):
-                    uid = j.get("employer_id")
-                    if not uid:
-                        continue
-                    if uid not in stats_map:
-                        stats_map[uid] = {
-                            "total_bookings": 0,
-                            "completed_bookings": 0,
-                            "cancelled_bookings": 0,
-                            "total_spent": 0.0,
-                        }
-                    stats_map[uid]["total_bookings"] += 1
-                    status = (j.get("status") or "").lower()
-                    if status == "completed":
-                        stats_map[uid]["completed_bookings"] += 1
-                        val = float(j.get("amount") or 0.0) + float(j.get("surcharge_amount") or 0.0)
-                        stats_map[uid]["total_spent"] += val
-                    elif status == "cancelled":
-                        stats_map[uid]["cancelled_bookings"] += 1
+                    emp_id = str(j.get("employer_id") or "")
+                    wrk_id = str(j.get("worker_id") or "")
+                    matched_ids = [uid for uid in (emp_id, wrk_id) if uid and uid in user_id_set]
+                    for uid in matched_ids:
+                        if uid not in stats_map:
+                            stats_map[uid] = {
+                                "total_bookings": 0,
+                                "completed_bookings": 0,
+                                "cancelled_bookings": 0,
+                                "total_spent": 0.0,
+                            }
+                            recent_jobs_map[uid] = []
+                        stats_map[uid]["total_bookings"] += 1
+                        status = (j.get("status") or "").lower()
+                        if status == "completed":
+                            stats_map[uid]["completed_bookings"] += 1
+                            val = float(j.get("amount") or 0.0) + float(j.get("surcharge_amount") or 0.0)
+                            stats_map[uid]["total_spent"] += val
+                        elif status == "cancelled":
+                            stats_map[uid]["cancelled_bookings"] += 1
+                        if len(recent_jobs_map[uid]) < 5:
+                            recent_jobs_map[uid].append({
+                                "id": j.get("id"),
+                                "skill_required": j.get("skill_required"),
+                                "status": j.get("status"),
+                                "amount": j.get("amount"),
+                                "created_at": j.get("created_at"),
+                                "address": j.get("address"),
+                                "has_video": bool(j.get("diagnosis_video_url")),
+                            })
             except Exception as j_err:
                 logger.warning(f"Failed to aggregate user job stats: {j_err}")
 
         enriched = []
         for u in raw_users:
             uid = u.get("id")
-            s = stats_map.get(uid, {
+            s = stats_map.get(str(uid), {
                 "total_bookings": 0,
                 "completed_bookings": 0,
                 "cancelled_bookings": 0,
@@ -736,7 +756,16 @@ def list_users_for_admin(
                 "phone": u.get("phone") or "",
                 "email": u.get("email") or "",
                 "role": u.get("role") or "employer",
+                "city": u.get("city") or "",
                 "created_at": u.get("created_at"),
+                "last_active_at": u.get("last_active_at") or u.get("updated_at"),
+                "battery_level": u.get("battery_level"),
+                "is_low_battery": u.get("is_low_battery"),
+                "network_mode": u.get("network_mode"),
+                "recent_searches": u.get("recent_searches") or [],
+                "last_booked_skill": u.get("last_booked_skill"),
+                "has_trusted_contact": bool(u.get("has_trusted_contact")),
+                "recent_jobs": recent_jobs_map.get(str(uid), []),
                 "total_bookings": total_b,
                 "completed_bookings": s["completed_bookings"],
                 "cancelled_bookings": canc_b,

@@ -21,7 +21,10 @@ import {
   UserCheck,
   UserX,
   X,
-  Download
+  Download,
+  Activity,
+  BatteryLow,
+  Wifi
 } from 'lucide-react';
 import { exportCustomersToCsv } from '../utils/csvExport';
 
@@ -92,9 +95,11 @@ export default function CustomersManager({ session }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUserJobs, setSelectedUserJobs] = useState([]);
   const [actionFeedback, setActionFeedback] = useState(null);
 
   // In-app modal state (replacing native browser alerts)
@@ -116,8 +121,8 @@ export default function CustomersManager({ session }) {
       const token = session?.access_token || '';
       const adminId = session?.user?.id || 'admin-local';
 
-      // Primary: backend API with enriched stats
-      const res = await fetch(API_ENDPOINTS.USERS('employer', searchQuery), {
+      // Primary: backend API with enriched stats + activity
+      const res = await fetch(API_ENDPOINTS.USERS(roleFilter, searchQuery), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-Admin-Id': adminId,
@@ -129,24 +134,47 @@ export default function CustomersManager({ session }) {
         const fetched = data.users || [];
         setUsers(fetched.length > 0 ? fetched : DEFAULT_DEMO_CUSTOMERS);
       } else {
-        // Fallback: direct Supabase query
-        const { data, error } = await supabase
+        // Fallback: direct Supabase query for ALL users + their recent jobs
+        let query = supabase
           .from('users')
           .select('*')
-          .eq('role', 'employer')
           .order('created_at', { ascending: false })
-          .limit(100);
+          .limit(200);
+        if (roleFilter !== 'all') {
+          query = query.eq('role', roleFilter);
+        }
+        const { data, error } = await query;
 
         if (!error && data && data.length > 0) {
-          setUsers(data.map(u => ({
-            ...u,
-            total_bookings: 0,
-            completed_bookings: 0,
-            cancelled_bookings: 0,
-            cancellation_rate: 0,
-            total_spent: 0,
-            status: u.is_suspended ? 'suspended' : 'active',
-          })));
+          const { data: jobsData } = await supabase
+            .from('jobs')
+            .select('id, employer_id, worker_id, skill_required, status, amount, surcharge_amount, created_at, address, diagnosis_video_url')
+            .order('created_at', { ascending: false })
+            .limit(300);
+          const jobsByUser = {};
+          (jobsData || []).forEach((j) => {
+            [j.employer_id, j.worker_id].filter(Boolean).forEach((uid) => {
+              if (!jobsByUser[uid]) jobsByUser[uid] = [];
+              jobsByUser[uid].push(j);
+            });
+          });
+          setUsers(data.map((u) => {
+            const uJobs = jobsByUser[u.id] || [];
+            const completed = uJobs.filter((j) => (j.status || '').toLowerCase() === 'completed');
+            const cancelled = uJobs.filter((j) => (j.status || '').toLowerCase() === 'cancelled');
+            const spent = completed.reduce((acc, j) => acc + Number(j.amount || 0) + Number(j.surcharge_amount || 0), 0);
+            const totalB = uJobs.length;
+            return {
+              ...u,
+              total_bookings: totalB,
+              completed_bookings: completed.length,
+              cancelled_bookings: cancelled.length,
+              cancellation_rate: totalB > 0 ? Math.round((cancelled.length / totalB) * 1000) / 10 : 0,
+              total_spent: spent,
+              recent_jobs: uJobs.slice(0, 5),
+              status: u.is_suspended ? 'suspended' : 'active',
+            };
+          }));
         } else {
           setUsers(DEFAULT_DEMO_CUSTOMERS);
         }
@@ -157,7 +185,7 @@ export default function CustomersManager({ session }) {
     } finally {
       setLoading(false);
     }
-  }, [session, searchQuery]);
+  }, [session, searchQuery, roleFilter]);
 
   useEffect(() => {
     fetchUsers();
@@ -167,12 +195,39 @@ export default function CustomersManager({ session }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
         fetchUsers();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => {
+        fetchUsers();
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [fetchUsers]);
+
+  useEffect(() => {
+    if (!selectedUser) {
+      setSelectedUserJobs([]);
+      return;
+    }
+    if (Array.isArray(selectedUser.recent_jobs) && selectedUser.recent_jobs.length > 0) {
+      setSelectedUserJobs(selectedUser.recent_jobs);
+      return;
+    }
+    let active = true;
+    supabase
+      .from('jobs')
+      .select('id, skill_required, status, amount, created_at, address, diagnosis_video_url')
+      .or(`employer_id.eq.${selectedUser.id},worker_id.eq.${selectedUser.id}`)
+      .order('created_at', { ascending: false })
+      .limit(8)
+      .then(({ data }) => {
+        if (active && Array.isArray(data)) setSelectedUserJobs(data);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedUser]);
 
   const requestToggleStatus = (user, suspend) => {
     if (suspend) {
@@ -375,6 +430,16 @@ export default function CustomersManager({ session }) {
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="bg-white border border-zinc-200 rounded-[10px] py-2 px-3 text-sm text-zinc-700 focus:outline-none"
+          >
+            <option value="all">All Roles</option>
+            <option value="employer">Customers</option>
+            <option value="worker">Workers</option>
+          </select>
+
+          <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-white border border-zinc-200 rounded-[10px] py-2 px-3 text-sm text-zinc-700 focus:outline-none"
@@ -405,8 +470,9 @@ export default function CustomersManager({ session }) {
           <table className="w-full text-left text-sm">
             <thead className="bg-zinc-50/80 text-zinc-500 text-xs font-medium uppercase tracking-wider border-b border-zinc-200/80">
               <tr>
-                <th className="py-3.5 px-4">Customer</th>
+                <th className="py-3.5 px-4">User & Role</th>
                 <th className="py-3.5 px-4">Contact</th>
+                <th className="py-3.5 px-4">Live Activity</th>
                 <th className="py-3.5 px-4 text-center">Bookings</th>
                 <th className="py-3.5 px-4 text-center">Cancel Rate</th>
                 <th className="py-3.5 px-4 text-right">Total Spent</th>
@@ -417,15 +483,15 @@ export default function CustomersManager({ session }) {
             <tbody className="divide-y divide-zinc-100">
               {loading && users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-zinc-400">
+                  <td colSpan={8} className="py-12 text-center text-zinc-400">
                     <RotateCcw className="w-6 h-6 animate-spin mx-auto mb-2 text-zinc-400" />
-                    Loading customer directory...
+                    Loading users & live activity...
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-zinc-400">
-                    No customers found matching the search and filter criteria.
+                  <td colSpan={8} className="py-12 text-center text-zinc-400">
+                    No users found matching the search and filter criteria.
                   </td>
                 </tr>
               ) : (
@@ -448,8 +514,11 @@ export default function CustomersManager({ session }) {
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-zinc-400 font-mono">
-                              #{user.id.slice(0, 8)}
+                            <div className="text-xs text-zinc-400 font-mono flex items-center gap-1.5">
+                              <span>#{user.id.slice(0, 8)}</span>
+                              <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 font-sans text-[10px] font-semibold uppercase">
+                                {user.role === 'worker' ? 'Worker' : 'Customer'}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -469,6 +538,42 @@ export default function CustomersManager({ session }) {
                             <div className="flex items-center gap-1.5 text-zinc-500 text-xs truncate max-w-[180px]">
                               <Mail className="w-3 h-3 text-zinc-400" />
                               {user.email}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <div className="space-y-1 text-xs">
+                          <div className="flex flex-wrap items-center gap-1">
+                            {user.last_booked_skill && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium capitalize">
+                                <Activity className="w-3 h-3" />
+                                {user.last_booked_skill.replace('_', ' ')}
+                              </span>
+                            )}
+                            {user.is_low_battery && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-medium">
+                                <BatteryLow className="w-3 h-3" />
+                                {user.battery_level ?? '<15'}%
+                              </span>
+                            )}
+                            {user.network_mode && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200 font-medium">
+                                <Wifi className="w-3 h-3" />
+                                {user.network_mode}
+                              </span>
+                            )}
+                          </div>
+                          {Array.isArray(user.recent_searches) && user.recent_searches.length > 0 ? (
+                            <div className="text-[11px] text-zinc-500 truncate max-w-[200px]">
+                              Searched: {user.recent_searches.slice(0, 2).join(', ')}
+                            </div>
+                          ) : (
+                            <div className="text-[11px] text-zinc-400">
+                              {user.recent_jobs?.length > 0
+                                ? `Last job: ${(user.recent_jobs[0].skill_required || '').replace('_', ' ')}`
+                                : 'No recent searches'}
                             </div>
                           )}
                         </div>
@@ -632,7 +737,55 @@ export default function CustomersManager({ session }) {
                 <span className="text-zinc-400">Member Since:</span>
                 <span className="font-medium">{selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : 'Unknown'}</span>
               </div>
+              <div className="flex justify-between py-1.5 border-b border-zinc-100">
+                <span className="text-zinc-400">Device & Network Context:</span>
+                <span className="font-medium">
+                  {selectedUser.battery_level != null ? `${selectedUser.battery_level}% battery` : 'Battery N/A'}
+                  {selectedUser.network_mode ? ` · ${selectedUser.network_mode}` : ''}
+                  {selectedUser.has_trusted_contact ? ' · Trusted Contact Set' : ''}
+                </span>
+              </div>
+              {Array.isArray(selectedUser.recent_searches) && selectedUser.recent_searches.length > 0 && (
+                <div className="py-1.5 border-b border-zinc-100">
+                  <span className="text-zinc-400 block mb-1">Recent Searches:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedUser.recent_searches.map((q, idx) => (
+                      <span key={idx} className="px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-700 text-[11px] font-medium">
+                        {q}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {selectedUserJobs.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider block">
+                  Recent Activity ({selectedUserJobs.length} bookings)
+                </span>
+                <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                  {selectedUserJobs.map((j) => (
+                    <div key={j.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-50 border border-zinc-100 text-xs">
+                      <div>
+                        <span className="font-semibold text-zinc-900 capitalize">
+                          {(j.skill_required || 'Service').replace('_', ' ')}
+                        </span>
+                        <span className="text-zinc-400 ml-2">
+                          {j.created_at ? new Date(j.created_at).toLocaleDateString() : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-semibold text-zinc-800">₹{j.amount || 0}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold uppercase">
+                          {j.status || 'requested'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="pt-2 flex gap-3">
               {selectedUser.is_suspended || selectedUser.status === 'suspended' ? (

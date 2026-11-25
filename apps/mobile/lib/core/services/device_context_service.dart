@@ -4,6 +4,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../config/supabase_config.dart';
+import 'auth_service.dart';
 
 /// Privacy-safe device & in-app context manager for Jugaad.
 ///
@@ -138,6 +140,26 @@ class DeviceContextService extends ChangeNotifier {
         _isOffline || results.contains(ConnectivityResult.mobile);
   }
 
+  Future<void> _syncActivityToBackend() async {
+    try {
+      final uid = AuthService().currentUser?.uid;
+      if (uid == null || uid.isEmpty) return;
+      await SupabaseConfig.client.from('users').update({
+        'battery_level': _batteryLevel,
+        'is_low_battery': isLowBattery,
+        'network_mode': _isOffline
+            ? 'offline'
+            : (_isSlowOrMeteredNetwork ? 'mobile_slow' : 'wifi'),
+        'recent_searches': _recentSearches,
+        'last_booked_skill': _lastBookedSkill,
+        'has_trusted_contact': hasTrustedContact,
+        'last_active_at': DateTime.now().toIso8601String(),
+      }).eq('id', uid);
+    } catch (_) {
+      // Safe no-op if offline, uninitialized, or columns not migrated yet
+    }
+  }
+
   /// Records a user search query to personalize service recommendations.
   Future<void> recordSearch(String query) async {
     final normalized = query.trim().toLowerCase();
@@ -151,6 +173,7 @@ class DeviceContextService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_kRecentSearchesKey, _recentSearches);
     } catch (_) {}
+    _syncActivityToBackend();
   }
 
   /// Records the most recently booked skill for smart re-ranking.
@@ -163,6 +186,7 @@ class DeviceContextService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kLastBookedSkillKey, normalized);
     } catch (_) {}
+    _syncActivityToBackend();
   }
 
   /// Saves an optional user-picked Trusted Emergency Contact.
@@ -178,6 +202,7 @@ class DeviceContextService extends ChangeNotifier {
       await prefs.setString(_kTrustedContactNameKey, _trustedContactName!);
       await prefs.setString(_kTrustedContactPhoneKey, _trustedContactPhone!);
     } catch (_) {}
+    _syncActivityToBackend();
   }
 
   /// Clears the saved Trusted Emergency Contact.
