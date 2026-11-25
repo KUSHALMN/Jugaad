@@ -82,6 +82,11 @@ class AppTranslations {
   String get storiesTraySubtitle => isKannada 
       ? '30-ಸೆಕೆಂಡ್ ವಿಡಿಯೋ ಡಯಾಗ್ನೋಸಿಸ್' 
       : (isHindi ? '30-सेकंड वीडियो डायग्नोसिस' : '30s Video Diagnosis');
+  String get videoDiagnosisDescription => isKannada
+      ? '30 ಸೆಕೆಂಡ್‌ಗಳ ಸಣ್ಣ ವಿಡಿಯೋ ರೆಕಾರ್ಡ್ ಮಾಡಿ ಸಮಸ್ಯೆಯನ್ನು ಶೀಘ್ರವಾಗಿ ಗುರುತಿಸಿ.'
+      : (isHindi
+          ? 'समस्या की पहचान के लिए 30 सेकंड का छोटा वीडियो रिकॉर्ड करें।'
+          : 'Record a short video (30 seconds) and get quick help to identify the issue.');
 
   // ── CATEGORIES ──
   String get electrician => isKannada ? 'ಎಲೆಕ್ಟ್ರಿಷಿಯನ್' : (isHindi ? 'इलेक्ट्रीशियन' : 'Electrician');
