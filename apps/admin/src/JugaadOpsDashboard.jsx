@@ -1265,7 +1265,7 @@ export default function JugaadOpsDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-50/50 flex flex-col justify-between font-sans selection:bg-indigo-150 selection:text-indigo-900 pb-20 md:pb-0">
+    <div className="min-h-screen bg-transparent flex flex-col justify-between font-sans selection:bg-orange-100 selection:text-orange-900 pb-20 md:pb-0">
       
       {/* === CUSTOM STYLE INJECTION (GEIST + INTER FONT) === */}
       <style dangerouslySetInnerHTML={{__html: `

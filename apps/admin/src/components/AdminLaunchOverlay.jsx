@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Shield, Radio, Users, CheckCircle2, Zap, Video, ArrowRight } from 'lucide-react';
 
 const DURATION_MS = 10000;
@@ -31,6 +32,8 @@ const SYSTEM_CHECKS = [
 
 export default function AdminLaunchOverlay({ onComplete }) {
   const [progress, setProgress] = useState(0);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     const start = performance.now();
@@ -43,20 +46,20 @@ export default function AdminLaunchOverlay({ onComplete }) {
       if (elapsed < DURATION_MS) {
         rafId = requestAnimationFrame(tick);
       } else {
-        onComplete?.();
+        onCompleteRef.current?.();
       }
     };
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [onComplete]);
+  }, []);
 
   const phaseIndex = Math.min(3, Math.floor(progress / 25));
   const currentPhase = PHASES[phaseIndex];
   const secondsLeft = Math.max(0, Math.ceil(((100 - progress) / 100) * 10));
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden bg-gradient-to-br from-orange-50 via-white to-emerald-50">
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto p-4 bg-gradient-to-br from-orange-50 via-white to-emerald-50">
       {/* Ambient pulsing orange & emerald orbs */}
       <div className="absolute -top-32 -left-32 w-[460px] h-[460px] rounded-full bg-orange-400/20 blur-[110px] animate-pulse" />
       <div className="absolute -bottom-32 -right-32 w-[460px] h-[460px] rounded-full bg-emerald-400/20 blur-[110px] animate-pulse" />
@@ -153,6 +156,7 @@ export default function AdminLaunchOverlay({ onComplete }) {
           })}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
