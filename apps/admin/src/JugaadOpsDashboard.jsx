@@ -1320,7 +1320,7 @@ export default function JugaadOpsDashboard() {
                 <h1 className="text-sm font-bold text-zinc-950 tracking-tight leading-none mb-0.5">
                   Jugaad Ops
                 </h1>
-                <span className="text-[10px] font-semibold bg-gradient-to-r from-orange-600 to-emerald-600 bg-clip-text text-transparent uppercase tracking-widest leading-none">
+                <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest leading-none">
                   Admin Console
                 </span>
               </div>
@@ -1351,10 +1351,10 @@ export default function JugaadOpsDashboard() {
                       setCategoryFilter('all');
                       setStatusFilter('all');
                     }}
-                    className={`whitespace-nowrap shrink-0 flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    className={`whitespace-nowrap shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                       isActive 
-                        ? 'bg-gradient-to-r from-orange-500 to-emerald-600 text-white shadow-sm shadow-orange-500/20' 
-                        : 'text-zinc-600 hover:text-orange-700 hover:bg-orange-50/80'
+                        ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25' 
+                        : 'text-zinc-600 hover:text-orange-600 hover:bg-orange-50/70'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5 shrink-0" />

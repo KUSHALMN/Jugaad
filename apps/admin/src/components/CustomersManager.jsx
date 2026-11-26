@@ -26,7 +26,9 @@ import {
   BatteryLow,
   Wifi,
   MapPin,
-  Sparkles
+  Sparkles,
+  Wallet,
+  Flag
 } from 'lucide-react';
 import { exportCustomersToCsv } from '../utils/csvExport';
 
@@ -435,26 +437,33 @@ export default function CustomersManager({ session }) {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header Block matching Website Theme */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-zinc-200/80 pb-6 mb-2">
-        <div>
-          <h2 className="text-[28px] font-semibold text-zinc-950 tracking-tight">Customer Directory & Intelligence</h2>
-          <p className="text-sm text-zinc-500 font-normal mt-1.5">Monitor booking health, manage fraudulent behavior, and inspect customer lifetime spend.</p>
+      {/* Header Block matching Glass & Orange/Green Theme */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-2">
+        <div className="flex items-start gap-3.5">
+          <div className="w-1 h-12 rounded-full bg-orange-500 mt-1 shrink-0" />
+          <div>
+            <h2 className="text-[26px] font-bold text-zinc-950 tracking-tight leading-tight">
+              Customer Directory &amp; Intelligence
+            </h2>
+            <p className="text-sm text-zinc-500 font-normal mt-1">
+              Monitor booking health, manage fraudulent behavior, and inspect customer lifetime spend.
+            </p>
+          </div>
         </div>
         <div className="flex items-center space-x-3 mt-4 md:mt-0">
           <button
             onClick={() => exportCustomersToCsv(filteredUsers)}
-            className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-800 font-medium active:scale-98 transition-all rounded-[10px] py-2 px-4 text-sm flex items-center space-x-1.5 shadow-sm"
+            className="jugaad-glass hover:bg-white/90 text-zinc-800 font-semibold active:scale-98 transition-all rounded-xl py-2 px-4 text-sm flex items-center space-x-1.5"
           >
-            <Download className="w-4 h-4 text-zinc-500" />
+            <Download className="w-4 h-4 text-zinc-600" />
             <span>Export Customers CSV</span>
           </button>
           <button
             onClick={fetchUsers}
             disabled={loading}
-            className="bg-zinc-950 hover:bg-zinc-800 text-white font-medium active:scale-98 transition-all rounded-[10px] py-2 px-4 text-sm flex items-center space-x-1.5 shadow-sm"
+            className="bg-emerald-800 hover:bg-emerald-900 text-white font-semibold active:scale-98 transition-all rounded-xl py-2 px-4 text-sm flex items-center space-x-1.5 shadow-sm shadow-emerald-900/20"
           >
-            <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin text-zinc-400' : ''}`} />
+            <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-200' : ''}`} />
             <span>Refresh</span>
           </button>
         </div>
@@ -467,38 +476,58 @@ export default function CustomersManager({ session }) {
         </div>
       )}
 
-      {/* KPI Headline Cards matching Orange & Green Glass Theme */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="jugaad-glass rounded-[22px] p-5 border-orange-200/60 hover:scale-[1.01] transition-all">
-          <span className="text-xs font-semibold text-orange-600 uppercase tracking-wider block">Total Users</span>
-          <h3 className="text-[28px] font-semibold text-zinc-900 mt-2 leading-none font-mono">
-            {metrics.total}
-          </h3>
-          <span className="text-xs text-zinc-500 mt-2 block font-normal">Registered platform accounts</span>
+      {/* KPI Headline Cards matching Mockup Glass Design */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="jugaad-glass rounded-[20px] p-5 flex items-center gap-4 hover:scale-[1.01] transition-all">
+          <div className="w-11 h-11 rounded-full bg-orange-100/90 border border-orange-200/70 flex items-center justify-center text-orange-600 shrink-0">
+            <Users className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-orange-600 uppercase tracking-wider block">Total Users</span>
+            <h3 className="text-[26px] font-bold text-zinc-950 mt-0.5 leading-none font-mono">
+              {metrics.total}
+            </h3>
+            <span className="text-[11px] text-zinc-500 mt-1 block truncate">Registered platform accounts</span>
+          </div>
         </div>
 
-        <div className="jugaad-glass rounded-[22px] p-5 border-emerald-200/60 hover:scale-[1.01] transition-all">
-          <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider block">Gross Customer Spend</span>
-          <h3 className="text-[28px] font-semibold text-emerald-600 mt-2 leading-none font-mono">
-            ₹{metrics.totalSpent.toLocaleString()}
-          </h3>
-          <span className="text-xs text-zinc-500 mt-2 block font-normal">Cumulative booking value</span>
+        <div className="jugaad-glass rounded-[20px] p-5 flex items-center gap-4 hover:scale-[1.01] transition-all">
+          <div className="w-11 h-11 rounded-full bg-emerald-100/90 border border-emerald-200/70 flex items-center justify-center text-emerald-600 shrink-0">
+            <Wallet className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block">Gross Customer Spend</span>
+            <h3 className="text-[26px] font-bold text-emerald-600 mt-0.5 leading-none font-mono">
+              ₹{metrics.totalSpent.toLocaleString()}
+            </h3>
+            <span className="text-[11px] text-zinc-500 mt-1 block truncate">Cumulative booking value</span>
+          </div>
         </div>
 
-        <div className="jugaad-glass rounded-[22px] p-5 border-orange-200/60 hover:scale-[1.01] transition-all">
-          <span className="text-xs font-semibold text-orange-600 uppercase tracking-wider block">Frequent Bookers</span>
-          <h3 className="text-[28px] font-semibold text-orange-600 mt-2 leading-none font-mono">
-            {metrics.frequent}
-          </h3>
-          <span className="text-xs text-zinc-500 mt-2 block font-normal">Completed 3+ service jobs</span>
+        <div className="jugaad-glass rounded-[20px] p-5 flex items-center gap-4 hover:scale-[1.01] transition-all">
+          <div className="w-11 h-11 rounded-full bg-blue-100/90 border border-blue-200/70 flex items-center justify-center text-blue-600 shrink-0">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider block">Frequent Bookers</span>
+            <h3 className="text-[26px] font-bold text-zinc-950 mt-0.5 leading-none font-mono">
+              {metrics.frequent}
+            </h3>
+            <span className="text-[11px] text-zinc-500 mt-1 block truncate">Completed 3+ service jobs</span>
+          </div>
         </div>
 
-        <div className="jugaad-glass rounded-[22px] p-5 border-emerald-200/60 hover:scale-[1.01] transition-all">
-          <span className="text-xs font-semibold text-red-600 uppercase tracking-wider block">Suspended / Flagged</span>
-          <h3 className="text-[28px] font-semibold text-red-600 mt-2 leading-none font-mono">
-            {metrics.suspended}
-          </h3>
-          <span className="text-xs text-zinc-500 mt-2 block font-normal">Restricted user profiles</span>
+        <div className="jugaad-glass rounded-[20px] p-5 flex items-center gap-4 hover:scale-[1.01] transition-all">
+          <div className="w-11 h-11 rounded-full bg-rose-100/90 border border-rose-200/70 flex items-center justify-center text-rose-600 shrink-0">
+            <Flag className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">Suspended / Flagged</span>
+            <h3 className="text-[26px] font-bold text-rose-600 mt-0.5 leading-none font-mono">
+              {metrics.suspended}
+            </h3>
+            <span className="text-[11px] text-zinc-500 mt-1 block truncate">Restricted user profiles</span>
+          </div>
         </div>
       </div>
 
@@ -589,11 +618,15 @@ export default function CustomersManager({ session }) {
                     <tr key={user.id} className="hover:bg-zinc-50/80 transition-colors group">
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-700 font-bold text-xs uppercase shadow-sm">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs uppercase shadow-xs ${
+                            user.role === 'worker'
+                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-200/80'
+                              : 'bg-purple-100 text-purple-700 border border-purple-200/80'
+                          }`}>
                             {(user.name || 'U').slice(0, 2)}
                           </div>
                           <div>
-                            <div className="font-semibold text-zinc-900 group-hover:text-indigo-600 transition flex items-center gap-2">
+                            <div className="font-semibold text-zinc-900 group-hover:text-orange-600 transition flex items-center gap-2">
                               {user.name || 'Anonymous User'}
                               {isSusp && (
                                 <span className="px-1.5 py-0.5 bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold rounded-md">
@@ -603,7 +636,11 @@ export default function CustomersManager({ session }) {
                             </div>
                             <div className="text-xs text-zinc-400 font-mono flex items-center gap-1.5">
                               <span>#{user.id.slice(0, 8)}</span>
-                              <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 font-sans text-[10px] font-semibold uppercase">
+                              <span className={`px-1.5 py-0.5 rounded-md font-sans text-[10px] font-bold uppercase ${
+                                user.role === 'worker'
+                                  ? 'bg-blue-50 text-blue-700 border border-blue-200/60'
+                                  : 'bg-sky-50 text-sky-700 border border-sky-200/60'
+                              }`}>
                                 {user.role === 'worker' ? 'Worker' : 'Customer'}
                               </span>
                             </div>
