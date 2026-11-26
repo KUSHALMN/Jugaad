@@ -40,8 +40,8 @@ export default function AdminLaunchOverlay({ onComplete }) {
     let rafId;
 
     const tick = (now) => {
-      const elapsed = now - start;
-      const pct = Math.min(100, (elapsed / DURATION_MS) * 100);
+      const elapsed = Math.max(0, now - start);
+      const pct = Math.max(0, Math.min(100, (elapsed / DURATION_MS) * 100));
       setProgress(pct);
       if (elapsed < DURATION_MS) {
         rafId = requestAnimationFrame(tick);
@@ -54,8 +54,8 @@ export default function AdminLaunchOverlay({ onComplete }) {
     return () => cancelAnimationFrame(rafId);
   }, []);
 
-  const phaseIndex = Math.min(3, Math.floor(progress / 25));
-  const currentPhase = PHASES[phaseIndex];
+  const phaseIndex = Math.max(0, Math.min(3, Math.floor(progress / 25)));
+  const currentPhase = PHASES[phaseIndex] || PHASES[0];
   const secondsLeft = Math.max(0, Math.ceil(((100 - progress) / 100) * 10));
 
   return createPortal(
