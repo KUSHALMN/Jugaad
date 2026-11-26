@@ -41,7 +41,7 @@ class SymptomDiscoveryCarousel extends StatelessWidget {
       title: 'Ceiling fan noisy?',
       titleKannada: 'ಫ್ಯಾನ್ ಶಬ್ದ ಮಾಡುತ್ತಿದೆಯೇ?',
       startingPrice: '₹149',
-      icon: Icons.toys_rounded,
+      icon: Icons.wind_power_rounded,
       accentColor: Color(0xFF2563EB),
       bgGradientStart: Color(0xFFEFF6FF),
       bgGradientEnd: Color(0xFFDBEAFE),
@@ -136,120 +136,154 @@ class SymptomDiscoveryCarousel extends StatelessWidget {
                   ),
                 ],
               ),
-              Text(
-                'Top Solutions',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF2563EB),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                ),
+                child: Text(
+                  'Top Solutions',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF15803D),
+                  ),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 120,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            scrollDirection: Axis.horizontal,
-            itemCount: _symptoms.length,
-            separatorBuilder: (_, index) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final item = _symptoms[index];
-              return InkWell(
-                onTap: () => onSymptomTap?.call(item),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  width: 170,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [item.bgGradientStart, item.bgGradientEnd],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: item.accentColor.withValues(alpha: 0.2)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: item.accentColor.withValues(alpha: 0.06),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 900;
+            if (isWide) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Row(
+                  children: [
+                    for (int i = 0; i < _symptoms.length; i++) ...[
+                      Expanded(child: _buildSymptomCard(_symptoms[i])),
+                      if (i < _symptoms.length - 1) const SizedBox(width: 12),
                     ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(7),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: Icon(item.icon, color: item.accentColor, size: 18),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              item.startingPrice,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: item.accentColor,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF0F172A),
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                          Text(
-                            item.titleKannada,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.notoSansKannada(
-                              fontSize: 10,
-                              color: const Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               );
-            },
-          ),
+            }
+            return SizedBox(
+              height: 124,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                scrollDirection: Axis.horizontal,
+                itemCount: _symptoms.length,
+                separatorBuilder: (_, index) => const SizedBox(width: 12),
+                itemBuilder: (context, index) => SizedBox(
+                  width: 172,
+                  child: _buildSymptomCard(_symptoms[index]),
+                ),
+              ),
+            );
+          },
         ),
       ],
+    );
+  }
+
+  Widget _buildSymptomCard(SymptomCardData item) {
+    return InkWell(
+      onTap: () => onSymptomTap?.call(item),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        height: 124,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, item.bgGradientStart, item.bgGradientEnd],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: item.accentColor.withValues(alpha: 0.22),
+            width: 1.2,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A0F172A),
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: item.accentColor.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  child: Icon(item.icon, color: item.accentColor, size: 17),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: item.accentColor.withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: Text(
+                    item.startingPrice,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: item.accentColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0F172A),
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  item.titleKannada,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.notoSansKannada(
+                    fontSize: 10,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
