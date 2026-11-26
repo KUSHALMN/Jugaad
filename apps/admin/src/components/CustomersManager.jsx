@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../supabaseClient';
 import { API_ENDPOINTS } from '../apiConfig';
 import AdminActionModal from './AdminActionModal';
@@ -806,10 +807,16 @@ export default function CustomersManager({ session }) {
         </div>
       </div>
 
-      {/* Customer Detail Drawer / Modal matching Website Theme */}
-      {selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white border border-zinc-200 rounded-[24px] w-full max-w-lg p-6 shadow-2xl relative space-y-5">
+      {/* Customer Detail Drawer / Modal rendered in Portal so fixed inset-0 covers full viewport */}
+      {selectedUser && createPortal(
+        <div
+          onClick={() => setSelectedUser(null)}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-sm"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white/95 backdrop-blur-xl border border-orange-100 rounded-[24px] w-full max-w-lg max-h-[88vh] overflow-y-auto p-6 shadow-2xl relative space-y-5"
+          >
             <button
               onClick={() => setSelectedUser(null)}
               className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition"
@@ -984,22 +991,26 @@ export default function CustomersManager({ session }) {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* In-app Confirmation Modal (Zero native browser popups!) */}
-      <AdminActionModal
-        isOpen={modalState.isOpen}
-        type={modalState.type}
-        title={modalState.title}
-        message={modalState.message}
-        inputLabel={modalState.inputLabel}
-        inputPlaceholder={modalState.inputPlaceholder}
-        initialInputValue={modalState.initialInputValue}
-        confirmText={modalState.confirmText}
-        onConfirm={modalState.onConfirm}
-        onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
-      />
+      {createPortal(
+        <AdminActionModal
+          isOpen={modalState.isOpen}
+          type={modalState.type}
+          title={modalState.title}
+          message={modalState.message}
+          inputLabel={modalState.inputLabel}
+          inputPlaceholder={modalState.inputPlaceholder}
+          initialInputValue={modalState.initialInputValue}
+          confirmText={modalState.confirmText}
+          onConfirm={modalState.onConfirm}
+          onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+        />,
+        document.body
+      )}
     </div>
   );
 }
