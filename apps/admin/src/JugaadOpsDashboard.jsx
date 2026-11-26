@@ -35,6 +35,7 @@ import SurgeGeofencingHub from './components/SurgeGeofencingHub';
 import EnhancedKycAudit from './components/EnhancedKycAudit';
 import CustomersManager from './components/CustomersManager';
 import AnalyticsReportsHub from './components/AnalyticsReportsHub';
+import AdminLaunchOverlay from './components/AdminLaunchOverlay';
 import AdminActionModal from './components/AdminActionModal';
 import { exportJobsToCsv, exportWorkersToCsv } from './utils/csvExport';
 import { 
@@ -234,6 +235,7 @@ export default function JugaadOpsDashboard() {
   const [authName, setAuthName] = useState('');
   const [isSignUpMode, setIsSignUpMode] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
+  const [showLaunchOverlay, setShowLaunchOverlay] = useState(false);
 
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [isLoading, setIsLoading] = useState(true);
@@ -384,10 +386,12 @@ export default function JugaadOpsDashboard() {
         setSession({ user: { id: 'e19f862f-945b-4c87-a981-2b6c7d7de305', email: 'admin@jugaad.com' } });
         setIsAdmin(true);
       }
+      setShowLaunchOverlay(true);
     } catch (err) {
       // Local fallback
       setSession({ user: { id: 'e19f862f-945b-4c87-a981-2b6c7d7de305', email: 'admin@jugaad.com' } });
       setIsAdmin(true);
+      setShowLaunchOverlay(true);
     } finally {
       setAuthLoading(false);
     }
@@ -413,6 +417,7 @@ export default function JugaadOpsDashboard() {
           password: trimmedPassword,
         });
         if (error) throw error;
+        setShowLaunchOverlay(true);
       }
     } catch (err) {
       console.error("Authentication failed:", err);
@@ -1308,6 +1313,9 @@ export default function JugaadOpsDashboard() {
       `}} />
 
       <div>
+        {showLaunchOverlay && (
+          <AdminLaunchOverlay onComplete={() => setShowLaunchOverlay(false)} />
+        )}
         {/* === TOP NAVBAR === */}
         <header className="sticky top-0 z-40 bg-white/75 border-b border-orange-200/60 backdrop-blur-xl shadow-[0_4px_24px_rgba(234,88,12,0.05)]">
           <div className="max-w-[1440px] mx-auto px-4 lg:px-6 h-16 flex items-center justify-between gap-3">
