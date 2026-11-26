@@ -242,7 +242,7 @@ export default function AnalyticsReportsHub({ session, onExportTrigger }) {
               <span className="text-zinc-700">Gross GMV (₹)</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-indigo-500"></span>
+              <span className="w-3 h-3 rounded-full bg-orange-500"></span>
               <span className="text-zinc-700">Take Rate (10%)</span>
             </div>
           </div>
@@ -262,14 +262,14 @@ export default function AnalyticsReportsHub({ session, onExportTrigger }) {
                   </div>
 
                   {/* Dual Bar Group */}
-                  <div className="w-full max-w-[42px] flex items-end justify-center gap-1">
+                  <div className="flex-1 min-h-0 w-full max-w-[42px] flex items-end justify-center gap-1 pt-4">
                     <div
                       style={{ height: `${heightPercent}%` }}
                       className="w-full bg-emerald-500 hover:bg-emerald-600 rounded-t-[6px] transition-all cursor-pointer shadow-sm"
                     />
                     <div
-                      style={{ height: `${Math.max(6, Math.round(heightPercent * 0.28))}%` }}
-                      className="w-2.5 bg-indigo-500 hover:bg-indigo-600 rounded-t-[4px] transition-all cursor-pointer shadow-sm"
+                      style={{ height: `${Math.max(8, Math.round(heightPercent * 0.28))}%` }}
+                      className="w-2.5 bg-orange-500 hover:bg-orange-600 rounded-t-[4px] transition-all cursor-pointer shadow-sm"
                     />
                   </div>
 
