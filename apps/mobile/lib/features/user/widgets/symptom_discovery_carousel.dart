@@ -41,7 +41,7 @@ class SymptomDiscoveryCarousel extends StatelessWidget {
       title: 'Ceiling fan noisy?',
       titleKannada: 'ಫ್ಯಾನ್ ಶಬ್ದ ಮಾಡುತ್ತಿದೆಯೇ?',
       startingPrice: '₹149',
-      icon: Icons.wind_power_rounded,
+      icon: Icons.mode_fan_off_rounded,
       accentColor: Color(0xFF2563EB),
       bgGradientStart: Color(0xFFEFF6FF),
       bgGradientEnd: Color(0xFFDBEAFE),
@@ -52,7 +52,7 @@ class SymptomDiscoveryCarousel extends StatelessWidget {
       title: 'Water tap leaking?',
       titleKannada: 'ನಲ್ಲಿ ಸೋರುತ್ತಿದೆಯೇ?',
       startingPrice: '₹99',
-      icon: Icons.water_drop_rounded,
+      icon: Icons.plumbing_rounded,
       accentColor: Color(0xFF0284C7),
       bgGradientStart: Color(0xFFF0F9FF),
       bgGradientEnd: Color(0xFFE0F2FE),
@@ -96,7 +96,7 @@ class SymptomDiscoveryCarousel extends StatelessWidget {
       title: 'Door lock jammed?',
       titleKannada: 'ಬಾಗಿಲಿನ ಲಾಕ್ ಜಾಮ್ ಆಗಿದೆಯೇ?',
       startingPrice: '₹179',
-      icon: Icons.lock_open_rounded,
+      icon: Icons.lock_rounded,
       accentColor: Color(0xFFEA580C),
       bgGradientStart: Color(0xFFFFF7ED),
       bgGradientEnd: Color(0xFFFFEDD5),
@@ -195,32 +195,46 @@ class SymptomDiscoveryCarousel extends StatelessWidget {
     return InkWell(
       onTap: () => onSymptomTap?.call(item),
       borderRadius: BorderRadius.circular(20),
-      child: Container(
-        height: 124,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.white, item.bgGradientStart, item.bgGradientEnd],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: item.accentColor.withValues(alpha: 0.22),
-            width: 1.2,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A0F172A),
-              blurRadius: 12,
-              offset: Offset(0, 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          height: 124,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.white, item.bgGradientStart, item.bgGradientEnd],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: item.accentColor.withValues(alpha: 0.22),
+              width: 1.2,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A0F172A),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -10,
+                bottom: -10,
+                child: Icon(
+                  item.icon,
+                  size: 62,
+                  color: item.accentColor.withValues(alpha: 0.09),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -281,7 +295,11 @@ class SymptomDiscoveryCarousel extends StatelessWidget {
                 ),
               ],
             ),
-          ],
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
