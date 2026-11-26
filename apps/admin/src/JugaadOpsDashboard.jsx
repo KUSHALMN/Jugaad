@@ -1105,8 +1105,8 @@ export default function JugaadOpsDashboard() {
         `}} />
 
         {/* Global Animated Glow Backdrops */}
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[60%] rounded-full bg-indigo-600/10 blur-[150px] pointer-events-none animate-pulse-glow-1" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[60%] rounded-full bg-violet-600/10 blur-[150px] pointer-events-none animate-pulse-glow-2" />
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[60%] rounded-full bg-orange-500/15 blur-[150px] pointer-events-none animate-pulse-glow-1" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[60%] rounded-full bg-emerald-500/15 blur-[150px] pointer-events-none animate-pulse-glow-2" />
 
         {/* Left Side: 60% Width Dashboard Visual with Grid and Hero */}
         <div className="hidden lg:flex lg:w-[60%] relative bg-zinc-950 border-r border-zinc-800/60 items-center justify-center overflow-hidden">
@@ -1116,16 +1116,16 @@ export default function JugaadOpsDashboard() {
             alt="Jugaad Workers" 
             className="absolute inset-0 w-full h-full object-cover opacity-45 mix-blend-luminosity scale-105 transition-transform duration-1000"
           />
-          <div className="absolute inset-0 bg-gradient-to-tr from-zinc-950 via-zinc-950/80 to-indigo-950/30 z-10" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-zinc-950 via-zinc-950/80 to-orange-950/30 z-10" />
           
           <div className="relative z-20 max-w-xl px-12">
-            <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-indigo-950/80 border border-indigo-500/30 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-8 shadow-[0_0_15px_rgba(99,102,241,0.15)]">
-              <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse" />
+            <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-8 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
               <span>Jugaad Ops System v1.4</span>
             </div>
             
             <h1 className="text-5xl font-bold text-white mb-6 leading-tight tracking-tight">
-              Empowering India's <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-400 to-indigo-300">Blue-Collar</span> Workforce
+              Empowering India's <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-emerald-400">Blue-Collar</span> Workforce
             </h1>
             <p className="text-lg text-zinc-400 font-normal leading-relaxed mb-8">
               Real-time dispatch, automatic fallback matchmaking, secure automated payout releases, and Aadhaar verification for tradespeople across Mysuru's hyperlocal marketplace.
@@ -1153,7 +1153,7 @@ export default function JugaadOpsDashboard() {
         <div className="w-full lg:w-[40%] flex flex-col justify-center px-6 sm:px-16 lg:px-20 bg-zinc-950/80 backdrop-blur-md relative z-20">
           <div className="w-full max-w-md mx-auto">
             <div className="mb-10 text-left">
-              <div className="inline-flex p-3.5 bg-zinc-900 border border-zinc-800 rounded-2xl text-indigo-500 mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+              <div className="inline-flex p-3.5 bg-gradient-to-br from-orange-500/20 to-emerald-500/20 border border-orange-500/30 rounded-2xl text-orange-400 mb-6 shadow-[0_4px_20px_rgba(249,115,22,0.15)]">
                 <Shield className="w-6 h-6 animate-pulse" />
               </div>
               <h2 className="text-3xl font-bold text-white tracking-tight mb-2.5">Console Authorization</h2>
@@ -1210,7 +1210,7 @@ export default function JugaadOpsDashboard() {
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl font-semibold text-sm transition-all shadow-[0_4px_20px_rgba(99,102,241,0.25)] active:scale-[0.99] disabled:opacity-50 mt-6 cursor-pointer"
+                className="w-full py-3 bg-gradient-to-r from-orange-500 to-emerald-600 hover:from-orange-400 hover:to-emerald-500 text-white rounded-xl font-semibold text-sm transition-all shadow-[0_4px_20px_rgba(249,115,22,0.3)] active:scale-[0.99] disabled:opacity-50 mt-6 cursor-pointer"
               >
                 {authLoading ? 'Authorizing Core Access...' : isSignUpMode ? 'Register Console Operator' : 'Authorize Core Access'}
               </button>
@@ -1229,15 +1229,15 @@ export default function JugaadOpsDashboard() {
 
             <div className="mt-4 p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-center">
               <span className="text-[11px] text-zinc-400 block font-medium">Default Admin Credentials:</span>
-              <span className="text-xs font-mono text-indigo-400 font-semibold">admin@jugaad.com</span>
+              <span className="text-xs font-mono text-orange-400 font-semibold">admin@jugaad.com</span>
               <span className="text-[10px] text-zinc-500 mx-2">•</span>
-              <span className="text-xs font-mono text-indigo-400 font-semibold">admin12345</span>
+              <span className="text-xs font-mono text-emerald-400 font-semibold">admin12345</span>
             </div>
 
             <div className="mt-8 text-center border-t border-zinc-900 pt-6">
               <button
                 onClick={() => setIsSignUpMode(!isSignUpMode)}
-                className="text-xs text-zinc-400 hover:text-indigo-400 font-medium transition-colors focus:outline-none cursor-pointer"
+                className="text-xs text-zinc-400 hover:text-orange-400 font-medium transition-colors focus:outline-none cursor-pointer"
               >
                 {isSignUpMode ? 'Already registered? Authorize credentials' : 'Create new administrator profile'}
               </button>
