@@ -1309,25 +1309,25 @@ export default function JugaadOpsDashboard() {
 
       <div>
         {/* === TOP NAVBAR === */}
-        <header className="sticky top-0 z-40 bg-white border-b border-zinc-200/80 backdrop-blur-md bg-white/95">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <header className="sticky top-0 z-40 bg-white/75 border-b border-orange-200/60 backdrop-blur-xl shadow-[0_4px_24px_rgba(234,88,12,0.05)]">
+          <div className="max-w-[1440px] mx-auto px-4 lg:px-6 h-16 flex items-center justify-between gap-3">
             {/* Logo Section */}
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-600 shadow-xs">
+            <div className="flex items-center space-x-3 shrink-0">
+              <div className="p-2 bg-gradient-to-br from-orange-500 to-emerald-600 rounded-xl text-white shadow-md shadow-orange-500/20">
                 <Shield className="w-5 h-5" />
               </div>
-              <div>
-                <h1 className="text-sm font-semibold text-zinc-950 tracking-tight leading-none mb-0.5">
+              <div className="whitespace-nowrap">
+                <h1 className="text-sm font-bold text-zinc-950 tracking-tight leading-none mb-0.5">
                   Jugaad Ops
                 </h1>
-                <span className="text-[10px] font-medium text-emerald-600 uppercase tracking-widest leading-none">
-                  Admin Command Console
+                <span className="text-[10px] font-semibold bg-gradient-to-r from-orange-600 to-emerald-600 bg-clip-text text-transparent uppercase tracking-widest leading-none">
+                  Admin Console
                 </span>
               </div>
             </div>
 
-            {/* Nav Tabs for Desktop (Stripe-like center links) */}
-            <nav className="hidden md:flex items-center space-x-1">
+            {/* Nav Tabs for Desktop */}
+            <nav className="hidden md:flex items-center space-x-1 overflow-x-auto no-scrollbar flex-1 justify-center px-2">
               {[
                 { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
                 { id: 'Jobs', label: 'Jobs', icon: CheckSquare },
@@ -1351,13 +1351,13 @@ export default function JugaadOpsDashboard() {
                       setCategoryFilter('all');
                       setStatusFilter('all');
                     }}
-                    className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`whitespace-nowrap shrink-0 flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                       isActive 
-                        ? 'bg-zinc-100 text-zinc-900' 
-                        : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
+                        ? 'bg-gradient-to-r from-orange-500 to-emerald-600 text-white shadow-sm shadow-orange-500/20' 
+                        : 'text-zinc-600 hover:text-orange-700 hover:bg-orange-50/80'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
                     <span>{tab.label}</span>
                   </button>
                 );
@@ -1365,8 +1365,8 @@ export default function JugaadOpsDashboard() {
             </nav>
 
             {/* Actions Section */}
-            <div className="flex items-center space-x-4 relative">
-              <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-medium">
+            <div className="flex items-center space-x-2.5 relative shrink-0">
+              <div className="hidden sm:inline-flex whitespace-nowrap items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50/90 border border-emerald-200 text-emerald-700 text-[11px] font-semibold">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 Live Sync
               </div>
@@ -1376,23 +1376,23 @@ export default function JugaadOpsDashboard() {
                   setShowCompanyDetails(false);
                   setBellAlert(false);
                 }}
-                className="relative p-2 text-zinc-500 hover:text-zinc-950 transition-colors rounded-lg hover:bg-zinc-50 focus:outline-none"
+                className="relative p-2 text-zinc-500 hover:text-orange-600 transition-colors rounded-xl hover:bg-orange-50/80 focus:outline-none"
               >
                 <Bell className="w-4.5 h-4.5" />
                 {bellAlert && (
-                  <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-indigo-600 rounded-full ring-2 ring-white" />
+                  <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-orange-500 rounded-full ring-2 ring-white" />
                 )}
               </button>
               
-              <div className="h-8 w-px bg-zinc-200/80" />
+              <div className="h-7 w-px bg-orange-200/60" />
               
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
                 <button 
                   onClick={() => {
                     setShowCompanyDetails(!showCompanyDetails);
                     setShowNotifications(false);
                   }}
-                  className="w-8 h-8 rounded-full border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 flex items-center justify-center font-semibold text-xs text-zinc-700 transition-colors focus:outline-none cursor-pointer"
+                  className="w-8 h-8 rounded-full border border-orange-200/80 bg-gradient-to-br from-orange-50 to-emerald-50 hover:from-orange-100 hover:to-emerald-100 flex items-center justify-center font-bold text-xs text-orange-700 transition-colors focus:outline-none cursor-pointer"
                 >
                   AD
                 </button>
@@ -1486,9 +1486,9 @@ export default function JugaadOpsDashboard() {
                 <div className="flex items-center space-x-3 mt-4 md:mt-0">
                   <button 
                     onClick={() => { fetchPendingWorkers(); fetchJobs(); }} 
-                    className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-800 font-medium active:scale-98 transition-all rounded-[10px] py-2 px-4 text-sm flex items-center space-x-1.5"
+                    className="jugaad-glass hover:bg-orange-50/80 border border-orange-200/80 text-orange-700 font-semibold active:scale-98 transition-all rounded-xl py-2 px-4 text-sm flex items-center space-x-1.5"
                   >
-                    <Activity className="w-4 h-4 text-zinc-400" />
+                    <Activity className="w-4 h-4 text-emerald-600" />
                     <span>Refresh Telemetry</span>
                   </button>
                 </div>
@@ -1496,22 +1496,22 @@ export default function JugaadOpsDashboard() {
 
               {/* Section: System Health */}
               <section className="space-y-4">
-                <h3 className="text-[18px] font-medium text-zinc-900 tracking-tight">System Health</h3>
-                <div className="h-px bg-zinc-200/80" />
+                <h3 className="text-[18px] font-semibold text-zinc-900 tracking-tight">System Health</h3>
+                <div className="h-px bg-gradient-to-r from-orange-200/70 via-emerald-200/70 to-transparent" />
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                   {/* KPI: Jobs */}
-                  <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-150 ease-out hover:scale-[1.01] hover:shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-                    <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Jobs</span>
-                    <h3 className="text-[28px] font-semibold text-zinc-900 mt-2 leading-none">
+                  <div className="jugaad-glass rounded-[22px] p-5 border-orange-200/60 transition-all duration-150 ease-out hover:scale-[1.01]">
+                    <span className="text-xs font-semibold text-orange-600 uppercase tracking-wider block">Jobs</span>
+                    <h3 className="text-[28px] font-bold text-zinc-900 mt-2 leading-none">
                       <AnimatedCounter value={stats.activeJobs} />
                     </h3>
                     <span className="text-xs text-zinc-500 mt-2 block">Active matching queue</span>
                   </div>
                   
                   {/* KPI: Workers */}
-                  <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-150 ease-out hover:scale-[1.01] hover:shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-                    <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Workers</span>
-                    <h3 className="text-[28px] font-semibold text-zinc-900 mt-2 leading-none">
+                  <div className="jugaad-glass rounded-[22px] p-5 border-emerald-200/60 transition-all duration-150 ease-out hover:scale-[1.01]">
+                    <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider block">Workers</span>
+                    <h3 className="text-[28px] font-bold text-zinc-900 mt-2 leading-none">
                       <AnimatedCounter value={stats.onlineWorkers || allWorkers.length || 21} />
                     </h3>
                     <span className="text-xs text-zinc-500 mt-2 block">
@@ -1520,18 +1520,18 @@ export default function JugaadOpsDashboard() {
                   </div>
 
                   {/* KPI: Revenue */}
-                  <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-150 ease-out hover:scale-[1.01] hover:shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-                    <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Revenue</span>
-                    <h3 className="text-[28px] font-semibold text-zinc-900 mt-2 leading-none">
+                  <div className="jugaad-glass rounded-[22px] p-5 border-emerald-200/60 transition-all duration-150 ease-out hover:scale-[1.01]">
+                    <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider block">Revenue</span>
+                    <h3 className="text-[28px] font-bold text-emerald-700 mt-2 leading-none">
                       ₹<AnimatedCounter value={stats.emergencyRevenue} />
                     </h3>
                     <span className="text-xs text-zinc-500 mt-2 block">Total platform bookings</span>
                   </div>
 
                   {/* KPI: Response */}
-                  <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-150 ease-out hover:scale-[1.01] hover:shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-                    <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Response Time</span>
-                    <h3 className="text-[28px] font-semibold text-zinc-900 mt-2 leading-none">
+                  <div className="jugaad-glass rounded-[22px] p-5 border-orange-200/60 transition-all duration-150 ease-out hover:scale-[1.01]">
+                    <span className="text-xs font-semibold text-orange-600 uppercase tracking-wider block">Response Time</span>
+                    <h3 className="text-[28px] font-bold text-orange-600 mt-2 leading-none">
                       {stats.avgResponseTime.toFixed(1)}m
                     </h3>
                     <span className="text-xs text-zinc-500 mt-2 block">Avg dispatch response</span>

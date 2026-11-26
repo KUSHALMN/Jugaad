@@ -145,3 +145,29 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1aa;
 }
+
+/* =========================================================================
+   Light Orange + Emerald Glassmorphism Theme
+   ========================================================================= */
+body {
+  background: radial-gradient(circle at 8% 12%, rgba(255, 237, 213, 0.85) 0%, transparent 42%),
+              radial-gradient(circle at 92% 18%, rgba(209, 250, 229, 0.85) 0%, transparent 45%),
+              linear-gradient(135deg, #fffaf5 0%, #ffffff 52%, #f0fdf4 100%);
+  background-attachment: fixed;
+}
+
+.jugaad-glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 30px rgba(234, 88, 12, 0.06), 0 2px 8px rgba(16, 185, 129, 0.05);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -467,43 +467,43 @@ export default function CustomersManager({ session }) {
         </div>
       )}
 
-      {/* KPI Headline Cards matching Website Theme */}
+      {/* KPI Headline Cards matching Orange & Green Glass Theme */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
-          <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Total Customers</span>
+        <div className="jugaad-glass rounded-[22px] p-5 border-orange-200/60 hover:scale-[1.01] transition-all">
+          <span className="text-xs font-semibold text-orange-600 uppercase tracking-wider block">Total Users</span>
           <h3 className="text-[28px] font-semibold text-zinc-900 mt-2 leading-none font-mono">
             {metrics.total}
           </h3>
-          <span className="text-xs text-zinc-500 mt-2 block font-normal">Registered employer accounts</span>
+          <span className="text-xs text-zinc-500 mt-2 block font-normal">Registered platform accounts</span>
         </div>
 
-        <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
-          <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Gross Customer Spend</span>
+        <div className="jugaad-glass rounded-[22px] p-5 border-emerald-200/60 hover:scale-[1.01] transition-all">
+          <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider block">Gross Customer Spend</span>
           <h3 className="text-[28px] font-semibold text-emerald-600 mt-2 leading-none font-mono">
             ₹{metrics.totalSpent.toLocaleString()}
           </h3>
           <span className="text-xs text-zinc-500 mt-2 block font-normal">Cumulative booking value</span>
         </div>
 
-        <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
-          <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Frequent Bookers</span>
-          <h3 className="text-[28px] font-semibold text-indigo-600 mt-2 leading-none font-mono">
+        <div className="jugaad-glass rounded-[22px] p-5 border-orange-200/60 hover:scale-[1.01] transition-all">
+          <span className="text-xs font-semibold text-orange-600 uppercase tracking-wider block">Frequent Bookers</span>
+          <h3 className="text-[28px] font-semibold text-orange-600 mt-2 leading-none font-mono">
             {metrics.frequent}
           </h3>
           <span className="text-xs text-zinc-500 mt-2 block font-normal">Completed 3+ service jobs</span>
         </div>
 
-        <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
-          <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Suspended / Flagged</span>
+        <div className="jugaad-glass rounded-[22px] p-5 border-emerald-200/60 hover:scale-[1.01] transition-all">
+          <span className="text-xs font-semibold text-red-600 uppercase tracking-wider block">Suspended / Flagged</span>
           <h3 className="text-[28px] font-semibold text-red-600 mt-2 leading-none font-mono">
             {metrics.suspended}
           </h3>
-          <span className="text-xs text-zinc-500 mt-2 block font-normal">Restricted customer profiles</span>
+          <span className="text-xs text-zinc-500 mt-2 block font-normal">Restricted user profiles</span>
         </div>
       </div>
 
-      {/* Filter and Search Panel matching Website Theme */}
-      <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col md:flex-row gap-4 items-center justify-between">
+      {/* Filter and Search Panel matching Glass Theme */}
+      <div className="jugaad-glass rounded-[22px] p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
           <input
@@ -552,7 +552,7 @@ export default function CustomersManager({ session }) {
       </div>
 
       {/* Customer Directory Table */}
-      <div className="bg-white border border-zinc-200/80 rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] overflow-hidden">
+      <div className="jugaad-glass rounded-[22px] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-zinc-50/80 text-zinc-500 text-xs font-medium uppercase tracking-wider border-b border-zinc-200/80">
