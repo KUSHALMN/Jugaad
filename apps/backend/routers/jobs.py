@@ -128,6 +128,8 @@ def create_job(body: CreateJobRequest, background_tasks: BackgroundTasks, uid: s
             emergency_fields["service_fee_type"] = body.service_fee_type
         if body.surcharge_amount:
             emergency_fields["surcharge_amount"] = body.surcharge_amount
+        if getattr(body, "diagnosis_video_url", None):
+            emergency_fields["diagnosis_video_url"] = body.diagnosis_video_url
         if emergency_fields:
             supabase.table("jobs").update(emergency_fields).eq("id", job_id).execute()
     except Exception as e:

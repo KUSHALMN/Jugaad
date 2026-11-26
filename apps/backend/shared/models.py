@@ -40,6 +40,7 @@ class CreateJobRequest(BaseModel):
     job_type: Optional[Literal["normal", "emergency"]] = "normal"
     service_fee_type: Optional[Literal["normal", "emergency"]] = "normal"
     surcharge_amount: Optional[float] = 0.0
+    diagnosis_video_url: Optional[str] = None
 
     @field_validator("skill")
     @classmethod
