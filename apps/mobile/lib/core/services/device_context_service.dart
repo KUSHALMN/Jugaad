@@ -25,6 +25,7 @@ class DeviceContextService extends ChangeNotifier {
   static const _kTrustedContactNameKey = 'jugaad_trusted_contact_name';
   static const _kTrustedContactPhoneKey = 'jugaad_trusted_contact_phone';
   static const _kActivityLogKey = 'jugaad_activity_log';
+  static const _kSessionIdKey = 'jugaad_session_id';
 
   final Battery _battery = Battery();
   final Connectivity _connectivity = Connectivity();
@@ -38,6 +39,7 @@ class DeviceContextService extends ChangeNotifier {
   bool _isSlowOrMeteredNetwork = false;
   bool _isOffline = false;
   String _networkType = 'wifi';
+  String _sessionId = '';
   List<String> _recentSearches = [];
   List<Map<String, dynamic>> _activityLog = [];
   String? _lastBookedSkill;
@@ -50,6 +52,24 @@ class DeviceContextService extends ChangeNotifier {
   bool get isOffline => _isOffline;
   String get networkType => _networkType;
   String get devicePlatform => kIsWeb ? 'Web' : defaultTargetPlatform.name;
+
+  /// First-party session & preference cookie metadata for Admin diagnostics.
+  Map<String, dynamic> get cookieProfile => {
+        'consent_status': 'accepted_essential',
+        'session_id': _sessionId.isNotEmpty
+            ? _sessionId
+            : 'jg_sess_${DateTime.now().millisecondsSinceEpoch}',
+        'cookies_enabled': true,
+        'preferred_language': 'en',
+        'portal_mode': 'user',
+        'stored_keys': [
+          'jugaad_session_id',
+          if (_recentSearches.isNotEmpty) 'jugaad_recent_searches',
+          if (_lastBookedSkill != null) 'jugaad_last_booked_skill',
+          if (hasTrustedContact) 'jugaad_trusted_contact',
+        ],
+        'last_cookie_sync_at': DateTime.now().toIso8601String(),
+      };
 
   /// Derives a concise behavioral pattern label from in-app & device signals.
   String get behaviorPattern {
@@ -143,6 +163,11 @@ class DeviceContextService extends ChangeNotifier {
       _lastBookedSkill = prefs.getString(_kLastBookedSkillKey);
       _trustedContactName = prefs.getString(_kTrustedContactNameKey);
       _trustedContactPhone = prefs.getString(_kTrustedContactPhoneKey);
+      _sessionId = prefs.getString(_kSessionIdKey) ?? '';
+      if (_sessionId.isEmpty) {
+        _sessionId = 'jg_sess_${DateTime.now().millisecondsSinceEpoch}';
+        await prefs.setString(_kSessionIdKey, _sessionId);
+      }
       notifyListeners();
     } catch (_) {}
   }
@@ -201,6 +226,7 @@ class DeviceContextService extends ChangeNotifier {
         'last_booked_skill': _lastBookedSkill,
         'has_trusted_contact': hasTrustedContact,
         'behavior_pattern': behaviorPattern,
+        'cookie_profile': cookieProfile,
         'activity_log': _activityLog,
         'last_active_at': DateTime.now().toIso8601String(),
       }).eq('id', uid);

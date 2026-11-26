@@ -768,6 +768,7 @@ def list_users_for_admin(
                 "recent_searches": u.get("recent_searches") or [],
                 "last_booked_skill": u.get("last_booked_skill"),
                 "has_trusted_contact": bool(u.get("has_trusted_contact")),
+                "cookie_profile": u.get("cookie_profile") or {},
                 "behavior_pattern": u.get("behavior_pattern") or (
                     "High Cancel Risk • Review Needed" if canc_rate > 25
                     else ("Frequent Repeat Booker" if total_b >= 3

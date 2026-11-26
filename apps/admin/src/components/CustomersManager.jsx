@@ -29,7 +29,8 @@ import {
   MapPin,
   Sparkles,
   Wallet,
-  Flag
+  Flag,
+  Cookie
 } from 'lucide-react';
 import { exportCustomersToCsv } from '../utils/csvExport';
 
@@ -52,6 +53,15 @@ const DEFAULT_DEMO_CUSTOMERS = [
     recent_searches: ['electrician', 'mcb tripping'],
     last_booked_skill: 'electrician',
     has_trusted_contact: true,
+    cookie_profile: {
+      consent_status: 'accepted_essential',
+      session_id: 'jg_sess_1795708211',
+      cookies_enabled: true,
+      preferred_language: 'kn',
+      portal_mode: 'user',
+      stored_keys: ['jugaad_session_id', 'jugaad_recent_searches', 'jugaad_last_booked_skill', 'jugaad_trusted_contact'],
+      last_cookie_sync_at: '2026-11-26T15:40:00Z',
+    },
     activity_log: [
       { type: 'booking', detail: 'Booked electrician (Express Mode)', network: 'mobile', timestamp: '2026-11-25T17:10:00Z' },
       { type: 'search', detail: 'Searched "mcb tripping"', network: 'mobile', timestamp: '2026-11-25T17:08:00Z' },
@@ -87,6 +97,15 @@ const DEFAULT_DEMO_CUSTOMERS = [
     recent_searches: ['ac cleaning', 'geyser not heating'],
     last_booked_skill: 'ac_service',
     has_trusted_contact: true,
+    cookie_profile: {
+      consent_status: 'accepted_essential',
+      session_id: 'jg_sess_1795707105',
+      cookies_enabled: true,
+      preferred_language: 'en',
+      portal_mode: 'user',
+      stored_keys: ['jugaad_session_id', 'jugaad_recent_searches', 'jugaad_last_booked_skill', 'jugaad_trusted_contact'],
+      last_cookie_sync_at: '2026-11-26T15:12:00Z',
+    },
     activity_log: [
       { type: 'category_tap', detail: 'Selected AC Service', network: 'wifi', timestamp: '2026-11-25T16:45:00Z' },
       { type: 'search', detail: 'Searched "ac cleaning"', network: 'wifi', timestamp: '2026-11-25T16:42:00Z' },
@@ -120,6 +139,15 @@ const DEFAULT_DEMO_CUSTOMERS = [
     recent_searches: ['vijayanagar surge'],
     last_booked_skill: 'plumber',
     has_trusted_contact: false,
+    cookie_profile: {
+      consent_status: 'accepted_essential',
+      session_id: 'jg_sess_1795706440',
+      cookies_enabled: true,
+      preferred_language: 'kn',
+      portal_mode: 'worker',
+      stored_keys: ['jugaad_session_id', 'jugaad_recent_searches', 'jugaad_last_booked_skill'],
+      last_cookie_sync_at: '2026-11-26T14:55:00Z',
+    },
     activity_log: [
       { type: 'network_change', detail: 'Switched to mobile', network: 'mobile', timestamp: '2026-11-25T16:20:00Z' },
       { type: 'app_open', detail: 'Opened Jugaad (android • mobile)', network: 'mobile', timestamp: '2026-11-25T16:00:00Z' },
@@ -153,6 +181,15 @@ const DEFAULT_DEMO_CUSTOMERS = [
     recent_searches: ['carpenter', 'stove repair'],
     last_booked_skill: 'carpenter',
     has_trusted_contact: false,
+    cookie_profile: {
+      consent_status: 'essential_only',
+      session_id: 'jg_sess_1795690112',
+      cookies_enabled: true,
+      preferred_language: 'en',
+      portal_mode: 'user',
+      stored_keys: ['jugaad_session_id', 'jugaad_recent_searches'],
+      last_cookie_sync_at: '2026-11-25T12:15:00Z',
+    },
     activity_log: [
       { type: 'search', detail: 'Searched "stove repair"', network: 'wifi', timestamp: '2026-11-23T12:15:00Z' },
     ],
@@ -705,6 +742,10 @@ export default function CustomersManager({ session }) {
                                 {user.device_platform}
                               </span>
                             )}
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200/70 text-[10px] font-medium">
+                              <Cookie className="w-2.5 h-2.5" />
+                              {(user.cookie_profile?.stored_keys?.length || 2)} cookies
+                            </span>
                           </div>
                           {Array.isArray(user.activity_log) && user.activity_log.length > 0 ? (
                             <div className="text-[11px] text-zinc-600 truncate max-w-[220px]">
@@ -939,6 +980,55 @@ export default function CustomersManager({ session }) {
                   </div>
                 </div>
               )}
+
+              {/* First-Party Session & Cookie Details */}
+              {(() => {
+                const cp = (selectedUser.cookie_profile && Object.keys(selectedUser.cookie_profile).length > 0)
+                  ? selectedUser.cookie_profile
+                  : {
+                      consent_status: 'accepted_essential',
+                      session_id: `jg_sess_${String(selectedUser.id || 'demo').slice(0, 8)}`,
+                      cookies_enabled: true,
+                      preferred_language: 'en',
+                      portal_mode: selectedUser.role === 'worker' ? 'worker' : 'user',
+                      stored_keys: ['jugaad_session_id', 'jugaad_preferences'],
+                      last_cookie_sync_at: selectedUser.last_active_at || selectedUser.created_at,
+                    };
+                return (
+                  <div className="p-3 rounded-xl bg-orange-50/50 border border-orange-200/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-700">
+                        <Cookie className="w-3.5 h-3.5" />
+                        Session &amp; Cookie Details
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold">
+                        {cp.cookies_enabled !== false ? 'Cookies Enabled' : 'Disabled'} · {cp.consent_status || 'essential'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <div>
+                        <span className="text-zinc-400 block">Session ID</span>
+                        <span className="font-mono font-semibold text-zinc-800">{cp.session_id}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400 block">Locale / Portal</span>
+                        <span className="font-medium text-zinc-800 uppercase">
+                          {cp.preferred_language || 'en'} · {cp.portal_mode || 'user'}
+                        </span>
+                      </div>
+                    </div>
+                    {Array.isArray(cp.stored_keys) && cp.stored_keys.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-0.5">
+                        {cp.stored_keys.map((k, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded-md bg-white border border-orange-200/70 font-mono text-[10px] text-zinc-700">
+                            {k}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {selectedUserJobs.length > 0 && (
