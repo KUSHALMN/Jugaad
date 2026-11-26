@@ -298,7 +298,7 @@ class _JobsScreenState extends State<JobsScreen>
                 unselectedLabelStyle: GoogleFonts.plusJakartaSans(
                   fontSize: 13.5,
                   color: const Color(0xFF64748B),
-                  weight: FontWeight.w700,
+                  fontWeight: FontWeight.w700,
                 ),
                 tabs: const [
                   Tab(text: 'Active'),
