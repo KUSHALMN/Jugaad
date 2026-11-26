@@ -712,10 +712,10 @@ export default function JugaadOpsDashboard() {
 
     if (isAdmin) {
       fetchStats();
-      const interval = setInterval(fetchStats, 6000);
+      const interval = setInterval(fetchStats, 12000);
       return () => clearInterval(interval);
     }
-  }, [isAdmin, allWorkers.length, jobs.length]);
+  }, [isAdmin]);
 
   // Handle Operations console simulated logs
   useEffect(() => {

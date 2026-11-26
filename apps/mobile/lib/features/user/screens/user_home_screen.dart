@@ -1025,17 +1025,21 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
 
                   // --- JUGAAD STORIES (30s Video Diagnosis Tray)
                   const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: 12.0),
-                      child: JugaadStoriesTray(),
+                    child: RepaintBoundary(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: 12.0),
+                        child: JugaadStoriesTray(),
+                      ),
                     ),
                   ),
 
                   // --- MANE TECHNICIAN (1-Tap Trusted Rebooking Tray)
                   const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: 16.0),
-                      child: TrustedTechniciansTray(),
+                    child: RepaintBoundary(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: 16.0),
+                        child: TrustedTechniciansTray(),
+                      ),
                     ),
                   ),
 

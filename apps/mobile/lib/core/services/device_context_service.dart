@@ -32,6 +32,7 @@ class DeviceContextService extends ChangeNotifier {
 
   StreamSubscription<BatteryState>? _batterySub;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+  Timer? _syncDebounce;
   bool _initialized = false;
 
   int _batteryLevel = 100;
@@ -213,26 +214,29 @@ class DeviceContextService extends ChangeNotifier {
   }
 
   Future<void> _syncActivityToBackend() async {
-    try {
-      final uid = AuthService().currentUser?.uid;
-      if (uid == null || uid.isEmpty) return;
-      await SupabaseConfig.client.from('users').update({
-        'battery_level': _batteryLevel,
-        'is_low_battery': isLowBattery,
-        'battery_state': _batteryState.name,
-        'network_mode': _networkType,
-        'device_platform': devicePlatform,
-        'recent_searches': _recentSearches,
-        'last_booked_skill': _lastBookedSkill,
-        'has_trusted_contact': hasTrustedContact,
-        'behavior_pattern': behaviorPattern,
-        'cookie_profile': cookieProfile,
-        'activity_log': _activityLog,
-        'last_active_at': DateTime.now().toIso8601String(),
-      }).eq('id', uid);
-    } catch (_) {
-      // Safe no-op if offline, uninitialized, or columns not migrated yet
-    }
+    _syncDebounce?.cancel();
+    _syncDebounce = Timer(const Duration(milliseconds: 2500), () async {
+      try {
+        final uid = AuthService().currentUser?.uid;
+        if (uid == null || uid.isEmpty) return;
+        await SupabaseConfig.client.from('users').update({
+          'battery_level': _batteryLevel,
+          'is_low_battery': isLowBattery,
+          'battery_state': _batteryState.name,
+          'network_mode': _networkType,
+          'device_platform': devicePlatform,
+          'recent_searches': _recentSearches,
+          'last_booked_skill': _lastBookedSkill,
+          'has_trusted_contact': hasTrustedContact,
+          'behavior_pattern': behaviorPattern,
+          'cookie_profile': cookieProfile,
+          'activity_log': _activityLog,
+          'last_active_at': DateTime.now().toIso8601String(),
+        }).eq('id', uid);
+      } catch (_) {
+        // Safe no-op if offline, uninitialized, or columns not migrated yet
+      }
+    });
   }
 
   /// Records an in-app or device event to the user's activity feed and syncs it.
@@ -399,6 +403,7 @@ class DeviceContextService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _syncDebounce?.cancel();
     _batterySub?.cancel();
     _connectivitySub?.cancel();
     super.dispose();
