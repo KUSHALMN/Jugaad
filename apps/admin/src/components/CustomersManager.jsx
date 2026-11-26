@@ -677,9 +677,8 @@ export default function CustomersManager({ session }) {
                             </span>
                           </div>
                           {user.behavior_pattern && (
-                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-[10px] font-semibold">
-                              <Sparkles className="w-2.5 h-2.5 flex-shrink-0" />
-                              <span className="truncate max-w-[190px]">{user.behavior_pattern}</span>
+                            <div className="text-[11px] font-medium text-orange-700 truncate max-w-[200px]">
+                              {user.behavior_pattern}
                             </div>
                           )}
                           <div className="flex flex-wrap items-center gap-1">
@@ -897,8 +896,7 @@ export default function CustomersManager({ session }) {
               </div>
               <div className="flex justify-between items-center py-1.5 border-b border-zinc-100">
                 <span className="text-zinc-400">Behavior Pattern:</span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-[11px] font-semibold">
-                  <Sparkles className="w-3 h-3" />
+                <span className="font-medium text-orange-700">
                   {selectedUser.behavior_pattern || 'Steady Local User'}
                 </span>
               </div>
