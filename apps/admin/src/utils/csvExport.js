@@ -133,8 +133,15 @@ export function exportCustomersToCsv(customers = []) {
   const headers = [
     'User ID',
     'Full Name',
+    'Role',
     'Phone',
     'Email',
+    'Session Status',
+    'Location',
+    'Behavior Pattern',
+    'Battery Level',
+    'Network Mode',
+    'Cookie Consent',
     'Total Bookings',
     'Completed Bookings',
     'Cancelled Bookings',
@@ -145,11 +152,19 @@ export function exportCustomersToCsv(customers = []) {
   ];
 
   const rows = customers.map(u => {
+    const isLive = Boolean(u.is_session_live || u.is_online);
     return [
       u.id || '',
       u.name || 'Customer',
+      u.role === 'worker' ? 'Worker' : 'Customer',
       u.phone || '',
       u.email || '',
+      isLive ? 'LIVE NOW' : 'Offline',
+      u.last_location || u.city || '',
+      u.behavior_pattern || '',
+      u.battery_level != null ? `${u.battery_level}%` : '',
+      u.network_mode || '',
+      u.cookie_profile?.consent_status || '',
       (u.total_bookings || 0).toString(),
       (u.completed_bookings || 0).toString(),
       (u.cancelled_bookings || 0).toString(),

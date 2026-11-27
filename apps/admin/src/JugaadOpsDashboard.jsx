@@ -238,6 +238,9 @@ export default function JugaadOpsDashboard() {
   const [authLoading, setAuthLoading] = useState(false);
   const [showLaunchOverlay, setShowLaunchOverlay] = useState(false);
   const [previewVideoJob, setPreviewVideoJob] = useState(null);
+  const [jobsQuickFilter, setJobsQuickFilter] = useState('all');
+  const [showCommandBar, setShowCommandBar] = useState(false);
+  const [commandQuery, setCommandQuery] = useState('');
 
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [isLoading, setIsLoading] = useState(true);
@@ -335,7 +338,20 @@ export default function JugaadOpsDashboard() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowCommandBar((prev) => !prev);
+        setCommandQuery('');
+      } else if (e.key === 'Escape') {
+        setShowCommandBar(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const checkAdminRole = async (userId, userEmail) => {
@@ -1027,7 +1043,7 @@ export default function JugaadOpsDashboard() {
     if (c?.includes('carpenter')) return 'bg-orange-50 text-orange-700 border-orange-100/70';
     if (c?.includes('ac')) return 'bg-cyan-50 text-cyan-700 border-cyan-100/70';
     if (c?.includes('phone')) return 'bg-purple-50 text-purple-700 border-purple-100/70';
-    if (c?.includes('laptop')) return 'bg-indigo-50 text-indigo-700 border-indigo-100/70';
+    if (c?.includes('laptop')) return 'bg-orange-50 text-orange-700 border-orange-100/70';
     return 'bg-zinc-50 text-zinc-700 border-zinc-100';
   };
 
@@ -1075,7 +1091,7 @@ export default function JugaadOpsDashboard() {
   if (checkingAuth) {
     return (
       <div className="min-h-screen bg-zinc-50/50 flex flex-col justify-center items-center font-sans">
-        <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4" />
+        <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin mb-4" />
         <span className="text-xs font-medium text-zinc-400 uppercase tracking-widest">LOADING COMMAND CONSOLE...</span>
       </div>
     );
@@ -1177,7 +1193,7 @@ export default function JugaadOpsDashboard() {
                       type="text"
                       value={authName}
                       onChange={(e) => setAuthName(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-sans"
+                      className="w-full pl-11 pr-4 py-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all font-sans"
                       placeholder="e.g. Administrator"
                     />
                   </div>
@@ -1192,7 +1208,7 @@ export default function JugaadOpsDashboard() {
                     type="email"
                     value={authEmail}
                     onChange={(e) => setAuthEmail(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-sans"
+                    className="w-full pl-11 pr-4 py-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all font-sans"
                     placeholder="admin@jugaad.com"
                     required
                   />
@@ -1207,7 +1223,7 @@ export default function JugaadOpsDashboard() {
                     type="password"
                     value={authPassword}
                     onChange={(e) => setAuthPassword(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-sans"
+                    className="w-full pl-11 pr-4 py-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all font-sans"
                     placeholder="••••••••"
                     required
                   />
@@ -1353,6 +1369,67 @@ export default function JugaadOpsDashboard() {
           </div>,
           document.body
         )}
+        {showCommandBar && createPortal(
+          <div
+            onClick={() => setShowCommandBar(false)}
+            className="fixed inset-0 z-[180] flex items-start justify-center pt-20 p-4 bg-zinc-950/50 backdrop-blur-sm"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg rounded-2xl bg-white/95 backdrop-blur-xl border border-orange-200/80 shadow-2xl overflow-hidden"
+            >
+              <div className="px-4 py-3 border-b border-orange-100 flex items-center gap-2.5 bg-gradient-to-r from-orange-50/70 to-emerald-50/70">
+                <Search className="w-4 h-4 text-orange-600" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={commandQuery}
+                  onChange={(e) => setCommandQuery(e.target.value)}
+                  placeholder="Jump to tab or search job/skill..."
+                  className="flex-1 bg-transparent text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none"
+                />
+                <span className="text-[10px] font-mono text-zinc-400 px-1.5 py-0.5 rounded bg-white border border-zinc-200">ESC</span>
+              </div>
+              <div className="max-h-72 overflow-y-auto p-2 space-y-1">
+                {[
+                  { id: 'Dashboard', label: 'Dashboard Overview', desc: 'System health, live telemetry & revenue' },
+                  { id: 'Jobs', label: 'Jobs Database', desc: 'Filter emergency, 30s video & active jobs' },
+                  { id: 'Workers', label: 'Workers Roster', desc: 'Live providers & approval status' },
+                  { id: 'Users', label: 'Users & Live Activity', desc: 'Live sessions, cookies, battery & patterns' },
+                  { id: 'Analytics', label: 'Analytics & Reports', desc: 'GMV histogram & category share' },
+                  { id: 'Radar', label: 'Live Radar Map', desc: 'Mysuru & Bengaluru dispatch zones' },
+                  { id: 'Disputes', label: 'Disputes & Escrow', desc: 'Resolve flagged customer disputes' },
+                  { id: 'Surge', label: 'Surge & Geofencing', desc: 'Dynamic pricing & zone control' },
+                  { id: 'KYC', label: 'KYC Audit Suite', desc: 'Verify worker Aadhaar documents' },
+                  { id: 'Ops', label: 'Operations Settings', desc: 'Dispatch radius & Realtime config' },
+                ]
+                  .filter(
+                    (t) =>
+                      !commandQuery ||
+                      t.label.toLowerCase().includes(commandQuery.toLowerCase()) ||
+                      t.desc.toLowerCase().includes(commandQuery.toLowerCase())
+                  )
+                  .map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setActiveTab(t.id);
+                        setShowCommandBar(false);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl hover:bg-orange-50/80 flex items-center justify-between transition cursor-pointer"
+                    >
+                      <div>
+                        <span className="text-xs font-bold text-zinc-900 block">{t.label}</span>
+                        <span className="text-[11px] text-zinc-500">{t.desc}</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-orange-500" />
+                    </button>
+                  ))}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
         {/* === TOP NAVBAR === */}
         <header className="sticky top-0 z-40 bg-white/75 border-b border-orange-200/60 backdrop-blur-xl shadow-[0_4px_24px_rgba(234,88,12,0.05)]">
           <div className="max-w-[1440px] mx-auto px-4 lg:px-6 h-16 flex items-center justify-between gap-3">
@@ -1411,6 +1488,17 @@ export default function JugaadOpsDashboard() {
 
             {/* Actions Section */}
             <div className="flex items-center space-x-2.5 relative shrink-0">
+              <button
+                onClick={() => {
+                  setCommandQuery('');
+                  setShowCommandBar(true);
+                }}
+                className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/80 hover:bg-white border border-orange-200/80 text-zinc-600 hover:text-orange-600 text-[11px] font-semibold transition cursor-pointer"
+                title="Quick Command Palette (Ctrl+K)"
+              >
+                <Search className="w-3 h-3" />
+                <span>Ctrl+K</span>
+              </button>
               <div className="hidden sm:inline-flex whitespace-nowrap items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50/90 border border-emerald-200 text-emerald-700 text-[11px] font-semibold">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 Live Sync
@@ -1553,7 +1641,7 @@ export default function JugaadOpsDashboard() {
                     </div>
                     <div className="px-3 py-2 text-xs text-zinc-600 flex justify-between">
                       <span className="font-medium text-zinc-500">Role</span>
-                      <span className="font-semibold text-indigo-600">Super Admin</span>
+                      <span className="font-semibold text-orange-600">Super Admin</span>
                     </div>
                     <div className="px-3 py-2 text-xs text-zinc-600 flex justify-between">
                       <span className="font-medium text-zinc-500">Database</span>
@@ -1650,6 +1738,76 @@ export default function JugaadOpsDashboard() {
                     <span className="text-xs text-zinc-500 mt-2 block">Avg dispatch response</span>
                   </div>
                 </div>
+
+                {/* Live Telemetry Strip (4-pill 1-click jump bar) */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+                  <button
+                    onClick={() => setActiveTab('Users')}
+                    className="jugaad-glass rounded-2xl px-4 py-3 flex items-center justify-between hover:border-emerald-300 transition cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <div>
+                        <span className="text-[11px] font-bold text-zinc-800 block">Live Users Now</span>
+                        <span className="text-[10px] text-emerald-700 font-semibold">Inspect active sessions →</span>
+                      </div>
+                    </div>
+                    <Users className="w-4 h-4 text-emerald-600 shrink-0" />
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('Users')}
+                    className="jugaad-glass rounded-2xl px-4 py-3 flex items-center justify-between hover:border-orange-300 transition cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Zap className="w-4 h-4 text-orange-500 shrink-0" />
+                      <div>
+                        <span className="text-[11px] font-bold text-zinc-800 block">Low-Battery Express</span>
+                        <span className="text-[10px] text-orange-600 font-semibold">
+                          {jobs.filter((j) => j.job_type === 'emergency').length} urgent dispatches →
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-orange-500 shrink-0" />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setJobsQuickFilter('video');
+                      setActiveTab('Jobs');
+                    }}
+                    className="jugaad-glass rounded-2xl px-4 py-3 flex items-center justify-between hover:border-emerald-300 transition cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Video className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <span className="text-[11px] font-bold text-zinc-800 block">30s Diagnosis Videos</span>
+                        <span className="text-[10px] text-emerald-700 font-semibold">
+                          {jobs.filter((j) => j.diagnosis_video_url || j.video_url).length} attached clips →
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-emerald-600 shrink-0" />
+                  </button>
+
+                  <button
+                    onClick={measureDbLatency}
+                    className="jugaad-glass rounded-2xl px-4 py-3 flex items-center justify-between hover:border-orange-300 transition cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Activity className="w-4 h-4 text-orange-500 shrink-0" />
+                      <div>
+                        <span className="text-[11px] font-bold text-zinc-800 block">Supabase DB Latency</span>
+                        <span className="text-[10px] text-zinc-500 font-mono">
+                          {dbLatency != null ? `${dbLatency} ms (Tap to ping)` : 'Tap to measure'}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+                      OK
+                    </span>
+                  </button>
+                </div>
               </section>
 
               {/* Section: Active Jobs Table */}
@@ -1662,7 +1820,7 @@ export default function JugaadOpsDashboard() {
                     <span className="text-sm text-zinc-400">Loading active jobs...</span>
                   </div>
                 ) : (
-                  <div className="rounded-[20px] border border-zinc-200/80 overflow-hidden bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                  <div className="jugaad-glass rounded-[20px] overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
                         <thead>
@@ -1701,7 +1859,7 @@ export default function JugaadOpsDashboard() {
                               <td className="py-4 px-5">
                                 <span className={`text-[12px] px-2.5 py-0.5 rounded-full border font-medium ${
                                   job.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100/80' :
-                                  job.status === 'running' || job.status === 'accepted' ? 'bg-indigo-50 text-indigo-700 border-indigo-100/80' :
+                                  job.status === 'running' || job.status === 'accepted' ? 'bg-orange-50 text-orange-700 border-orange-100/80' :
                                   job.status === 'pending' || job.status === 'open' ? 'bg-amber-50 text-amber-700 border-amber-100/80' :
                                   'bg-zinc-100 text-zinc-700 border-zinc-200'
                                 }`}>
@@ -1747,7 +1905,7 @@ export default function JugaadOpsDashboard() {
                   {/* KPI: Avg Arrival */}
                   <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all duration-150 ease-out hover:scale-[1.01]">
                     <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Avg Arrival</span>
-                    <h3 className="text-2xl font-semibold text-indigo-600 mt-2 leading-none">
+                    <h3 className="text-2xl font-semibold text-orange-600 mt-2 leading-none">
                       {stats.avgArrivalTime.toFixed(1)}m
                     </h3>
                   </div>
@@ -1774,7 +1932,7 @@ export default function JugaadOpsDashboard() {
                         <div className="flex items-start space-x-3">
                           <div className={`p-1.5 rounded-lg flex-shrink-0 mt-0.5 ${
                             act.type === 'approval' ? 'bg-amber-50 text-amber-600' :
-                            act.type === 'dispatch' ? 'bg-indigo-50 text-indigo-600' :
+                            act.type === 'dispatch' ? 'bg-orange-50 text-orange-600' :
                             act.type === 'payment' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-50 text-zinc-500'
                           }`}>
                             {act.type === 'approval' ? <Shield className="w-3.5 h-3.5" /> :
@@ -1806,7 +1964,7 @@ export default function JugaadOpsDashboard() {
                                 Hide Demo
                               </button>
                             )}
-                            <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-100/70 px-2.5 py-0.5 rounded-full">
+                            <span className="text-xs font-medium text-orange-600 bg-orange-50 border border-orange-100/70 px-2.5 py-0.5 rounded-full">
                               {displayApprovals.length} {displayApprovals.length === 1 ? 'Applicant' : 'Pending'}
                             </span>
                           </div>
@@ -1932,7 +2090,7 @@ export default function JugaadOpsDashboard() {
                                     </button>
                                     <button
                                       onClick={() => handleApprove(worker.id)}
-                                      className="py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs rounded-[10px] active:scale-95 transition-all cursor-pointer"
+                                      className="py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium text-xs rounded-[10px] active:scale-95 transition-all cursor-pointer"
                                     >
                                       Approve
                                     </button>
@@ -1967,7 +2125,7 @@ export default function JugaadOpsDashboard() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search by address or skill..."
-                    className="w-full pl-9 pr-4 py-2 bg-white border border-zinc-200 rounded-[10px] text-zinc-800 text-sm focus:outline-none focus:border-indigo-500"
+                    className="w-full pl-9 pr-4 py-2 bg-white border border-zinc-200 rounded-[10px] text-zinc-800 text-sm focus:outline-none focus:border-orange-500"
                   />
                 </div>
                 <div className="flex gap-3 w-full md:w-auto">
@@ -2006,6 +2164,32 @@ export default function JugaadOpsDashboard() {
                 </div>
               </div>
 
+              {/* Quick-Filter Chips */}
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { id: 'all', label: 'All Jobs' },
+                  { id: 'emergency', label: 'Emergency' },
+                  { id: 'video', label: 'Has 30s Video' },
+                  { id: 'open', label: 'Open / Unmatched' },
+                  { id: 'completed', label: 'Completed' },
+                ].map((chip) => {
+                  const active = jobsQuickFilter === chip.id;
+                  return (
+                    <button
+                      key={chip.id}
+                      onClick={() => setJobsQuickFilter(chip.id)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        active
+                          ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/25'
+                          : 'jugaad-glass text-zinc-600 hover:text-orange-600'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  );
+                })}
+              </div>
+
               {/* Jobs Table */}
               {loadingAllJobs ? (
                 <div className="h-64 rounded-[20px] border border-zinc-200/80 bg-white shimmer-bg animate-pulse flex items-center justify-center">
@@ -2034,7 +2218,13 @@ export default function JugaadOpsDashboard() {
                                                   (job.skill_required || '').toLowerCase().includes(searchQuery.toLowerCase());
                             const matchesCat = categoryFilter === 'all' || job.skill_required === categoryFilter;
                             const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
-                            return matchesSearch && matchesCat && matchesStatus;
+                            const matchesQuick =
+                              jobsQuickFilter === 'all' ||
+                              (jobsQuickFilter === 'emergency' && (job.job_type === 'emergency' || (job.surcharge_amount || 0) > 0)) ||
+                              (jobsQuickFilter === 'video' && Boolean(job.diagnosis_video_url || job.video_url)) ||
+                              (jobsQuickFilter === 'open' && (job.status === 'open' || job.status === 'pending')) ||
+                              (jobsQuickFilter === 'completed' && job.status === 'completed');
+                            return matchesSearch && matchesCat && matchesStatus && matchesQuick;
                           });
 
                           if (filtered.length === 0) {
@@ -2076,7 +2266,7 @@ export default function JugaadOpsDashboard() {
                               <td className="py-4 px-5">
                                 <span className={`text-[11px] px-2.5 py-0.5 rounded-full border font-medium ${
                                   job.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100/85' :
-                                  job.status === 'running' || job.status === 'accepted' ? 'bg-indigo-50 text-indigo-700 border-indigo-100/85' :
+                                  job.status === 'running' || job.status === 'accepted' ? 'bg-orange-50 text-orange-700 border-orange-100/85' :
                                   job.status === 'pending' || job.status === 'open' ? 'bg-amber-50 text-amber-700 border-amber-100/85' :
                                   'bg-zinc-100 text-zinc-700 border-zinc-200'
                                 }`}>
@@ -2126,7 +2316,7 @@ export default function JugaadOpsDashboard() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search by name, phone, or area..."
-                    className="w-full pl-9 pr-4 py-2 bg-white border border-zinc-200 rounded-[10px] text-zinc-800 text-sm focus:outline-none focus:border-indigo-500"
+                    className="w-full pl-9 pr-4 py-2 bg-white border border-zinc-200 rounded-[10px] text-zinc-800 text-sm focus:outline-none focus:border-orange-500"
                   />
                 </div>
                 <div className="flex gap-3 w-full md:w-auto">
@@ -2332,7 +2522,7 @@ export default function JugaadOpsDashboard() {
                         <select
                           value={opsConfig.smsMode}
                           onChange={(e) => setOpsConfig(prev => ({ ...prev, smsMode: e.target.value }))}
-                          className="w-full bg-white border border-zinc-200 rounded-[10px] py-2 px-3 text-sm text-zinc-700 focus:outline-none focus:border-indigo-500"
+                          className="w-full bg-white border border-zinc-200 rounded-[10px] py-2 px-3 text-sm text-zinc-700 focus:outline-none focus:border-orange-500"
                         >
                           <option value="sandbox">Sandbox Simulator (Free)</option>
                           <option value="twilio">Twilio API Live (Paid)</option>
@@ -2350,7 +2540,7 @@ export default function JugaadOpsDashboard() {
                             max="15"
                             value={opsConfig.dispatchRadius}
                             onChange={(e) => setOpsConfig(prev => ({ ...prev, dispatchRadius: parseInt(e.target.value) }))}
-                            className="w-full accent-indigo-600 h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer"
+                            className="w-full accent-orange-600 h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer"
                           />
                           <span className="text-sm font-semibold text-zinc-800 whitespace-nowrap">{opsConfig.dispatchRadius} km</span>
                         </div>
@@ -2368,7 +2558,7 @@ export default function JugaadOpsDashboard() {
                             type="number"
                             value={opsConfig.surchargeFee}
                             onChange={(e) => setOpsConfig(prev => ({ ...prev, surchargeFee: parseInt(e.target.value) }))}
-                            className="w-full pl-7 pr-3 py-2 bg-white border border-zinc-200 rounded-[10px] text-zinc-850 text-sm focus:outline-none focus:border-indigo-500"
+                            className="w-full pl-7 pr-3 py-2 bg-white border border-zinc-200 rounded-[10px] text-zinc-850 text-sm focus:outline-none focus:border-orange-500"
                           />
                         </div>
                         <span className="text-xs text-zinc-400 block font-normal">Extra charge added during peak load hours.</span>
@@ -2409,7 +2599,7 @@ export default function JugaadOpsDashboard() {
                         type="button"
                         onClick={() => setOpsConfig(prev => ({ ...prev, websocketsSync: !prev.websocketsSync }))}
                         className={`w-11 h-6 rounded-full p-0.5 transition-colors focus:outline-none ${
-                          opsConfig.websocketsSync ? 'bg-indigo-600' : 'bg-zinc-300'
+                          opsConfig.websocketsSync ? 'bg-orange-600' : 'bg-zinc-300'
                         }`}
                       >
                         <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${
@@ -2565,7 +2755,7 @@ export default function JugaadOpsDashboard() {
           
           {/* Tab sliding underline indicator */}
           <div 
-            className="absolute top-0 h-0.5 bg-indigo-600 transition-all duration-300 ease-out"
+            className="absolute top-0 h-0.5 bg-orange-600 transition-all duration-300 ease-out"
             style={{
               width: '25%',
               left: `${['Dashboard', 'Jobs', 'Workers', 'Ops'].indexOf(activeTab) * 25}%`
@@ -2593,7 +2783,7 @@ export default function JugaadOpsDashboard() {
                   setStatusFilter('all');
                 }}
                 className={`flex flex-col items-center justify-center w-full h-full relative transition-colors duration-200 ${
-                  isActive ? 'text-indigo-600' : 'text-zinc-500 hover:text-zinc-900'
+                  isActive ? 'text-orange-600' : 'text-zinc-500 hover:text-zinc-900'
                 }`}
               >
                 <Icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? 'scale-110' : 'scale-100'}`} />
@@ -2601,7 +2791,7 @@ export default function JugaadOpsDashboard() {
                   {tab.label}
                 </span>
                 {isActive && (
-                  <span className="w-1 h-1 rounded-full bg-indigo-600 absolute bottom-1" />
+                  <span className="w-1 h-1 rounded-full bg-orange-600 absolute bottom-1" />
                 )}
               </button>
             );
