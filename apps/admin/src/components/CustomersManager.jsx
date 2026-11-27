@@ -44,6 +44,7 @@ const DEFAULT_DEMO_CUSTOMERS = [
     city: 'Mysuru',
     last_location: 'Vijayanagar 2nd Stage, Mysuru',
     behavior_pattern: 'Night Emergency • Low-Battery Express',
+    is_session_live: true,
     created_at: '2026-09-15T10:30:00Z',
     battery_level: 11,
     is_low_battery: true,
@@ -130,6 +131,7 @@ const DEFAULT_DEMO_CUSTOMERS = [
     city: 'Mysuru',
     last_location: 'Gokulam 3rd Stage, Mysuru',
     behavior_pattern: 'High-Frequency Field Pro • Mobile Data',
+    is_session_live: true,
     created_at: '2026-09-28T09:45:00Z',
     battery_level: 64,
     is_low_battery: false,
@@ -206,13 +208,27 @@ const DEFAULT_DEMO_CUSTOMERS = [
   },
 ];
 
+const LIVE_SESSION_WINDOW_MS = 15 * 60 * 1000;
+
+function getSessionMeta(user) {
+  const lastActiveIso =
+    user?.last_active_at ||
+    user?.cookie_profile?.last_cookie_sync_at ||
+    user?.updated_at ||
+    user?.created_at;
+  const lastActiveMs = lastActiveIso ? new Date(lastActiveIso).getTime() : 0;
+  const isRecent = lastActiveMs > 0 && Date.now() - lastActiveMs <= LIVE_SESSION_WINDOW_MS;
+  const isLive = Boolean(user?.is_session_live || user?.is_online || isRecent);
+  return { isLive, lastActiveMs };
+}
+
 export default function CustomersManager({ session }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('recent');
+  const [sortBy, setSortBy] = useState('live');
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedUserJobs, setSelectedUserJobs] = useState([]);
   const [actionFeedback, setActionFeedback] = useState(null);
@@ -459,6 +475,7 @@ export default function CustomersManager({ session }) {
 
       if (!matchesSearch) return false;
 
+      if (statusFilter === 'live') return getSessionMeta(u).isLive;
       if (statusFilter === 'active') return !u.is_suspended && u.status !== 'suspended';
       if (statusFilter === 'suspended') return u.is_suspended || u.status === 'suspended';
       if (statusFilter === 'frequent') return (u.total_bookings || 0) >= 3;
@@ -466,6 +483,12 @@ export default function CustomersManager({ session }) {
 
       return true;
     }).sort((a, b) => {
+      if (sortBy === 'live') {
+        const aMeta = getSessionMeta(a);
+        const bMeta = getSessionMeta(b);
+        if (aMeta.isLive !== bMeta.isLive) return Number(bMeta.isLive) - Number(aMeta.isLive);
+        return bMeta.lastActiveMs - aMeta.lastActiveMs;
+      }
       if (sortBy === 'spend') return (b.total_spent || 0) - (a.total_spent || 0);
       if (sortBy === 'bookings') return (b.total_bookings || 0) - (a.total_bookings || 0);
       if (sortBy === 'cancel') return (b.cancellation_rate || 0) - (a.cancellation_rate || 0);
@@ -599,6 +622,7 @@ export default function CustomersManager({ session }) {
             className="bg-white border border-zinc-200 rounded-[10px] py-2 px-3 text-sm text-zinc-700 focus:outline-none"
           >
             <option value="all">All Statuses</option>
+            <option value="live">Active Session Now</option>
             <option value="active">Active Only</option>
             <option value="suspended">Suspended Only</option>
             <option value="frequent">Frequent Bookers (3+)</option>
@@ -610,6 +634,7 @@ export default function CustomersManager({ session }) {
             onChange={(e) => setSortBy(e.target.value)}
             className="bg-white border border-zinc-200 rounded-[10px] py-2 px-3 text-sm text-zinc-700 focus:outline-none"
           >
+            <option value="live">Sort by Active Session</option>
             <option value="recent">Sort by Newest</option>
             <option value="spend">Sort by Highest Spend</option>
             <option value="bookings">Sort by Most Bookings</option>
@@ -652,6 +677,7 @@ export default function CustomersManager({ session }) {
                 filteredUsers.map((user) => {
                   const isSusp = user.is_suspended || user.status === 'suspended';
                   const cancelRate = user.cancellation_rate || 0;
+                  const { isLive } = getSessionMeta(user);
                   return (
                     <tr key={user.id} className="hover:bg-zinc-50/80 transition-colors group">
                       <td className="py-3.5 px-4">
@@ -666,6 +692,12 @@ export default function CustomersManager({ session }) {
                           <div>
                             <div className="font-semibold text-zinc-900 group-hover:text-orange-600 transition flex items-center gap-2">
                               {user.name || 'Anonymous User'}
+                              {isLive && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[9px] font-bold rounded-full">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  LIVE NOW
+                                </span>
+                              )}
                               {isSusp && (
                                 <span className="px-1.5 py-0.5 bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold rounded-md">
                                   SUSPENDED
