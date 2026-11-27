@@ -28,8 +28,11 @@ import {
 import {
   MYSURU_CENTER,
   MYSURU_DEFAULT_ZOOM,
+  BENGALURU_CENTER,
+  BENGALURU_DEFAULT_ZOOM,
   TILE_PROVIDERS,
   MYSURU_MUNICIPAL_ZONES,
+  BENGALURU_ZONES,
   INITIAL_REAL_WORKERS,
   INITIAL_ACTIVE_ROUTES,
   getOptimizedRoute,
@@ -41,7 +44,8 @@ import {
 import {
   createWorkerVehicleIcon,
   createCustomerDestinationIcon,
-  createZoneDemandIcon
+  createZoneDemandIcon,
+  createJobPinIcon
 } from '../utils/mapIconUtils';
 import { parseWorkerCategory } from '../utils/workerUtils';
 
@@ -55,9 +59,12 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
   const workersLayerGroupRef = useRef(null);
   const routesLayerGroupRef = useRef(null);
   const zonesLayerGroupRef = useRef(null);
+  const jobsLayerGroupRef = useRef(null);
 
   // Component state — default to 'streets' for seamless match with light admin theme
   const [activeTileType, setActiveTileType] = useState('streets');
+  const [activeCity, setActiveCity] = useState('mysuru');
+  const [nearestSuggestions, setNearestSuggestions] = useState(null);
   const [workers, setWorkers] = useState(INITIAL_REAL_WORKERS);
   const [activeRoutes, setActiveRoutes] = useState(INITIAL_ACTIVE_ROUTES);
   const [selectedWorker, setSelectedWorker] = useState(null);
@@ -168,6 +175,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
       // Create layer groups
       zonesLayerGroupRef.current = L.layerGroup().addTo(map);
       routesLayerGroupRef.current = L.layerGroup().addTo(map);
+      jobsLayerGroupRef.current = L.layerGroup().addTo(map);
       workersLayerGroupRef.current = L.layerGroup().addTo(map);
 
       mapInstanceRef.current = map;
@@ -202,7 +210,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
     if (!showHeatmap) return;
 
-    MYSURU_MUNICIPAL_ZONES.forEach((zone) => {
+    [...MYSURU_MUNICIPAL_ZONES, ...BENGALURU_ZONES].forEach((zone) => {
       const circle = L.circle([zone.lat, zone.lng], {
         radius: zone.radiusMeters,
         color: zone.color,
@@ -241,6 +249,51 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
       }
     });
   }, [showHeatmap, showZoneLabels]);
+
+  // 5b. Plot Live Emergency & 30s Video Job Pins
+  useEffect(() => {
+    if (!jobsLayerGroupRef.current) return;
+    jobsLayerGroupRef.current.clearLayers();
+
+    (liveJobs || []).forEach((job, idx) => {
+      let lat = parseFloat(job.lat);
+      let lng = parseFloat(job.lng);
+      if ((Number.isNaN(lat) || Number.isNaN(lng)) && typeof job.location === 'string') {
+        const match = job.location.match(/POINT\(([-\d.]+)\s+([-\d.]+)\)/i);
+        if (match) {
+          lng = parseFloat(match[1]);
+          lat = parseFloat(match[2]);
+        }
+      }
+      if (Number.isNaN(lat) || Number.isNaN(lng)) {
+        const isBlr = (job.address || '').toLowerCase().includes('bengaluru') || (job.address || '').toLowerCase().includes('bangalore');
+        const base = isBlr ? BENGALURU_CENTER : MYSURU_CENTER;
+        lat = base[0] + ((idx % 5) - 2) * 0.008;
+        lng = base[1] + (((idx + 2) % 5) - 2) * 0.008;
+      }
+
+      const isEmergency = job.job_type === 'emergency' || (job.surcharge_amount || 0) > 0;
+      const hasVideo = Boolean(job.diagnosis_video_url || job.video_url);
+
+      const marker = L.marker([lat, lng], {
+        icon: createJobPinIcon(job),
+        zIndexOffset: isEmergency ? 700 : 400,
+      });
+      marker.bindPopup(
+        `<div class="text-xs space-y-1 p-1 min-w-[170px]">
+          <div class="font-bold text-zinc-900 capitalize">${(job.skill_required || 'Service').replace('_', ' ')}</div>
+          <div class="text-zinc-500">${job.address || 'Mysuru'}</div>
+          <div class="flex items-center gap-1.5 pt-0.5">
+            <span class="font-mono font-bold text-emerald-700">₹${job.amount || 0}</span>
+            ${isEmergency ? '<span class="px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 text-[9px] font-bold">EMERGENCY</span>' : ''}
+            ${hasVideo ? '<span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[9px] font-bold">30s VIDEO</span>' : ''}
+          </div>
+        </div>`,
+        { className: 'custom-leaflet-popup' }
+      );
+      marker.addTo(jobsLayerGroupRef.current);
+    });
+  }, [liveJobs]);
 
   // 6. Render Active Dispatch Routes
   useEffect(() => {
@@ -414,16 +467,24 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
       const onlineWorkers = workers.filter((w) => w.status === 'online');
       const candidates = onlineWorkers.length > 0 ? onlineWorkers : workers;
 
-      let nearestWorker = candidates[0];
-      let minDistance = Infinity;
+      const ranked = candidates
+        .map((w) => {
+          const distKm = haversineDistanceKm(w.lat, w.lng, destLat, destLng);
+          return {
+            ...w,
+            distKm: Number(distKm.toFixed(2)),
+            etaMins: Math.max(3, Math.round(distKm * 3.2)),
+          };
+        })
+        .sort((a, b) => a.distKm - b.distKm);
 
-      for (const w of candidates) {
-        const d = haversineDistanceKm(w.lat, w.lng, destLat, destLng);
-        if (d < minDistance) {
-          minDistance = d;
-          nearestWorker = w;
-        }
-      }
+      setNearestSuggestions({
+        lat: destLat,
+        lng: destLng,
+        workers: ranked.slice(0, 3),
+      });
+
+      const nearestWorker = ranked[0];
 
       const surgeData = getDemandSurgeForCoordinates(destLat, destLng);
       const origin = { lat: nearestWorker.lat, lng: nearestWorker.lng };
@@ -556,11 +617,32 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
     }
   };
 
-  const handleRecenterCity = () => {
+  const handleSwitchCity = (city) => {
+    setActiveCity(city);
+    setTrackingWorkerId(null);
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo(MYSURU_CENTER, MYSURU_DEFAULT_ZOOM, { duration: 1.2 });
-      setTrackingWorkerId(null);
+      if (city === 'bengaluru') {
+        mapInstanceRef.current.flyTo(BENGALURU_CENTER, BENGALURU_DEFAULT_ZOOM, { duration: 1.2 });
+      } else {
+        mapInstanceRef.current.flyTo(MYSURU_CENTER, MYSURU_DEFAULT_ZOOM, { duration: 1.2 });
+      }
     }
+  };
+
+  const handleFitAll = () => {
+    if (!mapInstanceRef.current) return;
+    const points = workers
+      .filter((w) => Number.isFinite(w.lat) && Number.isFinite(w.lng))
+      .map((w) => [w.lat, w.lng]);
+    if (points.length === 0) return;
+    const bounds = L.latLngBounds(points);
+    mapInstanceRef.current.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
+    setTrackingWorkerId(null);
+    showToast(`Framed ${points.length} active field units`);
+  };
+
+  const handleRecenterCity = () => {
+    handleSwitchCity(activeCity);
   };
 
   const handleFocusWorker = (worker) => {
@@ -579,8 +661,8 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
         </div>
       )}
 
-      {/* Top Banner Control Bar (Aligned with Admin Dashboard White Card Theme) */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+      {/* Top Banner Control Bar (Orange & Green Glassmorphism) */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 jugaad-glass p-5 rounded-2xl">
         <div>
           <div className="flex items-center space-x-2.5">
             <span className="relative flex h-3 w-3">
@@ -588,14 +670,14 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
             </span>
             <h2 className="text-base font-bold tracking-tight text-zinc-900 flex items-center space-x-2">
-              <span>Mysuru Real-World Telemetry & Road Routing Command</span>
+              <span>{activeCity === 'bengaluru' ? 'Bengaluru' : 'Mysuru'} Real-World Telemetry &amp; Routing</span>
             </h2>
             <span className="px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200">
               Live OSRM Routing
             </span>
           </div>
           <p className="text-xs text-zinc-500 mt-1 flex items-center space-x-2">
-            <span>Tracking active worker heartbeat pings across 9 Mysuru municipal wards.</span>
+            <span>Tracking active workers &amp; live {(liveJobs || []).length} jobs across Mysuru &amp; Bengaluru.</span>
             <span className="text-zinc-300">•</span>
             <span className="text-zinc-400 font-mono">Auto-synced: {lastRefreshed}</span>
           </p>
@@ -603,6 +685,40 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
         {/* Action Controls & Layer Switcher */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Dual-City Mysuru <-> Bengaluru Fly-To Switcher */}
+          <div className="flex items-center bg-orange-50/80 p-1 rounded-xl border border-orange-200/80 text-xs">
+            <button
+              onClick={() => handleSwitchCity('mysuru')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                activeCity === 'mysuru'
+                  ? 'bg-orange-500 text-white shadow-xs'
+                  : 'text-zinc-600 hover:text-orange-600'
+              }`}
+            >
+              Mysuru
+            </button>
+            <button
+              onClick={() => handleSwitchCity('bengaluru')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                activeCity === 'bengaluru'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-zinc-600 hover:text-emerald-700'
+              }`}
+            >
+              Bengaluru
+            </button>
+          </div>
+
+          {/* Fit All Active Units */}
+          <button
+            onClick={handleFitAll}
+            className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-white/85 hover:bg-white border border-orange-200/80 text-zinc-700 hover:text-orange-600 flex items-center space-x-1.5 transition-all cursor-pointer"
+            title="Fit all active workers in view"
+          >
+            <Crosshair className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Fit All</span>
+          </button>
+
           {/* Tile Layer Selector */}
           <div className="flex items-center bg-zinc-100 p-1 rounded-xl border border-zinc-200 text-xs">
             <button
@@ -685,9 +801,9 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
           <button
             onClick={handleSimulateDispatch}
             disabled={isDispatching}
-            className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white shadow-sm flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
+            className="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-gradient-to-r from-orange-500 to-emerald-600 hover:from-orange-400 hover:to-emerald-500 text-white shadow-sm flex items-center space-x-1.5 transition-all cursor-pointer disabled:opacity-50"
           >
-            <Send className="w-3.5 h-3.5 text-emerald-400" />
+            <Send className="w-3.5 h-3.5 text-white" />
             <span>{isDispatching ? 'Routing...' : 'Simulate Dispatch'}</span>
           </button>
 
@@ -719,7 +835,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
       {/* Main Interactive Map & Telemetry Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Real Leaflet Map Container (8 Columns) */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-zinc-200/80 p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col justify-between min-h-[620px]">
+        <div className="lg:col-span-8 jugaad-glass rounded-2xl p-4 flex flex-col justify-between min-h-[620px]">
           
           {/* Top Floating Map HUD (Filters & Search) */}
           <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -820,8 +936,8 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
               </div>
             )}
 
-            {/* In-Map Active Dispatches Quick Bar (Light Frosted Theme) */}
-            <div className="absolute top-3 right-3 z-400 pointer-events-auto bg-white/95 backdrop-blur-md border border-zinc-200/90 rounded-2xl p-3 max-w-[240px] shadow-lg text-xs space-y-2">
+            {/* In-Map Active Dispatches Quick Bar (Orange & Green Frosted Glass) */}
+            <div className="absolute top-3 right-3 z-400 pointer-events-auto jugaad-glass rounded-2xl p-3 max-w-[240px] text-xs space-y-2">
               <div className="flex items-center justify-between border-b border-zinc-100 pb-1.5">
                 <span className="font-bold text-zinc-900 text-[11px] flex items-center space-x-1.5">
                   <Activity className="w-3 h-3 text-emerald-600" />
@@ -852,10 +968,62 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
                 ))}
               </div>
             </div>
+
+            {/* Nearest-Technician Auto-Suggest Card (after Pin Dispatch click) */}
+            {nearestSuggestions && nearestSuggestions.workers?.length > 0 && (
+              <div className="absolute bottom-4 left-3 z-400 pointer-events-auto jugaad-glass rounded-2xl p-3 max-w-[270px] text-xs space-y-2">
+                <div className="flex items-center justify-between border-b border-orange-100 pb-1.5">
+                  <span className="font-bold text-zinc-900 text-[11px] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-orange-500" />
+                    Top 3 Nearest Techs
+                  </span>
+                  <button
+                    onClick={() => setNearestSuggestions(null)}
+                    className="text-[10px] text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  {nearestSuggestions.workers.map((w, idx) => (
+                    <div key={w.id} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-xl bg-white/80 border border-orange-100">
+                      <div className="min-w-0">
+                        <span className="font-semibold text-zinc-900 block truncate">
+                          {idx + 1}. {w.name}
+                        </span>
+                        <span className="text-[10px] text-zinc-500">
+                          {w.trade} · {w.distKm} km · <strong className="text-emerald-700">{w.etaMins}m ETA</strong>
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          handleFocusWorker(w);
+                          showToast(`Focused nearest technician ${w.name} (${w.etaMins}m ETA)`);
+                        }}
+                        className="px-2 py-1 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-[10px] font-bold shrink-0 cursor-pointer"
+                      >
+                        Assign
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Live Route Progress Pill (Bottom-Left when no suggestions open) */}
+            {!nearestSuggestions && activeRoutes.length > 0 && (
+              <div className="absolute bottom-4 left-3 z-400 pointer-events-auto jugaad-glass rounded-full px-3.5 py-1.5 text-[11px] font-semibold text-zinc-800 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>
+                  {activeRoutes.length} Active Route{activeRoutes.length > 1 ? 's' : ''} · Next ETA{' '}
+                  <strong className="text-emerald-700">{activeRoutes[0].etaMins}m</strong>
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Bottom Map Telemetry Legend */}
-          <div className="mt-3 flex flex-wrap items-center justify-between text-xs text-zinc-600 bg-zinc-50 px-4 py-2.5 rounded-xl border border-zinc-200/80">
+          <div className="mt-3 flex flex-wrap items-center justify-between text-xs text-zinc-600 jugaad-glass px-4 py-2.5 rounded-xl">
             <div className="flex items-center space-x-5">
               <span className="flex items-center space-x-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
@@ -881,7 +1049,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
         {/* Right Telemetry & Inspection Drawer (4 Columns) */}
         <div className="lg:col-span-4 space-y-4">
           {selectedWorker ? (
-            <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-4 text-zinc-900 animate-fade-in">
+            <div className="jugaad-glass rounded-2xl p-5 space-y-4 text-zinc-900 animate-fade-in">
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
                 <div className="flex items-center space-x-3">

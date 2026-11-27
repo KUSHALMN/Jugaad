@@ -6,6 +6,63 @@
 export const MYSURU_CENTER = [12.3051, 76.6450];
 export const MYSURU_DEFAULT_ZOOM = 13;
 
+export const BENGALURU_CENTER = [12.9716, 77.5946];
+export const BENGALURU_DEFAULT_ZOOM = 12;
+
+export const BENGALURU_ZONES = [
+  {
+    id: 'blr_z1',
+    name: 'Indiranagar 100ft Rd',
+    landmark: 'CMH Road & Metro Hub',
+    lat: 12.9784,
+    lng: 77.6408,
+    demand: 'Very High',
+    workers: 26,
+    surge: '1.5x',
+    color: '#f97316',
+    radiusMeters: 1600,
+    baseEmergencyFee: 100,
+  },
+  {
+    id: 'blr_z2',
+    name: 'Koramangala 4th Block',
+    landmark: 'Sony World Junction',
+    lat: 12.9352,
+    lng: 77.6245,
+    demand: 'High',
+    workers: 21,
+    surge: '1.3x',
+    color: '#10b981',
+    radiusMeters: 1500,
+    baseEmergencyFee: 75,
+  },
+  {
+    id: 'blr_z3',
+    name: 'Whitefield ITPL',
+    landmark: 'Hope Farm & Hoodi',
+    lat: 12.9698,
+    lng: 77.7499,
+    demand: 'High',
+    workers: 18,
+    surge: '1.2x',
+    color: '#f97316',
+    radiusMeters: 1800,
+    baseEmergencyFee: 75,
+  },
+  {
+    id: 'blr_z4',
+    name: 'Jayanagar 4th Block',
+    landmark: 'Shopping Complex',
+    lat: 12.9299,
+    lng: 77.5838,
+    demand: 'Moderate',
+    workers: 15,
+    surge: '1.0x',
+    color: '#10b981',
+    radiusMeters: 1400,
+  },
+];
+
 export const TILE_PROVIDERS = {
   dark: {
     id: 'dark',

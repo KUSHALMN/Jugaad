@@ -141,3 +141,35 @@ export function createZoneDemandIcon(zone) {
     iconAnchor: [60, 14],
   });
 }
+
+/**
+ * Creates a live job pin icon (pulsing orange for Emergency, emerald for 30s Video / Standard).
+ */
+export function createJobPinIcon(job) {
+  const isEmergency = job?.job_type === 'emergency' || (job?.surcharge_amount || 0) > 0;
+  const hasVideo = Boolean(job?.diagnosis_video_url || job?.video_url);
+  const bg = isEmergency ? '#f97316' : '#10b981';
+  const ring = isEmergency ? 'rgba(249,115,22,0.32)' : 'rgba(16,185,129,0.28)';
+
+  const html = `
+    <div class="relative flex items-center justify-center select-none" style="width: 40px; height: 40px;">
+      <div class="absolute inset-0 rounded-full radar-beacon-ring" style="background: ${ring}; border: 1px solid ${bg};"></div>
+      <div class="relative w-7 h-7 rounded-full border-2 border-white flex items-center justify-center shadow-lg text-white text-[10px] font-extrabold" style="background: ${bg};">
+        ${isEmergency ? '⚡' : 'J'}
+      </div>
+      ${hasVideo ? `
+        <div class="absolute -top-1 -right-1 px-1 py-0.2 rounded-full bg-emerald-600 text-white text-[8px] font-extrabold border border-white shadow-xs">
+          30s
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  return L.divIcon({
+    html,
+    className: 'custom-job-div-icon',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20],
+  });
+}
