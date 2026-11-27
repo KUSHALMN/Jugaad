@@ -310,7 +310,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
       // Outer glow line
       const glowPoly = L.polyline(coords, {
-        color: route.color || '#4f46e5',
+        color: route.color || '#10b981',
         weight: 8,
         opacity: 0.28,
         lineCap: 'round',
@@ -319,7 +319,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
       // Inner animated dashed road line
       const flowPoly = L.polyline(coords, {
-        color: route.color || '#4f46e5',
+        color: route.color || '#10b981',
         weight: 3.5,
         opacity: 0.95,
         dashArray: '10, 10',
@@ -511,7 +511,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
         etaMins: roadData.durationMins,
         distanceKm: roadData.distanceKm,
         progress: 0.05,
-        color: '#4f46e5',
+        color: '#10b981',
         roadCoordinates: roadData.coordinates,
         totalDurationMins: roadData.durationMins,
         isRealRoad: roadData.isRealRoad,
@@ -593,7 +593,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
         etaMins: roadData.durationMins,
         distanceKm: roadData.distanceKm,
         progress: 0.05,
-        color: '#4f46e5',
+        color: '#10b981',
         roadCoordinates: roadData.coordinates,
         totalDurationMins: roadData.durationMins,
         isRealRoad: roadData.isRealRoad,
@@ -771,13 +771,15 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
             onClick={() => setShowRoutes(!showRoutes)}
             className={`px-3 py-1.5 text-xs font-medium rounded-xl border flex items-center space-x-1.5 transition-all cursor-pointer ${
               showRoutes
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-semibold'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-semibold'
                 : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
             }`}
           >
             <Navigation className="w-3.5 h-3.5" />
             <span>Road Routes</span>
           </button>
+
+          <div className="hidden sm:block h-6 w-px bg-orange-200/70 mx-0.5" />
 
           {/* Click to Pin Dispatch on Map */}
           <button
@@ -1027,7 +1029,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
             <div className="flex items-center space-x-5">
               <span className="flex items-center space-x-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
-                <span>Online & Idle ({workers.filter((w) => w.status === 'online').length})</span>
+                <span>Online &amp; Idle ({workers.filter((w) => w.status === 'online').length})</span>
               </span>
               <span className="flex items-center space-x-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
@@ -1044,6 +1046,35 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
               <span>Click any vehicle marker to inspect</span>
             </div>
           </div>
+
+          {/* Clickable High-Demand Zone Quick-Jump Strip */}
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mr-1">
+              Hot Zones:
+            </span>
+            {[
+              { name: 'Gokulam', surge: '1.4x', city: 'mysuru', lat: 12.3325, lng: 76.6268 },
+              { name: 'Kuvempunagar', surge: '1.5x', city: 'mysuru', lat: 12.2852, lng: 76.6294 },
+              { name: 'Indiranagar', surge: '1.5x', city: 'bengaluru', lat: 12.9784, lng: 77.6408 },
+              { name: 'Koramangala', surge: '1.3x', city: 'bengaluru', lat: 12.9352, lng: 77.6245 },
+            ].map((z) => (
+              <button
+                key={z.name}
+                onClick={() => {
+                  setActiveCity(z.city);
+                  setTrackingWorkerId(null);
+                  if (mapInstanceRef.current) {
+                    mapInstanceRef.current.flyTo([z.lat, z.lng], 14, { duration: 1.1 });
+                  }
+                }}
+                className="jugaad-glass px-3 py-1 rounded-full text-[11px] font-semibold text-zinc-800 hover:border-orange-300 hover:text-orange-600 flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                <span>{z.name}</span>
+                <span className="text-emerald-700 font-bold">{z.surge}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Right Telemetry & Inspection Drawer (4 Columns) */}
@@ -1051,9 +1082,9 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
           {selectedWorker ? (
             <div className="jugaad-glass rounded-2xl p-5 space-y-4 text-zinc-900 animate-fade-in">
               {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+              <div className="flex items-center justify-between pb-3 border-b border-orange-100/80">
                 <div className="flex items-center space-x-3">
-                  <div className="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm shadow-xs">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-50 to-emerald-50 border border-orange-200/80 text-orange-700 flex items-center justify-center font-bold text-sm shadow-xs">
                     {selectedWorker.name.split(' ').map((n) => n[0]).join('')}
                   </div>
                   <div>
@@ -1066,12 +1097,24 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
                     </span>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedWorker(null)}
-                  className="text-zinc-400 hover:text-zinc-600 text-xs cursor-pointer p-1"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                    selectedWorker.status === 'en_route'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : selectedWorker.status === 'in_progress'
+                      ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                      : 'bg-sky-50 text-sky-700 border border-sky-200'
+                  }`}>
+                    {selectedWorker.status.replace('_', ' ')}
+                  </span>
+                  <button
+                    onClick={() => setSelectedWorker(null)}
+                    className="text-zinc-400 hover:text-zinc-600 text-xs cursor-pointer p-1"
+                    title="Close Inspector"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               {/* Status and Telemetry Matrix */}
@@ -1088,7 +1131,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
 
                 <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-100">
                   <span className="text-zinc-400 block text-[10px] uppercase font-bold flex items-center space-x-1">
-                    <Gauge className="w-3 h-3 text-indigo-600" />
+                    <Gauge className="w-3 h-3 text-orange-600" />
                     <span>Speed / Heading</span>
                   </span>
                   <span className="font-bold text-zinc-900 mt-1 inline-block">
@@ -1134,7 +1177,7 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
                 {selectedWorker.job && (
                   <div className="flex justify-between text-zinc-500 pt-1.5 border-t border-zinc-200/70">
                     <span>Assigned Dispatch</span>
-                    <span className="font-bold text-indigo-600">{selectedWorker.job}</span>
+                    <span className="font-bold text-orange-600">{selectedWorker.job}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-zinc-500 pt-1 border-t border-zinc-200/70">
@@ -1147,10 +1190,10 @@ export default function RadarMapModal({ liveWorkers = [], liveJobs = [] }) {
               <div className="pt-1 space-y-2">
                 <button
                   onClick={() => handleFocusWorker(selectedWorker)}
-                  className="w-full py-2.5 px-3 bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-xs"
+                  className="w-full py-2.5 px-3 bg-gradient-to-r from-orange-500 to-emerald-600 hover:from-orange-400 hover:to-emerald-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-sm"
                 >
                   <Crosshair className="w-3.5 h-3.5" />
-                  <span>Track Vehicle (Focus Camera)</span>
+                  <span>Follow Vehicle (Focus Camera)</span>
                 </button>
 
                 <div className="grid grid-cols-2 gap-2">

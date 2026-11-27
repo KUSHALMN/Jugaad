@@ -23,7 +23,7 @@ export function createWorkerVehicleIcon(worker, isSelected = false) {
 
       ${isSelected ? `
         <!-- High-visibility selection halo -->
-        <div class="absolute -inset-1 rounded-full border-2 border-indigo-500 animate-ping opacity-60"></div>
+        <div class="absolute -inset-1 rounded-full border-2 border-orange-500 animate-ping opacity-60"></div>
       ` : ''}
 
       <!-- Main Marker Badge -->
@@ -75,12 +75,12 @@ export function createCustomerDestinationIcon(customerName, etaMins) {
   const html = `
     <div class="relative flex items-center justify-center select-none" style="width: 50px; height: 50px;">
       <!-- Expanding Radar Wave -->
-      <div class="absolute inset-0 rounded-full radar-beacon-ring bg-indigo-500/30 border border-indigo-400"></div>
+      <div class="absolute inset-0 rounded-full radar-beacon-ring bg-orange-500/25 border border-orange-400"></div>
 
       <!-- Core Customer Marker -->
       <div 
-        class="relative w-7 h-7 rounded-full bg-indigo-600 border-2 border-white flex items-center justify-center shadow-lg"
-        style="box-shadow: 0 4px 12px rgba(79, 70, 229, 0.45);"
+        class="relative w-7 h-7 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center shadow-lg"
+        style="box-shadow: 0 4px 12px rgba(249, 115, 22, 0.45);"
       >
         <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -90,7 +90,7 @@ export function createCustomerDestinationIcon(customerName, etaMins) {
 
       <!-- ETA Pill Label -->
       <div 
-        class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white text-zinc-800 text-[9px] font-bold px-2 py-0.5 rounded-full border border-indigo-200 whitespace-nowrap shadow-sm flex items-center space-x-1"
+        class="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white text-zinc-800 text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-200 whitespace-nowrap shadow-sm flex items-center space-x-1"
       >
         <span>${customerName.split(' ')[0]}</span>
         <span class="text-emerald-600 font-extrabold">• ${etaMins}m</span>
