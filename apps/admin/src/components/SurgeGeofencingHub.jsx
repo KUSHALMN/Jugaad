@@ -187,7 +187,7 @@ export default function SurgeGeofencingHub({ session, onConfigUpdated }) {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 jugaad-glass p-5 rounded-2xl">
         <div>
           <div className="flex items-center space-x-2">
             <span className="p-1.5 bg-amber-50 text-amber-600 rounded-lg border border-amber-200">
@@ -275,7 +275,7 @@ export default function SurgeGeofencingHub({ session, onConfigUpdated }) {
       </div>
 
       {/* Ward Multipliers Table */}
-      <div className="bg-white rounded-2xl border border-zinc-200/80 overflow-hidden shadow-xs">
+      <div className="jugaad-glass rounded-2xl overflow-hidden shadow-xs">
         <div className="p-4 border-b border-zinc-100 flex items-center justify-between text-xs font-bold text-zinc-400 uppercase tracking-wider">
           <span>Municipal Ward / Geofence Zone</span>
           <span>Demand vs. Supply</span>

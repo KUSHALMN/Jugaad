@@ -63,5 +63,22 @@ void main() {
       await svc.clearTrustedContact();
       expect(svc.hasTrustedContact, isFalse);
     });
+
+    test('persists privacy consent and offline booking draft queue', () async {
+      final svc = DeviceContextService.instance;
+      await svc.setPrivacyConsent('accepted_all');
+      expect(svc.hasSeenPrivacyConsent, isTrue);
+      expect(svc.consentStatus, 'accepted_all');
+      expect(svc.cookieProfile['consent_status'], 'accepted_all');
+
+      await svc.saveOfflineBookingDraft({
+        'skill': 'electrician',
+        'description': 'MCB tripping',
+      });
+      expect(svc.hasOfflineBookingDraft, isTrue);
+
+      await svc.clearOfflineBookingDraft();
+      expect(svc.hasOfflineBookingDraft, isFalse);
+    });
   });
 }

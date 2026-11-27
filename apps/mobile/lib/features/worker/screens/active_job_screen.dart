@@ -19,6 +19,7 @@ import 'package:jugaad_mvp/core/services/offline_sync_manager.dart';
 import 'package:jugaad_mvp/core/widgets/offline_sync_banner.dart';
 import 'package:jugaad_mvp/core/services/sound_service.dart';
 import 'package:jugaad_mvp/core/services/location_service.dart';
+import 'package:jugaad_mvp/features/shared/widgets/diagnosis_video_preview_dialog.dart';
 import 'widgets/slide_to_confirm.dart';
 import 'widgets/active_job_map_widgets.dart';
 
@@ -2741,37 +2742,46 @@ class _ActiveJobScreenState extends State<ActiveJobScreen>
             if (_jobData?['diagnosis_video_url'] != null ||
                 _jobData?['video_url'] != null) ...[
               const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFA7F3D0)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.videocam_rounded,
-                      size: 16,
-                      color: Color(0xFF16A34A),
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '30s Customer Diagnosis Video Attached',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF15803D),
-                          fontWeight: FontWeight.w700,
+              InkWell(
+                onTap: () {
+                  final url = (_jobData?['diagnosis_video_url'] ??
+                          _jobData?['video_url'])
+                      .toString();
+                  DiagnosisVideoPreviewDialog.show(context, videoUrl: url);
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.play_circle_fill_rounded,
+                        size: 16,
+                        color: Color(0xFF16A34A),
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Play 30s Customer Diagnosis Video',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF15803D),
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ),
-                    Icon(
-                      Icons.verified_rounded,
-                      size: 14,
-                      color: Color(0xFF16A34A),
-                    ),
-                  ],
+                      Icon(
+                        Icons.open_in_new_rounded,
+                        size: 14,
+                        color: Color(0xFF16A34A),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

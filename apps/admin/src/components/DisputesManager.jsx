@@ -295,7 +295,7 @@ export default function DisputesManager({ liveJobs = [], session }) {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Summary */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 jugaad-glass p-5 rounded-2xl">
         <div>
           <div className="flex items-center space-x-2">
             <span className="p-1.5 bg-rose-50 text-rose-600 rounded-lg border border-rose-200">
@@ -351,7 +351,7 @@ export default function DisputesManager({ liveJobs = [], session }) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Ticket List */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-zinc-200/80 overflow-hidden shadow-xs">
+        <div className="lg:col-span-7 jugaad-glass rounded-2xl overflow-hidden shadow-xs">
           <div className="p-4 border-b border-zinc-100 flex items-center justify-between text-xs font-bold text-zinc-400 uppercase tracking-wider">
             <span>Dispute Tickets ({filteredDisputes.length})</span>
             <span>Order Value</span>
@@ -408,7 +408,7 @@ export default function DisputesManager({ liveJobs = [], session }) {
         {/* Detailed Inspection Drawer */}
         <div className="lg:col-span-5 space-y-4">
           {selectedDispute ? (
-            <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 shadow-xs space-y-4 animate-fade-in">
+            <div className="jugaad-glass rounded-2xl p-5 shadow-xs space-y-4 animate-fade-in">
               <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
                 <div>
                   <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Case File</span>
@@ -498,7 +498,7 @@ export default function DisputesManager({ liveJobs = [], session }) {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-zinc-200/80 p-8 text-center text-zinc-400 text-xs">
+            <div className="jugaad-glass rounded-2xl p-8 text-center text-zinc-400 text-xs">
               Select a dispute ticket to inspect case details.
             </div>
           )}

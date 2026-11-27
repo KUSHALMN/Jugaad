@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -26,6 +27,9 @@ class DeviceContextService extends ChangeNotifier {
   static const _kTrustedContactPhoneKey = 'jugaad_trusted_contact_phone';
   static const _kActivityLogKey = 'jugaad_activity_log';
   static const _kSessionIdKey = 'jugaad_session_id';
+  static const _kPrivacyConsentSeenKey = 'jugaad_privacy_consent_seen';
+  static const _kConsentStatusKey = 'jugaad_consent_status';
+  static const _kOfflineBookingDraftKey = 'jugaad_offline_booking_draft';
 
   final Battery _battery = Battery();
   final Connectivity _connectivity = Connectivity();
@@ -41,6 +45,9 @@ class DeviceContextService extends ChangeNotifier {
   bool _isOffline = false;
   String _networkType = 'wifi';
   String _sessionId = '';
+  bool _hasSeenPrivacyConsent = true;
+  String _consentStatus = 'accepted_essential';
+  Map<String, dynamic>? _offlineBookingDraft;
   List<String> _recentSearches = [];
   List<Map<String, dynamic>> _activityLog = [];
   String? _lastBookedSkill;
@@ -53,10 +60,14 @@ class DeviceContextService extends ChangeNotifier {
   bool get isOffline => _isOffline;
   String get networkType => _networkType;
   String get devicePlatform => kIsWeb ? 'Web' : defaultTargetPlatform.name;
+  bool get hasSeenPrivacyConsent => _hasSeenPrivacyConsent;
+  String get consentStatus => _consentStatus;
+  Map<String, dynamic>? get offlineBookingDraft => _offlineBookingDraft;
+  bool get hasOfflineBookingDraft => _offlineBookingDraft != null;
 
   /// First-party session & preference cookie metadata for Admin diagnostics.
   Map<String, dynamic> get cookieProfile => {
-        'consent_status': 'accepted_essential',
+        'consent_status': _consentStatus,
         'session_id': _sessionId.isNotEmpty
             ? _sessionId
             : 'jg_sess_${DateTime.now().millisecondsSinceEpoch}',
@@ -168,6 +179,12 @@ class DeviceContextService extends ChangeNotifier {
       if (_sessionId.isEmpty) {
         _sessionId = 'jg_sess_${DateTime.now().millisecondsSinceEpoch}';
         await prefs.setString(_kSessionIdKey, _sessionId);
+      }
+      _hasSeenPrivacyConsent = prefs.getBool(_kPrivacyConsentSeenKey) ?? false;
+      _consentStatus = prefs.getString(_kConsentStatusKey) ?? 'accepted_essential';
+      final rawDraft = prefs.getString(_kOfflineBookingDraftKey);
+      if (rawDraft != null && rawDraft.isNotEmpty) {
+        _offlineBookingDraft = Map<String, dynamic>.from(jsonDecode(rawDraft) as Map);
       }
       notifyListeners();
     } catch (_) {}
@@ -305,6 +322,40 @@ class DeviceContextService extends ChangeNotifier {
       await prefs.setString(_kTrustedContactPhoneKey, _trustedContactPhone!);
     } catch (_) {}
     _syncActivityToBackend();
+  }
+
+  /// Saves the user's first-party cookie & telemetry consent choice.
+  Future<void> setPrivacyConsent(String status) async {
+    _hasSeenPrivacyConsent = true;
+    _consentStatus = status;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_kPrivacyConsentSeenKey, true);
+      await prefs.setString(_kConsentStatusKey, status);
+    } catch (_) {}
+    await recordActivity('privacy_consent', 'Privacy preference: $status');
+  }
+
+  /// Saves an offline booking draft so it can be resumed once connectivity returns.
+  Future<void> saveOfflineBookingDraft(Map<String, dynamic> draft) async {
+    _offlineBookingDraft = Map<String, dynamic>.from(draft);
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kOfflineBookingDraftKey, jsonEncode(_offlineBookingDraft));
+    } catch (_) {}
+  }
+
+  /// Clears any saved offline booking draft after successful submission.
+  Future<void> clearOfflineBookingDraft() async {
+    if (_offlineBookingDraft == null) return;
+    _offlineBookingDraft = null;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_kOfflineBookingDraftKey);
+    } catch (_) {}
   }
 
   /// Clears the saved Trusted Emergency Contact.

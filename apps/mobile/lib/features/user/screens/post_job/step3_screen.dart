@@ -124,6 +124,7 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
 
       print('[POST_JOB] Job created: job_id=$jobId');
       DeviceContextService.instance.recordBookedSkill(normalizedSkill);
+      DeviceContextService.instance.clearOfflineBookingDraft();
       videoSession.clear();
       ref.read(postJobProvider.notifier).reset();
 
@@ -139,6 +140,17 @@ class _PostJobStep3ScreenState extends ConsumerState<PostJobStep3Screen> {
         }
       }
     } catch (e) {
+      if (DeviceContextService.instance.isOffline ||
+          (e is DioException &&
+              (e.type == DioExceptionType.connectionError ||
+                  e.type == DioExceptionType.connectionTimeout))) {
+        await DeviceContextService.instance.saveOfflineBookingDraft({
+          'skill': jobState.skill,
+          'description': jobState.description,
+          'urgency': jobState.urgency,
+          'job_type': jobState.jobType,
+        });
+      }
       if (e is DioException) {
         final respData = e.response?.data;
         final errMsg = respData is Map && respData.containsKey('detail') 

@@ -10,6 +10,7 @@ import 'package:jugaad_mvp/core/services/notification_service.dart';
 import 'package:jugaad_mvp/core/services/sound_service.dart';
 import 'package:jugaad_mvp/core/services/video_diagnosis_session.dart';
 import 'package:jugaad_mvp/core/utils/jugaad_haptics.dart';
+import 'package:jugaad_mvp/features/shared/widgets/diagnosis_video_preview_dialog.dart';
 
 class IncomingRequestScreen extends StatefulWidget {
   final String jobId;
@@ -638,28 +639,39 @@ class _IncomingRequestScreenState extends State<IncomingRequestScreen>
                       children: [
                         if ((widget.diagnosisVideoUrl?.isNotEmpty ?? false) ||
                             VideoDiagnosisSession.instance.hasClip)
-                          Container(
-                            margin: const EdgeInsets.only(right: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFECFDF5),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0xFF86EFAC)),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.videocam_rounded, size: 12, color: Color(0xFF15803D)),
-                                SizedBox(width: 4),
-                                Text(
-                                  '30s Video',
-                                  style: TextStyle(
-                                    color: Color(0xFF15803D),
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w800,
+                          GestureDetector(
+                            onTap: () {
+                              final url = (widget.diagnosisVideoUrl?.isNotEmpty ?? false)
+                                  ? widget.diagnosisVideoUrl!
+                                  : VideoDiagnosisSession.instance.activeVideoUrl!;
+                              DiagnosisVideoPreviewDialog.show(
+                                context,
+                                videoUrl: url,
+                              );
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFECFDF5),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: const Color(0xFF86EFAC)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.play_circle_fill_rounded, size: 12, color: Color(0xFF15803D)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    '30s Video',
+                                    style: TextStyle(
+                                      color: Color(0xFF15803D),
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         Container(

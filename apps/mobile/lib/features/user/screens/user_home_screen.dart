@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/device_context_service.dart';
 import '../../../core/services/supabase_service.dart';
+import 'post_job/post_job_state.dart';
 import '../../../core/config/services_list.dart';
 import '../../../core/providers/services_provider.dart';
 import '../../../core/config/supabase_config.dart';
@@ -328,7 +329,13 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
   @override
   void initState() {
     super.initState();
-    DeviceContextService.instance.initialize();
+    DeviceContextService.instance.initialize().then((_) {
+      if (mounted && !DeviceContextService.instance.hasSeenPrivacyConsent) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _showPrivacyConsentSheet();
+        });
+      }
+    });
 
     // Bell shake anim: 15 degrees shake left-right 3 times
     _bellShakeController = AnimationController(
@@ -366,6 +373,101 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
       MaterialPageRoute(
         builder: (context) => UserNotificationSettingsScreen(
           currentData: {'id': uid},
+        ),
+      ),
+    );
+  }
+
+  void _showPrivacyConsentSheet() {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.cookie_outlined,
+                    color: Color(0xFF16A34A),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Privacy & Preferences',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Jugaad uses first-party session storage to remember your language, recent searches, battery-saver mode, and offline booking drafts.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                color: const Color(0xFF475569),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      DeviceContextService.instance.setPrivacyConsent('essential_only');
+                      Navigator.pop(sheetCtx);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text('Essential Only'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      DeviceContextService.instance.setPrivacyConsent('accepted_all');
+                      Navigator.pop(sheetCtx);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF16A34A),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text('Accept All'),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -1007,6 +1109,63 @@ class _UserHomeScreenState extends ConsumerState<UserHomeScreen> with TickerProv
                                     ),
                                   ),
                                 ],
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // --- OFFLINE BOOKING DRAFT RESUME BANNER
+                  SliverToBoxAdapter(
+                    child: ListenableBuilder(
+                      listenable: DeviceContextService.instance,
+                      builder: (context, _) {
+                        final ctx = DeviceContextService.instance;
+                        if (!ctx.hasOfflineBookingDraft || ctx.isOffline) {
+                          return const SizedBox.shrink();
+                        }
+                        final draft = ctx.offlineBookingDraft!;
+                        final skill = (draft['skill'] ?? 'Service').toString();
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(20.0, 0.0, 20.0, 12.0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFECFDF5),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFF86EFAC)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.cloud_done_rounded, color: Color(0xFF16A34A), size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Back online! Resume saved $skill booking draft',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF14532D),
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    ref.read(postJobProvider.notifier).setSkill(skill);
+                                    ctx.clearOfflineBookingDraft();
+                                    context.push('/user/post-job/step3');
+                                  },
+                                  child: const Text(
+                                    'Resume',
+                                    style: TextStyle(
+                                      color: Color(0xFF15803D),
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),

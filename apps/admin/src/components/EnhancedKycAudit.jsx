@@ -134,7 +134,7 @@ export default function EnhancedKycAudit({ pendingWorkers = [], onApprove, onRej
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 jugaad-glass p-5 rounded-2xl">
         <div>
           <div className="flex items-center space-x-2">
             <span className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200">
@@ -212,7 +212,7 @@ export default function EnhancedKycAudit({ pendingWorkers = [], onApprove, onRej
           })}
 
           {applications.length === 0 && (
-            <div className="p-8 bg-white rounded-2xl border border-zinc-200/80 text-center text-zinc-400 text-xs">
+            <div className="p-8 jugaad-glass rounded-2xl text-center text-zinc-400 text-xs">
               All pending worker applications have been audited!
             </div>
           )}
@@ -221,7 +221,7 @@ export default function EnhancedKycAudit({ pendingWorkers = [], onApprove, onRej
         {/* Inspection Lightbox (8 cols) */}
         <div className="lg:col-span-8">
           {selectedApp ? (
-            <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 shadow-xs space-y-5 animate-fade-in">
+            <div className="jugaad-glass rounded-2xl p-5 shadow-xs space-y-5 animate-fade-in">
               
               {/* Top Details & Controls Bar */}
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-100">
@@ -362,7 +362,7 @@ export default function EnhancedKycAudit({ pendingWorkers = [], onApprove, onRej
 
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-zinc-200/80 p-8 text-center text-zinc-400 text-xs">
+            <div className="jugaad-glass rounded-2xl p-8 text-center text-zinc-400 text-xs">
               Select an applicant from the left to launch the inspection suite.
             </div>
           )}

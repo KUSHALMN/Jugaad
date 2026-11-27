@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Shield, 
   Bell, 
@@ -236,6 +237,7 @@ export default function JugaadOpsDashboard() {
   const [isSignUpMode, setIsSignUpMode] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [showLaunchOverlay, setShowLaunchOverlay] = useState(false);
+  const [previewVideoJob, setPreviewVideoJob] = useState(null);
 
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [isLoading, setIsLoading] = useState(true);
@@ -1316,6 +1318,41 @@ export default function JugaadOpsDashboard() {
         {showLaunchOverlay && (
           <AdminLaunchOverlay onComplete={() => setShowLaunchOverlay(false)} />
         )}
+        {previewVideoJob && createPortal(
+          <div
+            onClick={() => setPreviewVideoJob(null)}
+            className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-sm"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg rounded-[24px] bg-white/95 backdrop-blur-xl border border-orange-200/80 shadow-2xl overflow-hidden"
+            >
+              <div className="px-5 py-4 border-b border-zinc-100 flex items-center justify-between bg-gradient-to-r from-orange-50/70 to-emerald-50/70">
+                <div className="flex items-center gap-2">
+                  <Video className="w-4 h-4 text-emerald-600" />
+                  <span className="text-sm font-bold text-zinc-900 capitalize">
+                    30s Diagnosis Video • {(previewVideoJob.skill_required || 'Service').replace('_', ' ')}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setPreviewVideoJob(null)}
+                  className="p-1.5 rounded-full hover:bg-white text-zinc-500 hover:text-zinc-900 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-4 bg-zinc-950">
+                <video
+                  src={previewVideoJob.diagnosis_video_url || previewVideoJob.video_url}
+                  controls
+                  autoPlay
+                  className="w-full max-h-[60vh] rounded-xl"
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
         {/* === TOP NAVBAR === */}
         <header className="sticky top-0 z-40 bg-white/75 border-b border-orange-200/60 backdrop-blur-xl shadow-[0_4px_24px_rgba(234,88,12,0.05)]">
           <div className="max-w-[1440px] mx-auto px-4 lg:px-6 h-16 flex items-center justify-between gap-3">
@@ -1413,26 +1450,94 @@ export default function JugaadOpsDashboard() {
                 </button>
               </div>
 
-              {/* Notifications Dropdown */}
-              {showNotifications && (
-                <div className="absolute top-12 right-12 w-80 bg-white border border-zinc-200 rounded-xl shadow-xl z-50 animate-fade-in overflow-hidden">
-                  <div className="px-4 py-3 border-b border-zinc-100 bg-zinc-50/50 flex justify-between items-center">
-                    <h4 className="text-sm font-semibold text-zinc-900">Notifications</h4>
-                    <span className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider">Mark all read</span>
+              {/* Smart Alerts Dropdown */}
+              {showNotifications && (() => {
+                const videoAlerts = jobs
+                  .filter((j) => j.diagnosis_video_url || j.video_url)
+                  .slice(0, 2)
+                  .map((j) => ({
+                    title: `30s Diagnosis Video • ${(j.skill_required || 'Service').replace('_', ' ')}`,
+                    sub: `${j.address || 'Mysuru'} • Tap to preview`,
+                    tab: 'Jobs',
+                    videoJob: j,
+                    badge: 'VIDEO',
+                  }));
+                const emergencyAlerts = jobs
+                  .filter((j) => j.job_type === 'emergency' || (j.surcharge_amount || 0) > 0)
+                  .slice(0, 2)
+                  .map((j) => ({
+                    title: `Emergency Dispatch • ${(j.skill_required || 'Job').replace('_', ' ')}`,
+                    sub: `₹${j.amount || 0} • ${j.status || 'open'}`,
+                    tab: 'Jobs',
+                    badge: 'URGENT',
+                  }));
+                const alerts = [
+                  ...videoAlerts,
+                  ...emergencyAlerts,
+                  {
+                    title: 'Low-Battery Express & Telemetry Active',
+                    sub: 'Inspect live user battery, network & cookies',
+                    tab: 'Users',
+                    badge: 'USERS',
+                  },
+                  {
+                    title: 'Review Flagged Disputes & Payouts',
+                    sub: 'Jump to Disputes & Escrow Resolution',
+                    tab: 'Disputes',
+                    badge: 'ESCROW',
+                  },
+                ].slice(0, 5);
+
+                return (
+                  <div className="absolute top-12 right-12 w-88 bg-white/95 backdrop-blur-xl border border-orange-200/80 rounded-2xl shadow-2xl z-50 animate-fade-in overflow-hidden">
+                    <div className="px-4 py-3 border-b border-orange-100 bg-gradient-to-r from-orange-50/80 to-emerald-50/80 flex justify-between items-center">
+                      <h4 className="text-sm font-bold text-zinc-900">Smart Alerts</h4>
+                      <span className="text-[10px] uppercase font-bold text-emerald-700 tracking-wider">Live Ops</span>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto divide-y divide-zinc-100">
+                      {alerts.map((al, i) => (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            setShowNotifications(false);
+                            if (al.videoJob) {
+                              setPreviewVideoJob(al.videoJob);
+                            } else {
+                              setActiveTab(al.tab);
+                            }
+                          }}
+                          className="w-full text-left px-4 py-3 hover:bg-orange-50/60 transition-colors flex items-start justify-between gap-2 cursor-pointer"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-xs text-zinc-900 font-semibold truncate">{al.title}</p>
+                            <span className="text-[11px] text-zinc-500 mt-0.5 block truncate">{al.sub}</span>
+                          </div>
+                          <span className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                            al.badge === 'URGENT'
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                              : al.badge === 'VIDEO'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-orange-50 text-orange-700 border border-orange-200'
+                          }`}>
+                            {al.badge}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="px-4 py-2 text-center border-t border-zinc-100 bg-zinc-50/50">
+                      <button
+                        onClick={() => {
+                          setShowNotifications(false);
+                          setActiveTab('Users');
+                        }}
+                        className="text-xs text-orange-600 font-semibold hover:text-orange-700 cursor-pointer"
+                      >
+                        Inspect All Users &amp; Activity →
+                      </button>
+                    </div>
                   </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    {FALLBACK_ACTIVITY.slice(0, 3).map((act, i) => (
-                      <div key={i} className="px-4 py-3 border-b border-zinc-50 hover:bg-zinc-50 cursor-pointer transition-colors">
-                        <p className="text-sm text-zinc-800 font-medium">{act.event}</p>
-                        <span className="text-xs text-zinc-400 mt-1 block">{act.time}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="px-4 py-2 text-center border-t border-zinc-100 bg-zinc-50/50">
-                    <button className="text-xs text-indigo-600 font-medium hover:text-indigo-700">View All Activity</button>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Company Details Dropdown */}
               {showCompanyDetails && (
@@ -1576,10 +1681,14 @@ export default function JugaadOpsDashboard() {
                                 <div className="flex items-center gap-2">
                                   <span>{job.skill_required?.replace('_', ' ')}</span>
                                   {(job.diagnosis_video_url || job.video_url) && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 normal-case">
+                                    <button
+                                      onClick={() => setPreviewVideoJob(job)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 normal-case transition cursor-pointer"
+                                      title="Play 30s Diagnosis Video"
+                                    >
                                       <Video className="w-3 h-3" />
                                       30s Video
-                                    </span>
+                                    </button>
                                   )}
                                 </div>
                               </td>
@@ -1947,10 +2056,14 @@ export default function JugaadOpsDashboard() {
                                 <div className="flex items-center gap-2">
                                   <span>{job.skill_required?.replace('_', ' ')}</span>
                                   {(job.diagnosis_video_url || job.video_url) && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 normal-case">
+                                    <button
+                                      onClick={() => setPreviewVideoJob(job)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 normal-case transition cursor-pointer"
+                                      title="Play 30s Diagnosis Video"
+                                    >
                                       <Video className="w-3 h-3" />
                                       30s Video
-                                    </span>
+                                    </button>
                                   )}
                                 </div>
                               </td>

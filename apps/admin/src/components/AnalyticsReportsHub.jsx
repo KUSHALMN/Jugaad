@@ -187,7 +187,7 @@ export default function AnalyticsReportsHub({ session, onExportTrigger }) {
 
       {/* Headline KPI Cards matching Website Theme */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
+        <div className="jugaad-glass rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
           <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Gross Platform GMV</span>
           <h3 className="text-[28px] font-semibold text-zinc-900 mt-2 leading-none font-mono">
             ₹{(analyticsData?.total_gmv || 0).toLocaleString()}
@@ -198,7 +198,7 @@ export default function AnalyticsReportsHub({ session, onExportTrigger }) {
           </div>
         </div>
 
-        <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
+        <div className="jugaad-glass rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
           <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Platform Take (10%)</span>
           <h3 className="text-[28px] font-semibold text-indigo-600 mt-2 leading-none font-mono">
             ₹{parseFloat(analyticsData?.platform_commission || 0).toLocaleString()}
@@ -208,7 +208,7 @@ export default function AnalyticsReportsHub({ session, onExportTrigger }) {
           </span>
         </div>
 
-        <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
+        <div className="jugaad-glass rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
           <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Fulfillment Rate</span>
           <h3 className="text-[28px] font-semibold text-emerald-600 mt-2 leading-none font-mono">
             {analyticsData?.fulfillment_rate || 0}%
@@ -218,7 +218,7 @@ export default function AnalyticsReportsHub({ session, onExportTrigger }) {
           </span>
         </div>
 
-        <div className="bg-white border border-zinc-200/80 rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
+        <div className="jugaad-glass rounded-[20px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:scale-[1.01] transition-all">
           <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Total Dispatches</span>
           <h3 className="text-[28px] font-semibold text-zinc-900 mt-2 leading-none font-mono">
             {analyticsData?.total_jobs || 0}
@@ -230,7 +230,7 @@ export default function AnalyticsReportsHub({ session, onExportTrigger }) {
       </div>
 
       {/* SVG Daily GMV and Commission Chart matching Website Theme */}
-      <div className="bg-white border border-zinc-200/80 rounded-[20px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-4">
+      <div className="jugaad-glass rounded-[20px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-4">
         <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
           <div>
             <h3 className="text-base font-semibold text-zinc-900 tracking-tight">Daily Gross Revenue & Platform Take (₹)</h3>
@@ -286,7 +286,7 @@ export default function AnalyticsReportsHub({ session, onExportTrigger }) {
       {/* Service Category Performance & Operational Diagnostics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Category Share matching Website Theme */}
-        <div className="bg-white border border-zinc-200/80 rounded-[20px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-4">
+        <div className="jugaad-glass rounded-[20px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-4">
           <h3 className="text-base font-semibold text-zinc-900 tracking-tight">Top Service Categories by Demand</h3>
           <div className="space-y-3.5">
             {categoryBreakdown.map((cat, idx) => {
@@ -311,7 +311,7 @@ export default function AnalyticsReportsHub({ session, onExportTrigger }) {
         </div>
 
         {/* Operational Health Diagnostic */}
-        <div className="bg-white border border-zinc-200/80 rounded-[20px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-4">
+        <div className="jugaad-glass rounded-[20px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-4">
           <h3 className="text-base font-semibold text-zinc-900 tracking-tight">Fleet Operational Diagnostic</h3>
           <div className="space-y-3">
             <div className="p-3.5 bg-zinc-50 border border-zinc-100 rounded-[14px] flex items-center justify-between">

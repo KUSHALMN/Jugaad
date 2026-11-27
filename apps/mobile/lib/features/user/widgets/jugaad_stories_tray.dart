@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jugaad_mvp/core/services/video_diagnosis_session.dart';
 
 class StoryDiagnosisItem {
@@ -368,17 +369,45 @@ class JugaadStoriesTray extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
                           HapticFeedback.lightImpact();
-                          VideoDiagnosisSession.instance.attachClip(
-                            videoUrl: 'assets/videos/ac.mp4',
-                            category: 'Uploaded Diagnosis',
-                          );
+                          String attachedUrl = 'assets/videos/ac.mp4';
+                          try {
+                            final picked = await ImagePicker().pickVideo(
+                              source: ImageSource.gallery,
+                              maxDuration: const Duration(seconds: 30),
+                            );
+                            if (picked != null) {
+                              final bytes = await picked.readAsBytes();
+                              attachedUrl = await VideoDiagnosisSession.instance
+                                  .uploadClipToSupabase(
+                                bytes: bytes,
+                                fileName: picked.name,
+                                category: 'Uploaded Diagnosis',
+                                fallbackAssetPath: 'assets/videos/ac.mp4',
+                              );
+                            } else {
+                              VideoDiagnosisSession.instance.attachClip(
+                                videoUrl: attachedUrl,
+                                category: 'Uploaded Diagnosis',
+                              );
+                            }
+                          } catch (_) {
+                            VideoDiagnosisSession.instance.attachClip(
+                              videoUrl: attachedUrl,
+                              category: 'Uploaded Diagnosis',
+                            );
+                          }
+                          if (!ctx.mounted) return;
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('30s Video attached! Workers & Admin can preview it on your booking.'),
-                              backgroundColor: Color(0xFF16A34A),
+                            SnackBar(
+                              content: Text(
+                                attachedUrl.startsWith('http')
+                                    ? '30s Video uploaded to cloud & attached to your booking!'
+                                    : '30s Video attached! Workers & Admin can preview it on your booking.',
+                              ),
+                              backgroundColor: const Color(0xFF16A34A),
                             ),
                           );
                         },
@@ -402,17 +431,45 @@ class JugaadStoriesTray extends StatelessWidget {
                     Expanded(
                       flex: 2,
                       child: ElevatedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
                           HapticFeedback.heavyImpact();
-                          VideoDiagnosisSession.instance.attachClip(
-                            videoUrl: 'assets/videos/fan.mp4',
-                            category: 'Recorded Diagnosis',
-                          );
+                          String attachedUrl = 'assets/videos/fan.mp4';
+                          try {
+                            final picked = await ImagePicker().pickVideo(
+                              source: ImageSource.camera,
+                              maxDuration: const Duration(seconds: 30),
+                            );
+                            if (picked != null) {
+                              final bytes = await picked.readAsBytes();
+                              attachedUrl = await VideoDiagnosisSession.instance
+                                  .uploadClipToSupabase(
+                                bytes: bytes,
+                                fileName: picked.name,
+                                category: 'Recorded Diagnosis',
+                                fallbackAssetPath: 'assets/videos/fan.mp4',
+                              );
+                            } else {
+                              VideoDiagnosisSession.instance.attachClip(
+                                videoUrl: attachedUrl,
+                                category: 'Recorded Diagnosis',
+                              );
+                            }
+                          } catch (_) {
+                            VideoDiagnosisSession.instance.attachClip(
+                              videoUrl: attachedUrl,
+                              category: 'Recorded Diagnosis',
+                            );
+                          }
+                          if (!ctx.mounted) return;
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('30s diagnosis clip recorded & attached to your next booking!'),
-                              backgroundColor: Color(0xFF16A34A),
+                            SnackBar(
+                              content: Text(
+                                attachedUrl.startsWith('http')
+                                    ? '30s clip uploaded & attached to your next booking!'
+                                    : '30s diagnosis clip recorded & attached to your next booking!',
+                              ),
+                              backgroundColor: const Color(0xFF16A34A),
                             ),
                           );
                         },
