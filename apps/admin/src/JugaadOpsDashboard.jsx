@@ -1791,7 +1791,7 @@ export default function JugaadOpsDashboard() {
                   </button>
 
                   <button
-                    onClick={measureDbLatency}
+                    onClick={checkDbLatency}
                     className="jugaad-glass rounded-2xl px-4 py-3 flex items-center justify-between hover:border-orange-300 transition cursor-pointer text-left"
                   >
                     <div className="flex items-center gap-2.5">
