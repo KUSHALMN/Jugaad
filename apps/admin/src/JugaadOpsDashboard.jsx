@@ -1449,7 +1449,7 @@ export default function JugaadOpsDashboard() {
             </div>
 
             {/* Nav Tabs for Desktop */}
-            <nav className="hidden md:flex items-center space-x-1 overflow-x-auto no-scrollbar flex-1 justify-center px-2">
+            <nav className="hidden md:flex items-center space-x-0.5 overflow-x-auto no-scrollbar flex-1 min-w-0 justify-start px-1">
               {[
                 { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
                 { id: 'Jobs', label: 'Jobs', icon: CheckSquare },
@@ -1473,7 +1473,7 @@ export default function JugaadOpsDashboard() {
                       setCategoryFilter('all');
                       setStatusFilter('all');
                     }}
-                    className={`whitespace-nowrap shrink-0 flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    className={`whitespace-nowrap shrink-0 flex items-center space-x-1 px-2 py-1.5 rounded-xl text-[11.5px] font-semibold transition-all ${
                       isActive 
                         ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25' 
                         : 'text-zinc-600 hover:text-orange-600 hover:bg-orange-50/70'
@@ -1487,17 +1487,16 @@ export default function JugaadOpsDashboard() {
             </nav>
 
             {/* Actions Section */}
-            <div className="flex items-center space-x-2.5 relative shrink-0">
+            <div className="flex items-center space-x-2 relative shrink-0">
               <button
                 onClick={() => {
                   setCommandQuery('');
                   setShowCommandBar(true);
                 }}
-                className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/80 hover:bg-white border border-orange-200/80 text-zinc-600 hover:text-orange-600 text-[11px] font-semibold transition cursor-pointer"
+                className="p-2 rounded-xl bg-white/80 hover:bg-white border border-orange-200/80 text-zinc-600 hover:text-orange-600 transition cursor-pointer"
                 title="Quick Command Palette (Ctrl+K)"
               >
-                <Search className="w-3 h-3" />
-                <span>Ctrl+K</span>
+                <Search className="w-3.5 h-3.5" />
               </button>
               <div className="hidden sm:inline-flex whitespace-nowrap items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50/90 border border-emerald-200 text-emerald-700 text-[11px] font-semibold">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
